@@ -275,7 +275,7 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
 
 </style>
 </head>
-<body onload="(function(){try{buildCatsGrid();}catch(e){}try{loadAds().then(function(){try{checkNewAds();}catch(e){}try{loadHomeBanners();}catch(e){}});}catch(e){}setTimeout(function(){var s=document.getElementById('splashScreen');if(s)s.style.display='none';},3000);})()">
+<body>
 
 <!-- SPLASH SCREEN -->
 <div class="splash" id="splashScreen" onanimationend="this.style.display='none'">
@@ -5702,34 +5702,23 @@ function renderAdminAdsList(cont, ads, tab) {
 
 
 // ===== INIT =====
-(async function init() {
-  function hideSplash() {
-    const splash = document.getElementById('splashScreen');
-    if(!splash) return;
-    splash.classList.add('hide');
-    setTimeout(function() { if(splash.parentNode) splash.parentNode.removeChild(splash); }, 600);
-  }
-
-  // بناء الأقسام فوراً
-  try { buildCatsGrid(); } catch(e) {}
-
-  // تحميل البيانات مع timeout
-  try {
-    await Promise.race([
-      loadAds(),
-      new Promise(function(_, rej) { setTimeout(function(){ rej('timeout'); }, 6000); })
-    ]);
-  } catch(e) { console.warn('loadAds:', e); }
-
-  // تشغيل الخدمات الإضافية
+buildCatsGrid();
+loadAds().then(function() {
   try { checkNewAds(); } catch(e) {}
   try { loadHomeBanners(); } catch(e) {}
   try { loadPrayerTimes(); } catch(e) {}
   try { loadGoldPrice(); } catch(e) {}
-
-  // إخفاء السبلاش
-  setTimeout(hideSplash, 1200);
-})();
+}).catch(function(e) { console.warn(e); }).finally(function() {
+  setTimeout(function() {
+    var s = document.getElementById('splashScreen');
+    if(s) s.style.display = 'none';
+  }, 1500);
+});
+// Fallback: hide splash after 5s no matter what
+setTimeout(function() {
+  var s = document.getElementById('splashScreen');
+  if(s) s.style.display = 'none';
+}, 5000);
 </script>
 <html lang="ar" dir="rtl">
 <head>
