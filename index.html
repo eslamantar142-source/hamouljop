@@ -678,7 +678,7 @@ function openChildCategory(parentId, childId) {
   if(child.subs && child.subs.length > 0) {
     showSubsPageV2(parent, child);
   } else {
-    showAdsPage({...child, id:parentId}, null);
+    showAdsPage({...child, id:parentId}, child.name);
   }
 }
 
@@ -718,10 +718,12 @@ function showAdsPageV2(parentId, childId, subName) {
     if(a.status !== 'approved' && !isAdmin) return false;
     if(a.category !== parentId) return false;
     if(isGeneral) {
-      // بيجيب كل إعلانات الـ child ده بغض النظر عن التخصص
-      return a.subcategory?.startsWith(child?.name + ' —') || false;
+      return a.subcategory?.startsWith(child?.name + ' —') || a.subcategory === child?.name || false;
     }
-    return a.subcategory === `${child?.name} — ${subName}`;
+    // match exact: "وظيفة شاغرة — محلات وتجارة" OR just "وظيفة شاغرة"
+    return a.subcategory === (child?.name + ' — ' + subName)
+        || a.subcategory === child?.name
+        || a.subcategory === subName;
   });
 
   sessionStorage.setItem('dynState', JSON.stringify({type:'ads2', catId:parentId, childId, subName}));
@@ -735,8 +737,8 @@ function showAdsPageV2(parentId, childId, subName) {
     <div class="dyn-search-bar" id="dynSearchBar" style="display:none;">
       <input type="text" id="dynSearchInput" placeholder="ابحث..." oninput="filterAdsV2('${parentId}','${childId}','${subName}')">
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" id="adsContent">
-      <div id="catBanner"></div>
       ${renderAdsList(ads, parent)}
     </div>
     <button class="fab-add" onclick="openAddModal('${parentId}','${child?.name} — ${subName}')">+</button>`;
@@ -803,10 +805,12 @@ function filterSubs(catId) {
 }
 
 // ======= ADS PAGE =======
-function showAdsPage(cat, sub) {
+async function showAdsPage(cat, sub) {
   sessionStorage.setItem('dynState', JSON.stringify({type:'ads', catId:cat.id, sub:sub||''}));
   const page = document.getElementById('dynamicPage');
   const title = sub ? sub : cat.name;
+  // جلب أحدث الإعلانات من Supabase دايمًا
+  await loadAds();
   const ads = allAds.filter(a => {
     if(a.status !== 'approved' && !isAdmin) return false;
     if(a.category !== cat.id) return false;
@@ -823,8 +827,8 @@ function showAdsPage(cat, sub) {
     <div class="dyn-search-bar" id="dynSearchBar" style="display:none;">
       <input type="text" id="dynSearchInput" placeholder="ابحث في ${title}..." oninput="filterAds('${cat.id}','${sub||''}')">
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" id="adsContent">
-      <div id="catBanner"></div>
       ${renderAdsList(ads, cat)}
     </div>
     <button class="fab-add" onclick="openAddModal('${cat.id}','${sub||''}')">+</button>
@@ -1232,6 +1236,7 @@ function openAddModal(catId='', sub='') {
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  setTimeout(function(){ updateFSub(); if(sub){ var fs=document.getElementById('fSub'); if(fs){ for(var i=0;i<fs.options.length;i++){ if(fs.options[i].value===sub){fs.value=sub;break;} } } } }, 50);
   updateFSub();
   if(sub) { setTimeout(() => { const sel = document.getElementById('fSub'); if(sel) sel.value = sub; }, 100); }
 }
@@ -1244,10 +1249,34 @@ function updateFSub() {
   const cat = CATEGORIES.find(c => c.id === catId);
   const wrap = document.getElementById('fSubWrap');
   const sel = document.getElementById('fSub');
-  if(cat && cat.subs.length > 0) {
+  if(!cat) { wrap.style.display = 'none'; return; }
+
+  // جمع كل التخصصات: subs المباشرة + subs داخل children
+  let allSubs = [];
+  if(cat.subs && cat.subs.length > 0) {
+    allSubs = cat.subs.map(s => typeof s === 'string' ? s : s.name);
+  }
+  if(cat.children && cat.children.length > 0) {
+    cat.children.forEach(child => {
+      if(child.subs && child.subs.length > 0) {
+        child.subs.forEach(s => {
+          const subName = typeof s === 'string' ? s : s.name;
+          if(!subName.startsWith('عام —')) {
+            allSubs.push(child.name + ' — ' + subName);
+          }
+        });
+      } else {
+        allSubs.push(child.name);
+      }
+    });
+  }
+
+  if(allSubs.length > 0) {
     wrap.style.display = 'block';
-    sel.innerHTML = `<option value="">-- اختر تخصص --</option>` + cat.subs.map(s=>`<option value="${s}">${s}</option>`).join('');
-  } else { wrap.style.display = 'none'; }
+    sel.innerHTML = '<option value="">-- اختر تخصص --</option>' + allSubs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+  } else {
+    wrap.style.display = 'none';
+  }
 }
 
 let addSelectedFiles = [];
@@ -1956,7 +1985,7 @@ async function deleteAdPermanent(id) {
 
 async function approveAd(id) {
   await sbFetch('PATCH',`ads?id=eq.${id}`,{status:'approved'});
-  showToast('✅ تم الموافقة');
+  showToast('✅ تم الموافقة على الإعلان — سيظهر فوراً في قسمه');
   await loadAds();
   showAdminPanel('pending');
 }
