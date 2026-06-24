@@ -1623,7 +1623,11 @@ async function loadAdminMarriage(page) {
       <div style="display:flex;width:100%;background:white;border-bottom:2px solid var(--border);overflow-x:auto;">
         ${tabList.map(([t,l])=>{
           const icons={'pending':'⏳','approved':'✅','rejected':'❌','marriage':'💍','banners':'📢','stats':'📊'};
-          return '<button onclick="showAdminPanel(''+t+'')" style="flex-shrink:0;padding:8px 6px;border:none;border-bottom:3px solid '+(tab===t?'#0284c7':'transparent')+';background:white;color:'+(tab===t?'#0284c7':'var(--gray)')+';font-family:Cairo,sans-serif;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:50px;text-align:center;">'+icons[t]+'<br>'+l.replace(/⏳|✅|❌|💍|📢|📊/g,'').trim()+'</button>';
+          var btn=document.createElement('button');
+          btn.setAttribute('onclick',"showAdminPanel('"+t+"')");
+          btn.style.cssText='flex-shrink:0;padding:8px 6px;border:none;border-bottom:3px solid '+(tab===t?'#0284c7':'transparent')+';background:white;color:'+(tab===t?'#0284c7':'#64748b')+';font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:50px;text-align:center;';
+          btn.innerHTML=icons[t]+'<br>'+l.replace(/[⏳✅❌💍📢📊]/g,'').trim();
+          return btn.outerHTML;
         }).join('')}
       </div>
     </div>
