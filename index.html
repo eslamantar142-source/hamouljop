@@ -5701,45 +5701,32 @@ function renderAdminAdsList(cont, ads, tab) {
 
 // ===== INIT =====
 (async function init() {
-  // إخفاء الـ splash
   function hideSplash() {
     const splash = document.getElementById('splashScreen');
-    if(splash) {
-      splash.style.opacity = '0';
-      setTimeout(() => { if(splash.parentNode) splash.remove(); }, 500);
-    }
+    if(!splash) return;
+    splash.classList.add('hide');
+    setTimeout(function() { if(splash.parentNode) splash.parentNode.removeChild(splash); }, 600);
   }
 
-  // بناء الأقسام
-  if(typeof buildCatsGrid === 'function') buildCatsGrid();
+  // بناء الأقسام فوراً
+  try { buildCatsGrid(); } catch(e) {}
 
-  // تحميل البيانات
+  // تحميل البيانات مع timeout
   try {
-    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000));
-    await Promise.race([loadAds(), timeout]);
-    if(typeof checkNewAds === 'function') checkNewAds();
-    if(typeof loadHomeBanners === 'function') loadHomeBanners();
-    if(typeof loadPrayerTimes === 'function') loadPrayerTimes();
-    if(typeof loadGoldPrice === 'function') loadGoldPrice();
-  } catch(e) { console.warn('Init error:', e.message); }
+    await Promise.race([
+      loadAds(),
+      new Promise(function(_, rej) { setTimeout(function(){ rej('timeout'); }, 6000); })
+    ]);
+  } catch(e) { console.warn('loadAds:', e); }
+
+  // تشغيل الخدمات الإضافية
+  try { checkNewAds(); } catch(e) {}
+  try { loadHomeBanners(); } catch(e) {}
+  try { loadPrayerTimes(); } catch(e) {}
+  try { loadGoldPrice(); } catch(e) {}
 
   // إخفاء السبلاش
-  setTimeout(hideSplash, 1500);
-
-  // استعادة الحالة لو فيه صفحة مفتوحة
-  try {
-    const saved = sessionStorage.getItem('dynState');
-    if(saved) {
-      const state = JSON.parse(saved);
-      sessionStorage.removeItem('dynState');
-      setTimeout(() => {
-        if(state.type === 'ads' && state.catId) {
-          const cat = CATEGORIES.find(c => c.id === state.catId);
-          if(cat) showAdsPage(cat, state.sub || null);
-        }
-      }, 500);
-    }
-  } catch(e) {}
+  setTimeout(hideSplash, 1200);
 })();
 </script>
 <html lang="ar" dir="rtl">
