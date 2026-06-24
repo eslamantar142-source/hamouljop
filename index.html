@@ -1576,7 +1576,10 @@ async function showAdminPanel(tab='pending') {
         <button onclick="adminLogout()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:6px;font-family:Cairo,sans-serif;font-size:11px;cursor:pointer;">خروج</button>
       </div>
       <div style="display:flex;width:100%;background:white;border-bottom:2px solid var(--border);overflow-x:auto;">
-        ${tabList.map(([t,l])=>`<button onclick="showAdminPanel('${t}')" style="flex-shrink:0;padding:10px 8px;border:none;background:${tab===t?'#0284c7':'white'};color:${tab===t?'white':'var(--gray)'};font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">${l}</button>`).join('')}
+        ${tabList.map(([t,l])=>{
+        const icons={'pending':'⏳','approved':'✅','rejected':'❌','marriage':'💍','banners':'📢','stats':'📊'};
+        return `<button onclick="showAdminPanel('${t}')" style="flex-shrink:0;padding:8px 6px;border:none;border-bottom:3px solid ${tab===t?'#0284c7':'transparent'};background:white;color:${tab===t?'#0284c7':'var(--gray)'};font-family:Cairo,sans-serif;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:50px;text-align:center;">${icons[t]}<br>${l.replace(/⏳|✅|❌|💍|📢|📊/g,'').trim()}</button>`;
+      }).join('')}
       </div>
     </div>
     <div class="dyn-content" style="padding:12px;" id="adminContent">
@@ -1604,14 +1607,12 @@ async function showAdminPanel(tab='pending') {
 }
 
 async function loadAdminMarriage(page) {
-  page.classList.add('active');
-  document.body.style.overflow = 'hidden';
-
-  // جلب عدد الإعلانات للـ stats
-  const pending = allAds.filter(a=>a.status==='pending');
-  const approved = allAds.filter(a=>a.status==='approved');
-  const rejected = allAds.filter(a=>a.status==='rejected');
-
+  // بناء الصفحة بنفس هيكل showAdminPanel
+  const tab = 'marriage';
+  const tabList = [
+    ['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],
+    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات']
+  ];
   page.innerHTML = `
     <div class="dyn-header" style="flex-direction:column;gap:0;padding:0;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;width:100%;">
@@ -1619,103 +1620,51 @@ async function loadAdminMarriage(page) {
         <span>⚙️ لوحة تحكم إسلام عنتر</span>
         <button onclick="adminLogout()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:6px;font-family:Cairo,sans-serif;font-size:11px;cursor:pointer;">خروج</button>
       </div>
-      <div style="display:flex;gap:0;width:100%;background:rgba(0,0,0,.2);">
-        <div style="flex:1;text-align:center;padding:8px 4px;"><div style="font-size:18px;font-weight:900;color:white;">${allAds.length}</div><div style="font-size:10px;color:rgba(255,255,255,.7);">إجمالي</div></div>
-        <div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid rgba(255,255,255,.2);"><div style="font-size:18px;font-weight:900;color:#fbbf24;">${pending.length}</div><div style="font-size:10px;color:rgba(255,255,255,.7);">انتظار</div></div>
-        <div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid rgba(255,255,255,.2);"><div style="font-size:18px;font-weight:900;color:#86efac;">${approved.length}</div><div style="font-size:10px;color:rgba(255,255,255,.7);">معتمدة</div></div>
-        <div style="flex:1;text-align:center;padding:8px 4px;border-right:1px solid rgba(255,255,255,.2);"><div style="font-size:18px;font-weight:900;color:#fca5a5;">${rejected.length}</div><div style="font-size:10px;color:rgba(255,255,255,.7);">مرفوضة</div></div>
-      </div>
-      <div style="display:flex;width:100%;background:white;border-bottom:2px solid var(--border);">
-        <button onclick="showAdminPanel('pending')" style="flex:1;padding:10px 4px;border:none;background:white;color:var(--gray);font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⏳ انتظار (${pending.length})</button>
-        <button onclick="showAdminPanel('approved')" style="flex:1;padding:10px 4px;border:none;background:white;color:var(--gray);font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">✅ معتمدة (${approved.length})</button>
-        <button onclick="showAdminPanel('rejected')" style="flex:1;padding:10px 4px;border:none;background:white;color:var(--gray);font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">❌ مرفوضة (${rejected.length})</button>
-        <button onclick="showAdminPanel('marriage')" style="flex:1;padding:10px 4px;border:none;background:#be185d;color:white;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;border-bottom:2px solid #be185d;">💍 زواج</button>
+      <div style="display:flex;width:100%;background:white;border-bottom:2px solid var(--border);overflow-x:auto;">
+        ${tabList.map(([t,l])=>{
+          const icons={'pending':'⏳','approved':'✅','rejected':'❌','marriage':'💍','banners':'📢','stats':'📊'};
+          return '<button onclick="showAdminPanel(''+t+'')" style="flex-shrink:0;padding:8px 6px;border:none;border-bottom:3px solid '+(tab===t?'#0284c7':'transparent')+';background:white;color:'+(tab===t?'#0284c7':'var(--gray)')+';font-family:Cairo,sans-serif;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:50px;text-align:center;">'+icons[t]+'<br>'+l.replace(/⏳|✅|❌|💍|📢|📊/g,'').trim()+'</button>';
+        }).join('')}
       </div>
     </div>
-    <div class="dyn-content" style="padding:12px;" id="marriageAdminContent">
-      <div style="text-align:center;padding:40px;color:var(--gray);">
-        <div style="font-size:30px;margin-bottom:8px;">⏳</div>
-        <p>جاري تحميل الملفات...</p>
-      </div>
+    <div class="dyn-content" style="padding:12px;" id="adminContent">
+      <div style="text-align:center;padding:20px;color:var(--gray);">⏳ جاري تحميل طلبات الزواج...</div>
     </div>`;
+  page.classList.add('active');
+  document.body.style.overflow = 'hidden';
 
-  // جلب ملفات الزواج
+  const cont = page.querySelector('#adminContent');
   try {
-    const profiles = await sbFetch('GET', 'marriage_profiles?select=*&order=created_at.desc');  // جلب إحصائيات بيت الحلال
-  let stats = { total:0, approved:0, pending:0, rejected:0, likes:0, requests:0, cities:{} };
-  try {
-    const [profiles, likes, requests] = await Promise.all([
-      sbFetch('GET', 'marriage_profiles?select=id,status,city') || [],
-      sbFetch('GET', 'marriage_likes?select=id') || [],
-      sbFetch('GET', 'marriage_requests?select=id,status') || []
-    ]);
-    stats.total = profiles.length;
-    stats.approved = profiles.filter(p=>p.status==='approved').length;
-    stats.pending = profiles.filter(p=>p.status==='pending').length;
-    stats.rejected = profiles.filter(p=>p.status==='rejected').length;
-    stats.likes = likes.length;
-    stats.requests = requests.length;
-    stats.newRequests = requests.filter(r=>r.status==='pending').length;
-    profiles.forEach(p => { if(p.city) stats.cities[p.city] = (stats.cities[p.city]||0)+1; });
-  } catch(e) {}
+    const profiles = await sbFetch('GET', 'marriage_profiles?select=*&order=created_at.desc') || [];
+    const pending = profiles.filter(p=>p.status==='pending');
+    const approved = profiles.filter(p=>p.status==='approved');
 
-  const topCity = Object.entries(stats.cities).sort((a,b)=>b[1]-a[1])[0];
+    if(!profiles.length) {
+      cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray);"><div style="font-size:40px;">💍</div><p>مفيش طلبات زواج</p></div>';
+      return;
+    }
 
-  cont.innerHTML = `
-    <!-- إحصائيات سريعة -->
-    <div style="background:linear-gradient(135deg,#be185d,#ec4899);border-radius:14px;padding:14px;margin-bottom:14px;color:white;">
-      <div style="font-size:13px;font-weight:900;margin-bottom:10px;opacity:.9;">📊 إحصائيات بيت الحلال</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;">${stats.total}</div>
-          <div style="font-size:10px;opacity:.85;">إجمالي الملفات</div>
-        </div>
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:#bbf7d0;">${stats.approved}</div>
-          <div style="font-size:10px;opacity:.85;">✅ معتمدة</div>
-        </div>
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:#fef08a;">${stats.pending}</div>
-          <div style="font-size:10px;opacity:.85;">⏳ انتظار</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;">❤️ ${stats.likes}</div>
-          <div style="font-size:10px;opacity:.85;">إجمالي اهتمام</div>
-        </div>
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;">📩 ${stats.requests}</div>
-          <div style="font-size:10px;opacity:.85;">طلبات تواصل</div>
-        </div>
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:#fef08a;">🔔 ${stats.newRequests}</div>
-          <div style="font-size:10px;opacity:.85;">طلبات جديدة</div>
-        </div>
-      </div>
-      ${topCity?`<div style="margin-top:10px;background:rgba(255,255,255,.15);border-radius:8px;padding:8px;text-align:center;font-size:12px;">📍 أكتر بلد: <strong>${topCity[0]}</strong> (${topCity[1]} ملف)</div>`:''}
-    </div>
-
-    <!-- فلاتر الملفات -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;">
-      <button onclick="filterMarriageAdmin('all')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:none;background:#1e293b;color:white;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">الكل (${stats.total})</button>
-      <button onclick="filterMarriageAdmin('pending')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid #fbbf24;background:white;color:#92400e;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">⏳ انتظار (${stats.pending})</button>
-      <button onclick="filterMarriageAdmin('approved')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--green);background:white;color:var(--green);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">✅ معتمدة (${stats.approved})</button>
-      <button onclick="filterMarriageAdmin('rejected')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--red);background:white;color:var(--red);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">❌ مرفوضة (${stats.rejected})</button>
-      <button onclick="loadContactRequests()" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid #7c3aed;background:${stats.newRequests>0?'#7c3aed':'white'};color:${stats.newRequests>0?'white':'#7c3aed'};font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📩 طلبات${stats.newRequests>0?' ('+stats.newRequests+')':''}</button>
-    </div>
-    <div id="marriageProfilesList">
-      <div>${skeletonCards(3)}</div>
-    </div>`;
-
-    // تحميل الملفات تلقائياً
-    setTimeout(() => filterMarriageAdmin('all'), 100);
-
+    cont.innerHTML = '<div style="margin-bottom:12px;display:flex;gap:8px;">' +
+      '<div style="background:#fef3c7;border-radius:10px;padding:10px;flex:1;text-align:center;"><div style="font-size:20px;font-weight:900;color:#d97706;">'+pending.length+'</div><div style="font-size:11px;color:#92400e;">انتظار</div></div>' +
+      '<div style="background:#dcfce7;border-radius:10px;padding:10px;flex:1;text-align:center;"><div style="font-size:20px;font-weight:900;color:#16a34a;">'+approved.length+'</div><div style="font-size:11px;color:#166534;">معتمد</div></div>' +
+      '</div>' +
+      profiles.map(function(p) {
+        return '<div style="background:white;border-radius:12px;padding:12px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.08);">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+          '<div style="font-size:13px;font-weight:900;">' + (p.gender==='male'?'👨':'👩') + ' ' + (p.name||'—') + '</div>' +
+          '<span style="background:'+(p.status==='approved'?'#dcfce7':'#fef3c7')+';color:'+(p.status==='approved'?'#166534':'#92400e')+';padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">'+(p.status==='approved'?'✅ معتمد':'⏳ انتظار')+'</span>' +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--gray);margin-bottom:8px;">📍 '+( p.city||'—')+' | 🎂 '+(p.age||'—')+' سنة</div>' +
+          '<div style="display:flex;gap:6px;">' +
+          (p.status==='pending' ? '<button data-id="'+p.id+'" onclick="approveMarriage(this.dataset.id)" style="flex:1;background:var(--green);color:white;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✅ موافقة</button>' : '') +
+          '<button data-id="'+p.id+'" onclick="deleteMarriage(this.dataset.id)" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 12px;border-radius:8px;font-size:14px;cursor:pointer;">🗑️</button>' +
+          '</div></div>';
+      }).join('');
   } catch(e) {
-    const cont = document.getElementById('marriageAdminContent');
-    if(cont) cont.innerHTML = `<div style="text-align:center;padding:40px;color:var(--red);"><p>خطأ في تحميل الإحصائيات</p></div>`;
+    cont.innerHTML = '<div style="text-align:center;padding:30px;color:#ef4444;">خطأ في تحميل البيانات</div>';
   }
 }
+
 
 async function filterMarriageAdmin(status) {
   const list = document.getElementById('marriageProfilesList');
