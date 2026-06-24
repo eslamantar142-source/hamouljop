@@ -656,6 +656,7 @@ function showChildrenPage(cat) {
       <span>${cat.icon} ${cat.name}</span>
       <span></span>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:12px;">
       <div class="cats-grid">
         ${cat.children.map(child => `
@@ -667,6 +668,7 @@ function showChildrenPage(cat) {
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner(cat.id);
 }
 
 function openChildCategory(parentId, childId) {
@@ -690,6 +692,7 @@ function showSubsPageV2(parent, child) {
       <span>${child.icon} ${child.name}</span>
       <span></span>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:12px;">
       <div class="cats-grid">
         ${child.subs.map(sub => `
@@ -701,6 +704,7 @@ function showSubsPageV2(parent, child) {
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner(parent.id);
 }
 
 function showAdsPageV2(parentId, childId, subName) {
@@ -768,6 +772,7 @@ function showSubsPage(cat) {
     <div class="dyn-search-bar" id="dynSearchBar" style="display:none;">
       <input type="text" id="dynSearchInput" placeholder="ابحث في ${cat.name}..." oninput="filterSubs('${cat.id}')">
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content">
       <div class="cats-grid" id="subsGrid">
         ${cat.subs.map(sub => `
@@ -781,6 +786,7 @@ function showSubsPage(cat) {
   `;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner(cat.id);
 }
 
 function filterSubs(catId) {
@@ -1337,18 +1343,12 @@ function openAdmin() {
 async function showAdminPanel(tab='pending') {
   sessionStorage.setItem('dynState', JSON.stringify({type:'admin', tab}));
   const page = document.getElementById('dynamicPage');
-  const pending = allAds.filter(a=>a.status==='pending');
-  const approved = allAds.filter(a=>a.status==='approved');
-  const rejected = allAds.filter(a=>a.status==='rejected');
   if(tab === 'marriage') {
     loadAdminMarriage(page);
   } else if(tab === 'banners') {
-    page.querySelector('#statsContent').innerHTML = '<div id="bannersAdminContent" style="padding:12px;"></div>';
-    loadAdminBanners();
-  } else if(tab === 'stats') {
-    loadAdminStatsPage(page);
+    loadAdminBannersPage(page, tab);
   } else {
-    loadAdminStats(tab, pending, approved, rejected, page);
+    loadAdminStatsPage(page, tab);
   }
 }
 
@@ -1628,7 +1628,7 @@ async function deleteMarriageProfile(id) {
   loadAdminMarriage(document.getElementById('dynamicPage'));
 }
 
-async function loadAdminStatsPage(page) {
+async function loadAdminStatsPage(page, tab='stats') {
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
   const pending = allAds.filter(a=>a.status==='pending');
@@ -1643,12 +1643,7 @@ async function loadAdminStatsPage(page) {
         <button onclick="adminLogout()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:6px;font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;">خروج</button>
       </div>
       <div style="display:flex;width:100%;background:white;border-bottom:2px solid var(--border);overflow-x:auto;">
-        <button onclick="showAdminPanel('pending')" style="flex-shrink:0;flex:1;padding:10px 4px;border:none;background:white;color:var(--gray);font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;cursor:pointer;">⏳ انتظار</button>
-        <button onclick="showAdminPanel('approved')" style="flex-shrink:0;flex:1;padding:10px 4px;border:none;background:white;color:var(--gray);font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;cursor:pointer;">✅ معتمدة</button>
-        <button onclick="showAdminPanel('rejected')" style="flex-shrink:0;flex:1;padding:10px 4px;border:none;background:white;color:var(--gray);font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;cursor:pointer;">❌ مرفوضة</button>
-        <button onclick="showAdminPanel('marriage')" style="flex-shrink:0;flex:1;padding:10px 4px;border:none;background:white;color:var(--gray);font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;cursor:pointer;">💍 زواج</button>
-        <button onclick="showAdminPanel('banners')" style="flex-shrink:0;flex:1;padding:10px 4px;border:none;background:white;color:var(--gray);font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;cursor:pointer;">📢 بانرات</button>
-        <button onclick="showAdminPanel('stats')" style="flex-shrink:0;flex:1;padding:10px 4px;border:none;background:#0284c7;color:white;font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;cursor:pointer;">📊 إحصائيات</button>
+        ${[['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات']].map(([t,l])=>`<button onclick="showAdminPanel('${t}')" style="flex-shrink:0;flex:1;padding:10px 4px;border:none;background:${tab===t?'#0284c7':'white'};color:${tab===t?'white':'var(--gray)'};font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;cursor:pointer;">${l}</button>`).join('')}
       </div>
     </div>
     <div class="dyn-content" style="padding:12px;" id="statsContent">
@@ -1659,15 +1654,21 @@ async function loadAdminStatsPage(page) {
     </div>`;
 
   try {
-    // جلب كل البيانات مع بعض
-    const [adStats, likes, reviews, marriageProfiles, marriageLikes, marriageRequests] = await Promise.all([
-      sbFetch('GET', 'ad_stats?select=ad_id,event_type') || [],
-      sbFetch('GET', 'ad_likes?select=ad_id') || [],
-      sbFetch('GET', 'reviews?select=id,rating') || [],
-      sbFetch('GET', 'marriage_profiles?select=id,status,gender,city') || [],
-      sbFetch('GET', 'marriage_likes?select=id') || [],
-      sbFetch('GET', 'marriage_requests?select=id,status') || [],
-    ]);
+    // جلب البيانات — فقط لو tab = stats
+    let adStats=[], likes=[], reviews=[], marriageProfiles=[], marriageLikes=[], marriageRequests=[];
+    if(tab === 'stats') {
+      [adStats, likes, reviews, marriageProfiles, marriageLikes, marriageRequests] = await Promise.all([
+        sbFetch('GET', 'ad_stats?select=ad_id,event_type') || [],
+        sbFetch('GET', 'ad_likes?select=ad_id') || [],
+        sbFetch('GET', 'reviews?select=id,rating') || [],
+        sbFetch('GET', 'marriage_profiles?select=id,status,gender,city') || [],
+        sbFetch('GET', 'marriage_likes?select=id') || [],
+        sbFetch('GET', 'marriage_requests?select=id,status') || [],
+      ]);
+    } else {
+      // لتبويبات الإعلانات فقط نجيب الإحصائيات البسيطة
+      adStats = await sbFetch('GET', 'ad_stats?select=ad_id,event_type') || [];
+    }
 
     const totalViews = adStats?.filter(s=>s.event_type==='view').length || 0;
     const totalWA = adStats?.filter(s=>s.event_type==='whatsapp').length || 0;
@@ -2320,6 +2321,7 @@ function showDeals() {
       <div style="font-size:16px;font-weight:900;">أحدث العروض في الحامول</div>
       <div style="font-size:12px;opacity:.85;margin-top:4px;">${dealAds.length} عرض متاح دلوقتي</div>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" id="dealsContent">
       ${dealAds.length === 0 ? `
         <div style="text-align:center;padding:60px 20px;color:var(--gray);">
@@ -2358,6 +2360,7 @@ function showDeals() {
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('deals');
 }
 
 async function toggleSponsored(id, val) {
@@ -2988,11 +2991,13 @@ function showMarriagePage(filter='all') {
       <button onclick="resetMarriageFilters()" style="background:transparent;border:none;color:#be185d;font-size:13px;cursor:pointer;">✕ مسح</button>
     </div>
 
+    <div id="catBanner"></div>
     <div class="dyn-content" id="marriageContent">
       ${skeletonMarriageCards(3)}
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('marriage');
   loadMarriageProfiles(filter);
 }
 
@@ -3968,6 +3973,7 @@ function showMarketPrices() {
       ${sections.map(s=>`<button onclick="filterMarket('${s.id}',this)" class="market-tab" style="padding:10px 14px;border:none;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--gray);">${s.icon} ${s.id}</button>`).join('')}
     </div>
 
+    <div id="catBanner"></div>
     <div class="dyn-content" id="marketContent">
       ${marketAds.length === 0 ? `
         <div style="text-align:center;padding:60px 20px;color:var(--gray);">
@@ -3981,6 +3987,7 @@ function showMarketPrices() {
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('market');
 }
 
 function renderMarketAds(ads, sections, filter='all') {
@@ -4092,6 +4099,7 @@ function showTransportPage() {
       </div>
     </div>
 
+    <div id="catBanner"></div>
     <div class="dyn-content">
       <!-- أخبار الموقف -->
       ${transportAds.length > 0 ? `
@@ -4131,6 +4139,7 @@ function showTransportPage() {
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('transport');
 }
 
 // NEWS PAGE
@@ -4331,6 +4340,7 @@ function showDoctorsHub() {
       <span></span>
     </div>
     <div class="dyn-content" style="padding:0 0 80px;">
+      <div id="catBanner"></div>
       <div onclick="showDoctorsCommunity()" style="background:linear-gradient(135deg,#0891b2,#0e7490);padding:16px;cursor:pointer;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;">
         <div style="position:absolute;top:10px;left:12px;background:#fbbf24;color:#1e293b;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:900;">💬 تفاعلي</div>
         <div style="font-size:38px;margin-top:6px;">🏥</div>
@@ -4353,6 +4363,7 @@ function showDoctorsHub() {
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
   buildSpecsGrid();
+  loadCatBanner('doctors');
 }
 
 function buildSpecsGrid() {
@@ -4406,11 +4417,13 @@ function showDoctorAds(subName) {
       <span>👨‍⚕️ ${subName}</span>
       <button onclick="openAddModal('doctors','${subName}')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ أضف</button>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:16px 16px 80px;" id="adsContent">
       ${renderAdsList(filtered, fakeCat)}
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('doctors');
 }
 
 function showDoctorsCommunity() {
@@ -4505,6 +4518,7 @@ function showCharityOrgs() {
       <span>🕌 الجمعيات الخيرية</span>
       <span></span>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:0 0 80px;">
 
       <!-- هيدر -->
@@ -4571,6 +4585,7 @@ function showCharityOrgs() {
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('charity_orgs');
 }
 
 function showCharityOrgAds(subName) {
@@ -4583,6 +4598,7 @@ function showCharityOrgAds(subName) {
       <span>🕌 ${subName}</span>
       <span></span>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:16px 16px 80px;">
       <!-- زرار الإضافة جوه الصفحة -->
       <div onclick="openAddModal('charity_orgs','${subName}')" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px dashed #059669;border-radius:14px;padding:14px;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;gap:12px;">
@@ -4597,6 +4613,7 @@ function showCharityOrgAds(subName) {
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('charity_orgs');
 }
 
 function showCharityPage() {
@@ -4622,6 +4639,7 @@ function showCharityPage() {
       <span>🤍 قسم الخير والتبرعات</span>
       <button onclick="openAddModal('charity','')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ تبرع</button>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:0 0 80px;">
 
       <!-- هيدر ملهم -->
@@ -4708,6 +4726,7 @@ function showCharityPage() {
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('charity');
 }
 
 function showCharityAds(subName) {
@@ -4720,11 +4739,13 @@ function showCharityAds(subName) {
       <span>🤍 ${subName}</span>
       <button onclick="openAddModal('charity','${subName}')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ تبرع</button>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:16px 16px 80px;" id="adsContent">
       ${renderAdsList(filtered, fakeCat)}
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('charity');
 }
 
 // TEACHERS HUB
@@ -4737,6 +4758,7 @@ function showTeachersHub() {
       <span>👨‍🏫 مجتمع المدرسين</span>
       <span></span>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:16px 16px 80px;">
 
       <!-- مجتمع النقاشات — مستقل فوق -->
@@ -4818,6 +4840,7 @@ function showTeachersHub() {
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('teachers_hub');
 }
 
 function showTeacherAds(subName) {
@@ -4830,11 +4853,13 @@ function showTeacherAds(subName) {
       <span>👨‍🏫 ${subName}</span>
       <button onclick="openAddModal()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ أضف</button>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:16px 16px 80px;" id="adsContent">
       ${renderAdsList(filtered, fakeCat)}
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('teachers_hub');
 }
 
 
@@ -5251,22 +5276,85 @@ async function loadCatBanner(catId) {
   const cont = document.getElementById('catBanner');
   if(!cont) return;
   try {
-    const banners = await sbFetch('GET', `banners?is_active=eq.true&select=*`) || [];
-    const banner = banners.find(b => b.category === catId || b.category === 'all');
-    if(!banner) return;
-    let phone = banner.phone || '';
+    const allBanners = await sbFetch('GET', 'banners?select=*') || [];
+    const active = allBanners.filter(function(b){ return b.is_active; });
+    const banner = active.find(function(b){ return b.category === catId; })
+                || active.find(function(b){ return b.category === 'all'; })
+                || (active.length > 0 ? active[0] : null);
+
+    if(!banner) {
+      // Fallback: hardcoded paidBanner
+      if(paidBanners && paidBanners.length > 0) {
+        const pb = paidBanners[0];
+        let html = '<div style="margin:0 0 12px;border-radius:12px;overflow:hidden;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.12);cursor:pointer;"';
+        if(pb.link) html += ' onclick="window.open(\'' + pb.link + '\',\'_blank\')"';
+        html += '>';
+        html += '<div style="position:absolute;top:6px;right:8px;background:rgba(0,0,0,.55);color:white;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;z-index:1;">إعلان ممول</div>';
+        html += '<img src="' + pb.img + '" style="width:100%;height:160px;object-fit:cover;object-position:top;display:block;border-radius:12px;">';
+        html += '</div>';
+        if(isAdmin) {
+          html += '<div onclick="showAdminPanel(\'banners\')" style="background:#fef9c3;border:2px dashed #ca8a04;border-radius:10px;padding:10px;margin-bottom:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:#92400e;">📢 + أضف إعلان ممول لهذا القسم</div>';
+        }
+        cont.innerHTML = html;
+      } else if(isAdmin) {
+        cont.innerHTML = '<div onclick="showAdminPanel(\'banners\')" style="background:#fef9c3;border:2px dashed #ca8a04;border-radius:10px;padding:12px;margin:0 0 12px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:#92400e;">📢 + أضف إعلان ممول لهذا القسم</div>';
+      }
+      return;
+    }
+
+    var phone = banner.phone || '';
     if(phone.startsWith('01')) phone = '20' + phone.substring(1);
-    cont.innerHTML = '<div onclick="' + (phone ? 'window.open(\'https://wa.me/' + phone + '\',\'_blank\')' : '') + '" style="background:' + (banner.bg_color||'#1a7a4a') + ';border-radius:12px;padding:12px 14px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden;">' +
-      '<div style="position:absolute;top:6px;left:8px;background:rgba(255,255,255,.2);color:white;padding:1px 8px;border-radius:20px;font-size:10px;font-weight:700;">إعلان</div>' +
-      (banner.image_url ? '<img src="' + banner.image_url + '" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;">' : '<div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">📢</div>') +
-      '<div style="flex:1;margin-top:6px;">' +
-      '<div style="color:white;font-size:14px;font-weight:900;">' + banner.title + '</div>' +
-      (banner.subtitle ? '<div style="color:rgba(255,255,255,.85);font-size:12px;margin-top:2px;">' + banner.subtitle + '</div>' : '') +
-      (phone ? '<div style="color:rgba(255,255,255,.75);font-size:11px;margin-top:4px;">📞 ' + banner.phone + '</div>' : '') +
-      '</div>' +
-      (isAdmin ? '<button onclick="event.stopPropagation();editBanner(\'' + banner.id + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;">✏️</button>' : '') +
-      '</div>';
-  } catch(e) {}
+
+    var html = '<div style="margin:0 0 12px;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer;"';
+    if(phone) html += ' onclick="window.open(\'https://wa.me/' + phone + '\',\'_blank\')"';
+    html += '>';
+
+    if(banner.image_url) {
+      html += '<div style="position:relative;">';
+      html += '<div style="position:absolute;top:6px;right:8px;background:rgba(0,0,0,.55);color:white;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;z-index:1;">إعلان ممول</div>';
+      html += '<img src="' + banner.image_url + '" style="width:100%;height:160px;object-fit:cover;object-position:top;display:block;border-radius:12px;">';
+      if(phone) html += '<div style="background:#25D366;color:white;text-align:center;padding:6px;font-size:12px;font-weight:700;">📞 تواصل واتساب</div>';
+      html += '</div>';
+    } else {
+      html += '<div style="background:' + (banner.bg_color||'#1a7a4a') + ';padding:12px 14px;display:flex;align-items:center;gap:12px;position:relative;">';
+      html += '<div style="position:absolute;top:6px;right:8px;background:rgba(255,255,255,.25);color:white;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">إعلان ممول</div>';
+      html += '<div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;margin-top:8px;">📢</div>';
+      html += '<div style="flex:1;padding-top:8px;">';
+      html += '<div style="color:white;font-size:14px;font-weight:900;">' + banner.title + '</div>';
+      if(banner.subtitle) html += '<div style="color:rgba(255,255,255,.85);font-size:12px;margin-top:3px;">' + banner.subtitle + '</div>';
+      if(banner.phone) html += '<div style="color:rgba(255,255,255,.8);font-size:11px;margin-top:4px;">📞 ' + banner.phone + '</div>';
+      html += '</div>';
+      if(isAdmin) html += '<button data-bid="' + banner.id + '" onclick="event.stopPropagation();editBanner(this.getAttribute(\'data-bid\'))" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;flex-shrink:0;">✏️</button>';
+      html += '</div>';
+    }
+
+    if(isAdmin && banner.image_url) {
+      html += '<button data-bid="' + banner.id + '" onclick="event.stopPropagation();editBanner(this.getAttribute(\'data-bid\'))" style="display:block;width:100%;background:#f3f4f6;color:#374151;border:none;padding:6px;font-size:11px;cursor:pointer;font-family:\'Cairo\',sans-serif;">✏️ تعديل الإعلان</button>';
+    }
+    html += '</div>';
+    cont.innerHTML = html;
+  } catch(e) { console.warn('banner err:', e); }
+}
+
+async function loadAdminBannersPage(page, tab) {
+  // Build full page shell then load banners
+  page.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  page.innerHTML = `
+    <div class="dyn-header" style="flex-direction:column;gap:0;padding:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;width:100%;">
+        <button class="dyn-back" onclick="hideDynPage()">←</button>
+        <span>⚙️ لوحة تحكم إسلام عنتر</span>
+        <button onclick="adminLogout()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:6px;font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;">خروج</button>
+      </div>
+      <div style="display:flex;width:100%;background:white;border-bottom:2px solid var(--border);overflow-x:auto;">
+        ${[['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات']].map(([t,l])=>`<button onclick="showAdminPanel('${t}')" style="flex-shrink:0;flex:1;padding:10px 4px;border:none;background:${'banners'===t?'#0284c7':'white'};color:${'banners'===t?'white':'var(--gray)'};font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;cursor:pointer;">${l}</button>`).join('')}
+      </div>
+    </div>
+    <div class="dyn-content" style="padding:12px;" id="statsContent">
+      <div id="bannersAdminContent"></div>
+    </div>`;
+  loadAdminBanners();
 }
 
 async function loadAdminBanners() {
@@ -5294,12 +5382,25 @@ async function loadAdminBanners() {
 }
 
 function openBannerModal(editData=null) {
+  // Support prefilled category from quick-add button
+  if(editData && editData.category && !editData.id) {
+    editData = {_prefillCat: editData.category};
+  }
   const old = document.getElementById('bannerModal');
   if(old) old.remove();
   const modal = document.createElement('div');
   modal.id = 'bannerModal';
   modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:flex-end;background:rgba(0,0,0,.5);';
-  const cats = [['all','كل الأقسام']].concat(CATEGORIES.map(c=>[c.id, c.icon+' '+c.name]));
+  const extraCats = [
+    ['doctors','🩺 أطباء الحامول'],['teachers_hub','👨‍🏫 مجتمع المدرسين'],
+    ['charity','🤍 قسم الخير'],['charity_orgs','🕌 الجمعيات الخيرية'],
+    ['borsa','📊 بورصة الحامول'],['market','🛒 أسعار السوق'],
+    ['marriage','💍 بيت الحلال'],['deals','🔥 عروض وصفقات'],
+    ['transport','🚌 مواصلات'],['emergency','🚨 أرقام الطوارئ'],
+  ];
+  const cats = [['all','🌐 كل الأقسام']]
+    .concat(CATEGORIES.map(c=>[c.id, (c.icon||'📂')+' '+c.name]))
+    .concat(extraCats);
   modal.innerHTML = '<div style="background:white;border-radius:20px 20px 0 0;width:100%;padding:20px;padding-bottom:32px;max-height:90vh;overflow-y:auto;">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
     '<div style="font-size:15px;font-weight:900;">' + (editData?'✏️ تعديل البانر':'📢 بانر جديد') + '</div>' +
@@ -5314,7 +5415,7 @@ function openBannerModal(editData=null) {
     '<input id="bnPhone" value="' + (editData?.phone||'') + '" placeholder="01xxxxxxxxx" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:\'Cairo\',sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
     '<div><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">القسم</label>' +
     '<select id="bnCat" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:\'Cairo\',sans-serif;font-size:12px;">' +
-    cats.map(([v,l])=>'<option value="' + v + '"' + (editData?.category===v?' selected':'') + '>' + l + '</option>').join('') +
+    cats.map(([v,l])=>'<option value="' + v + '"' + ((editData?.category===v || editData?._prefillCat===v)?' selected':'') + '>' + l + '</option>').join('') +
     '</select></div></div>' +
     '<div style="margin-bottom:14px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">لون الخلفية</label>' +
     '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
@@ -5322,21 +5423,78 @@ function openBannerModal(editData=null) {
       '<button onclick="document.querySelectorAll(\'.clr-btn\').forEach(b=>b.style.outline=\'none\');this.style.outline=\'3px solid #000\';document.getElementById(\'bnColor\').value=\'' + c + '\'" class="clr-btn" style="width:32px;height:32px;background:' + c + ';border:none;border-radius:8px;cursor:pointer;outline:' + (editData?.bg_color===c?'3px solid #000':'none') + ';"></button>'
     ).join('') +
     '<input type="hidden" id="bnColor" value="' + (editData?.bg_color||'#1a7a4a') + '"></div></div>' +
+    '<div style="margin-bottom:14px;">' +
+    '<label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">🖼️ صورة البانر (اختياري — بدلاً من اللون)</label>' +
+    (editData?.image_url ? '<img src="' + editData.image_url + '" style="width:100%;height:160px;object-fit:cover;border-radius:8px;margin-bottom:8px;display:block;">' : '') +
+    '<input type="hidden" id="bnImg" value="' + (editData?.image_url||'') + '">' +
+    '<label for="bnImgFile" id="bnImgLabel" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border:2px dashed #cbd5e1;border-radius:10px;cursor:pointer;background:#f8fafc;box-sizing:border-box;">' +
+    '<span style="font-size:22px;">📷</span>' +
+    '<div><div style="font-size:13px;font-weight:700;color:#334155;">اضغط لاختيار صورة</div>' +
+    '<div style="font-size:11px;color:#94a3b8;">JPG أو PNG — بتظهر بعرض كامل</div></div>' +
+    '</label>' +
+    '<input type="file" id="bnImgFile" accept="image/*" style="display:none;" onchange="previewBannerImg(this)">' +
+    '<div id="bnImgPreview" style="margin-top:8px;"></div>' +
+    '</div>' +
     '<button onclick="saveBanner(\'' + (editData?.id||'') + '\')" style="width:100%;background:#7c3aed;color:white;border:none;padding:13px;border-radius:12px;font-family:\'Cairo\',sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💾 حفظ البانر</button>' +
     '</div>';
   modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
   document.body.appendChild(modal);
 }
 
+function previewBannerImg(input) {
+  if(!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById('bnImgPreview');
+    const label = document.getElementById('bnImgLabel');
+    if(preview) {
+      preview.innerHTML = '<div style="position:relative;border-radius:10px;overflow:hidden;">' +
+        '<img src="' + e.target.result + '" style="width:100%;height:160px;object-fit:cover;display:block;border-radius:10px;">' +
+        '<div style="position:absolute;top:6px;left:8px;background:rgba(0,0,0,.55);color:white;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">معاينة البانر</div>' +
+        '<button onclick="clearBannerImg()" style="position:absolute;top:6px;right:8px;background:rgba(220,38,38,.9);color:white;border:none;border-radius:50%;width:24px;height:24px;font-size:14px;cursor:pointer;line-height:1;">×</button>' +
+        '</div>';
+    }
+    if(label) label.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearBannerImg() {
+  const preview = document.getElementById('bnImgPreview');
+  const label = document.getElementById('bnImgLabel');
+  const fileInput = document.getElementById('bnImgFile');
+  const hiddenImg = document.getElementById('bnImg');
+  if(preview) preview.innerHTML = '';
+  if(label) label.style.display = 'flex';
+  if(fileInput) fileInput.value = '';
+  if(hiddenImg) hiddenImg.value = '';
+}
+
 async function saveBanner(editId) {
   const title = document.getElementById('bnTitle').value.trim();
   if(!title) { showToast('اكتب عنوان البانر','error'); return; }
+  // رفع الصورة لو في ملف جديد
+  let imageUrl = document.getElementById('bnImg')?.value || null;
+  const fileInput = document.getElementById('bnImgFile');
+  if(fileInput && fileInput.files && fileInput.files[0]) {
+    const saveBtn = document.querySelector('[onclick*="saveBanner"]');
+    if(saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ جاري الرفع...'; }
+    try {
+      imageUrl = await uploadImage(fileInput.files[0]);
+    } catch(e) {
+      showToast('فشل رفع الصورة ❌', 'error');
+      if(saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 حفظ البانر'; }
+      return;
+    }
+  }
   const data = {
     title,
     subtitle: document.getElementById('bnSub').value.trim() || null,
     phone: document.getElementById('bnPhone').value.trim() || null,
     category: document.getElementById('bnCat').value,
     bg_color: document.getElementById('bnColor').value,
+    image_url: imageUrl || null,
     is_active: true
   };
   try {
@@ -5345,7 +5503,7 @@ async function saveBanner(editId) {
     document.getElementById('bannerModal').remove();
     showToast('✅ تم حفظ البانر');
     loadAdminBanners();
-  } catch(e) { showToast('خطأ','error'); }
+  } catch(e) { showToast('خطأ في الحفظ ❌','error'); }
 }
 
 async function editBanner(id) {
@@ -5403,6 +5561,7 @@ async function showBorsaPage() {
         </button>`).join('')}
       </div>
 
+      <div id="catBanner"></div>
       <div id="borsaContent" style="padding:14px 16px;">
         <div style="text-align:center;padding:30px;color:var(--gray);">
           <div class="spinner"></div>
@@ -5415,6 +5574,7 @@ async function showBorsaPage() {
   document.body.style.overflow = 'hidden';
   window._borsaTab = 'all';
   await loadBorsaPrices();
+  loadCatBanner('borsa');
 }
 
 async function loadBorsaPrices() {
@@ -5655,6 +5815,7 @@ function showEmergencyPage() {
       <span>🚨 أرقام الطوارئ</span>
       <span></span>
     </div>
+    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:0 16px 80px;">
 
       <div style="background:#fee2e2;border-radius:12px;padding:12px 14px;margin:14px 0;display:flex;gap:10px;align-items:flex-start;border:1px solid #fca5a5;">
@@ -5697,6 +5858,7 @@ function showEmergencyPage() {
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  loadCatBanner('emergency');
 }
 
 async function showNewsPage() {
