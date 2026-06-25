@@ -556,10 +556,22 @@ const paidBanners = [
 
 // SUPABASE
 async function sbFetch(method, path, body=null) {
-  const opts = { method, headers: { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY } };
+  const opts = {
+    method,
+    headers: {
+      'Content-Type':'application/json',
+      'apikey':SB_KEY,
+      'Authorization':'Bearer '+SB_KEY,
+      'Cache-Control':'no-cache, no-store, must-revalidate',
+      'Pragma':'no-cache'
+    }
+  };
   if(body) opts.body = JSON.stringify(body);
   if(method==='POST') opts.headers['Prefer'] = 'return=minimal';
-  const res = await fetch(SB_URL+'/rest/v1/'+path, opts);
+  // منع الـ cache على الموبايل
+  const sep = path.includes('?') ? '&' : '?';
+  const url = SB_URL+'/rest/v1/'+path + (method==='GET' ? sep+'_t='+Date.now() : '');
+  const res = await fetch(url, opts);
   if(method==='GET') return res.json();
   if(!res.ok) { const err = await res.text(); throw new Error(err); }
   return res;
@@ -926,15 +938,7 @@ function renderAdsList(ads, cat) {
       subHtml +
       addrHtml +
       '<div class="ad-desc">' + (ad.description||'') + '</div>' +
-      (ad.video_links ? (function(){
-        try {
-          const vids = JSON.parse(ad.video_links);
-          if(!vids.length) return '';
-          return '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;">' +
-            vids.map(v => '<a href="' + v + '" target="_blank" onclick="event.stopPropagation()" style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;text-decoration:none;">' + getVideoIcon(v) + ' فيديو</a>').join('') +
-            '</div>';
-        } catch(e) { return ''; }
-      })() : '') +
+      renderVideoLinks(ad.video_links) +
       '<div class="ad-footer"><span class="ad-date">' + date + '</span><div style="display:flex;gap:6px;align-items:center;">' + actionBtns + '</div></div>' +
       '</div></div>';
   }).join('');
@@ -1062,7 +1066,7 @@ async function openAdDetails(adId) {
         </div>
         ${ad.description?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:8px;">📋 التفاصيل</div><p style="font-size:14px;line-height:1.8;">${ad.description}</p></div>`:''}
         ${ad.address?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;margin-bottom:12px;"><span style="font-size:24px;">📍</span><div><div style="font-size:12px;color:var(--gray);font-weight:700;">العنوان</div><div style="font-size:13px;font-weight:600;">${ad.address}</div></div></div>`:''}
-        <!-- التقييمات واللايكات -->
+        <div id="videoLinksSection"></div>
         <div id="reviewsContainer" style="margin-bottom:12px;"></div>
 
         <!-- إعلانات مشابهة -->
@@ -1096,6 +1100,26 @@ async function openAdDetails(adId) {
   window._detSlideIdx = 0;
   window._detSlideTotal = images.length;
   window._detImages = images;
+
+  // عرض روابط الفيديو بشكل منفصل عشان يشتغل على الموبايل
+  const videoSec = document.getElementById('videoLinksSection');
+  if(videoSec && ad.video_links) {
+    try {
+      const vids = JSON.parse(ad.video_links);
+      if(vids.length > 0) {
+        let html = '<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;">';
+        html += '<div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px;">🎥 روابط الفيديو</div>';
+        html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+        vids.forEach(function(v) {
+          html += '<a href="' + v + '" target="_blank" style="display:flex;align-items:center;gap:8px;background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:10px;padding:10px 14px;text-decoration:none;font-size:13px;font-weight:700;">';
+          html += getVideoIcon(v) + ' ' + getVideoDomain(v);
+          html += '</a>';
+        });
+        html += '</div></div>';
+        videoSec.innerHTML = html;
+      }
+    } catch(e) { console.warn('video_links parse error:', e); }
+  }
   // تحميل التقييمات
   setTimeout(() => loadReviews(adId), 100);
   setTimeout(() => loadSimilarAds(adId, ad.category, ad.subcategory), 200);
@@ -1280,8 +1304,8 @@ function openAddModal(catId='', sub='') {
         </div>
         <div class="fg" style="margin-bottom:0;">
           <label>رابط الخريطة</label>
-          <input type="url" id="fLocation" placeholder="https://maps.google.com/..." style="font-size:13px;">
-          <div style="font-size:11px;color:var(--gray);margin-top:6px;line-height:1.6;">📍 افتح جوجل ماب ← حدد موقعك ← اضغط مشاركة ← انسخ الرابط</div>
+          <input type="url" id="fLocation" placeholder="https://maps.google.com/..." style="font-size:13px;" oninput="checkMapUrl(this)">
+          <div id="mapUrlHint" style="font-size:11px;color:var(--gray);margin-top:6px;line-height:1.6;">📍 افتح جوجل ماب ← حدد موقعك ← اضغط <b>مشاركة</b> ← انسخ الرابط</div>
         </div>
 
         <!-- روابط الفيديو -->
@@ -1438,6 +1462,65 @@ function updateFSub() {
     sel.innerHTML = '<option value="">-- اختر تخصص --</option>' + allSubs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
   } else {
     wrap.style.display = 'none';
+  }
+}
+
+function renderVideoLinks(videoLinksJson) {
+  if(!videoLinksJson) return '';
+  try {
+    const vids = JSON.parse(videoLinksJson);
+    if(!vids || !vids.length) return '';
+    var html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;">';
+    for(var i=0; i<vids.length; i++) {
+      var v = vids[i];
+      html += '<a href="' + v + '" target="_blank" onclick="event.stopPropagation()" style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;text-decoration:none;">';
+      html += getVideoIcon(v) + ' ' + getVideoDomain(v);
+      html += '</a>';
+    }
+    html += '</div>';
+    return html;
+  } catch(e) { return ''; }
+}
+
+function getVideoIcon(url) {
+  if(!url) return '🎥';
+  const u = url.toLowerCase();
+  if(u.includes('youtube') || u.includes('youtu.be')) return '▶️';
+  if(u.includes('tiktok')) return '🎵';
+  if(u.includes('facebook') || u.includes('fb.watch')) return '📘';
+  if(u.includes('instagram')) return '📸';
+  return '🎥';
+}
+
+function getVideoDomain(url) {
+  if(!url) return 'فيديو';
+  const u = url.toLowerCase();
+  if(u.includes('youtube') || u.includes('youtu.be')) return 'يوتيوب';
+  if(u.includes('tiktok')) return 'تيك توك';
+  if(u.includes('facebook') || u.includes('fb.watch')) return 'فيسبوك';
+  if(u.includes('instagram')) return 'انستجرام';
+  try { return new URL(url).hostname.replace('www.',''); } catch(e) { return 'فيديو'; }
+}
+
+function isValidMapUrl(url) {
+  if(!url) return false;
+  const u = url.toLowerCase();
+  return u.includes('maps.google') || u.includes('goo.gl/maps') || u.includes('maps.app.goo.gl') || u.includes('google.com/maps');
+}
+
+function checkMapUrl(input) {
+  const hint = document.getElementById('mapUrlHint');
+  if(!hint) return;
+  const v = input.value.trim();
+  if(!v) {
+    hint.style.color = 'var(--gray)';
+    hint.innerHTML = '📍 افتح جوجل ماب ← حدد موقعك ← اضغط <b>مشاركة</b> ← انسخ الرابط';
+  } else if(isValidMapUrl(v)) {
+    hint.style.color = '#16a34a';
+    hint.innerHTML = '✅ رابط صحيح';
+  } else {
+    hint.style.color = '#dc2626';
+    hint.innerHTML = '❌ الرابط غلط — لازم يكون رابط Google Maps مش Firebase';
   }
 }
 
