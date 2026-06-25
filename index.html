@@ -562,16 +562,12 @@ async function sbFetch(method, path, body=null) {
       'Content-Type':'application/json',
       'apikey':SB_KEY,
       'Authorization':'Bearer '+SB_KEY,
-      'Cache-Control':'no-cache, no-store, must-revalidate',
-      'Pragma':'no-cache'
+      'Cache-Control':'no-cache'
     }
   };
   if(body) opts.body = JSON.stringify(body);
   if(method==='POST') opts.headers['Prefer'] = 'return=minimal';
-  // منع الـ cache على الموبايل
-  const sep = path.includes('?') ? '&' : '?';
-  const url = SB_URL+'/rest/v1/'+path + (method==='GET' ? sep+'_t='+Date.now() : '');
-  const res = await fetch(url, opts);
+  const res = await fetch(SB_URL+'/rest/v1/'+path, opts);
   if(method==='GET') return res.json();
   if(!res.ok) { const err = await res.text(); throw new Error(err); }
   return res;
