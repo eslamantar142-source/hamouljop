@@ -6148,7 +6148,7 @@ function getBannerCategorySelect(fieldId, selectedVal, onchangeCall) {
   return html;
 }
 
-function openAddBannerModal() {
+function openAddBannerModal(catId, subName) {
   const old = document.getElementById('addBannerModal');
   if(old) old.remove();
   const modal = document.createElement('div');
@@ -6172,6 +6172,11 @@ function openAddBannerModal() {
     '</div>';
   modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
   document.body.appendChild(modal);
+  // auto-fill القسم والقسم الفرعي لو اتبعتوا
+  if(catId) {
+    const catSel = document.getElementById('bnrCategory');
+    if(catSel) { catSel.value = catId; updateBannerSubcatDropdown('bnrSubcat', catId, subName||''); }
+  }
 }
 
 function previewBnrImage(input) {
@@ -6260,6 +6265,7 @@ async function editBanner(id) {
 }
 
 async function saveEditBanner(id) {
+  if(!id || id === 'undefined' || id === '') { showToast('❌ خطأ: ID البانر مش موجود','error'); return; }
   const title = document.getElementById('eBnrTitle')?.value.trim();
   const subtitle = document.getElementById('eBnrSubtitle')?.value.trim();
   const phone = document.getElementById('eBnrPhone')?.value.trim();
@@ -6269,10 +6275,9 @@ async function saveEditBanner(id) {
   const btn = document.getElementById('eBnrSubmitBtn');
   if(btn) { btn.textContent='⏳ جاري الحفظ...'; btn.disabled=true; }
   try {
-    const updates = { title, category };
-    if(subtitle) updates.subtitle = subtitle;
-    if(phone) updates.phone = phone;
-    if(subcategory) updates.subcategory = subcategory;
+    const updates = { title, category, subcategory: subcategory || null };
+    if(subtitle) updates.subtitle = subtitle; else updates.subtitle = null;
+    if(phone) updates.phone = phone; else updates.phone = null;
     const fileInput = document.getElementById('eBnrImageInput');
     if(fileInput && fileInput.files && fileInput.files[0]) {
       try {
@@ -6292,12 +6297,32 @@ async function saveEditBanner(id) {
         return;
       }
     }
-    await sbFetch('PATCH', 'banners?id=eq.'+id, updates);
+    // جرب PATCH أولاً
+    const patchRes = await fetch(SB_URL+'/rest/v1/banners?id=eq.'+id, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(updates)
+    });
+    if(!patchRes.ok) {
+      const errText = await patchRes.text().catch(()=>'');
+      throw new Error('PATCH failed ' + patchRes.status + ': ' + errText.slice(0,100));
+    }
     document.getElementById('editBannerModal')?.remove();
     showToast('✅ تم حفظ التعديلات!');
     loadAdminBanners();
   } catch(e) {
-    showToast('❌ خطأ في الحفظ: ' + (e.message||'').slice(0,60), 'error');
+    const msg = e.message || '';
+    if(msg.includes('PGRST204') || msg.includes('204')) {
+      // PGRST204 = no rows matched - ID مش موجود أو RLS مش سامح
+      showToast('❌ البانر مش موجود في قاعدة البيانات أو مش مسموح بالتعديل — تأكد من RLS في Supabase', 'error');
+    } else {
+      showToast('❌ خطأ: ' + msg.slice(0,80), 'error');
+    }
     if(btn) { btn.textContent='💾 حفظ التعديلات'; btn.disabled=false; }
   }
 }
@@ -6360,11 +6385,11 @@ async function loadCatBanner(catId, subName) {
         html += '<img src="' + pb.img + '" style="width:100%;height:160px;object-fit:cover;object-position:top;display:block;border-radius:12px;">';
         html += '</div>';
         if(isAdmin) {
-          html += '<div onclick="showAdminPanel(\'banners\')" style="background:#fef9c3;border:2px dashed #ca8a04;border-radius:10px;padding:10px;margin-bottom:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:#92400e;">📢 + أضف إعلان ممول لهذا القسم</div>';
+          html += '<div onclick="openAddBannerModal(\''+catId+'\',\''+subName+'\')" style="background:#fef9c3;border:2px dashed #ca8a04;border-radius:10px;padding:10px;margin-bottom:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:#92400e;">📢 + أضف إعلان ممول لهذا القسم</div>';
         }
         cont.innerHTML = html;
       } else if(isAdmin) {
-        cont.innerHTML = '<div onclick="showAdminPanel(\'banners\')" style="background:#fef9c3;border:2px dashed #ca8a04;border-radius:10px;padding:12px;margin:0 0 12px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:#92400e;">📢 + أضف إعلان ممول لهذا القسم</div>';
+        cont.innerHTML = '<div onclick="openAddBannerModal(\''+catId+'\',\''+subName+'\')" style="background:#fef9c3;border:2px dashed #ca8a04;border-radius:10px;padding:12px;margin:0 0 12px;text-align:center;cursor:pointer;font-size:12px;font-weight:700;color:#92400e;">📢 + أضف إعلان ممول لهذا القسم</div>';
       }
       return;
     }
