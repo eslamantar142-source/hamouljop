@@ -1088,7 +1088,7 @@ async function openAdDetails(adId) {
          style="flex:2;display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:white;padding:13px;border-radius:12px;font-size:14px;font-weight:900;text-decoration:none;">
         📞 تواصل على واتساب
       </a>
-      ${ad.location_url?`<a href="${fixMapUrl(ad.location_url)}" target="_blank" onclick="trackStat('${adId}','map')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#4285f4;color:white;padding:13px;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;">🗺️ خريطة</a>`:''}
+      ${ad.location_url?`<a href="${ad.location_url}" target="_blank" onclick="trackStat('${adId}','map')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#4285f4;color:white;padding:13px;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;">🗺️ خريطة</a>`:''}
     </div>`;
 
   page.classList.add('active');
@@ -1527,6 +1527,7 @@ function isValidMapUrl(url) {
   return u.includes('maps.google') || 
          u.includes('goo.gl/maps') || 
          u.includes('maps.app.goo.gl') || 
+         u.includes('share.google') ||
          u.includes('google.com/maps');
 }
 
@@ -1538,7 +1539,7 @@ function checkMapUrl(input) {
     hint.style.background = '#f0fdf4';
     hint.style.color = '#64748b';
     hint.innerHTML = '📱 <b>إزاي تجيب رابط صح:</b><br>1️⃣ افتح تطبيق <b>Google Maps</b><br>2️⃣ ابحث عن موقعك<br>3️⃣ اضغط <b>مشاركة</b> ثم <b>نسخ الرابط</b><br>✅ الرابط الصح يبدأ بـ <b>maps.google.com</b> أو <b>maps.app.goo.gl</b>';
-  } else if(v.includes('goo.gl/app/maps') || v.includes('firebase') || (v.includes('_nr=') && !v.includes('maps.app'))) {
+  } else if(v.includes('goo.gl/app/maps') || (v.includes('firebase') && !v.includes('maps'))) {
     hint.style.background = '#fef2f2';
     hint.style.color = '#dc2626';
     hint.innerHTML = '❌ الرابط ده Firebase مش هيشتغل على الموبايل!<br>افتح Google Maps واضغط <b>مشاركة → نسخ الرابط</b>';
@@ -1626,8 +1627,12 @@ async function submitNewAd() {
     };
     // إضافة رابط الخريطة بعد التحقق
     var locVal = document.getElementById('fLocation')?.value.trim() || '';
-    if(locVal && !locVal.includes('goo.gl/app/maps') && !locVal.includes('_nr=')) {
-      adData.location_url = fixMapUrl(locVal);
+    if(locVal && isValidMapUrl(locVal)) {
+      adData.location_url = locVal;
+    } else if(locVal) {
+      showToast('⚠️ رابط الخريطة مش صح — حطه من Google Maps', 'error');
+      btn.disabled=false; btn.textContent='إرسال للمراجعة 🚀';
+      return;
     }
     console.log('Sending adData:', JSON.stringify(adData));
     const res = await fetch(SB_URL+'/rest/v1/ads', {
