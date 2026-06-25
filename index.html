@@ -1088,7 +1088,7 @@ async function openAdDetails(adId) {
          style="flex:2;display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:white;padding:13px;border-radius:12px;font-size:14px;font-weight:900;text-decoration:none;">
         📞 تواصل على واتساب
       </a>
-      ${ad.location_url?`<a href="${ad.location_url}" target="_blank" onclick="trackStat('${adId}','map')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#4285f4;color:white;padding:13px;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;">🗺️ خريطة</a>`:''}
+      ${ad.location_url?`<a href="${fixMapUrl(ad.location_url)}" target="_blank" onclick="trackStat('${adId}','map')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#4285f4;color:white;padding:13px;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;">🗺️ خريطة</a>`:''}
     </div>`;
 
   page.classList.add('active');
@@ -1506,24 +1506,26 @@ function getVideoDomain(url) {
 
 function fixMapUrl(url) {
   if(!url) return url;
+  // ❌ Firebase Dynamic Links (goo.gl/app/maps) — بتكسر على الموبايل
+  if(url.includes('goo.gl/app/maps') || (url.includes('firebase') && url.includes('maps'))) {
+    var match = url.match(/(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if(match) return 'https://maps.google.com/?q=' + match[1] + ',' + match[2];
+    return 'https://maps.google.com/?q=الحامول،كفر+الشيخ';
+  }
   // تحويل google.com/maps/dir لـ maps.google.com
   if(url.includes('google.com/maps/dir')) {
-    // استخراج الإحداثيات لو موجودة
     var match = url.match(/(-?\d+\.?\d*),(-?\d+\.?\d*)/);
-    if(match) {
-      return 'https://maps.google.com/?q=' + match[1] + ',' + match[2];
-    }
+    if(match) return 'https://maps.google.com/?q=' + match[1] + ',' + match[2];
   }
-  // تحويل goo.gl/maps لـ maps.google.com
-  if(url.includes('goo.gl/maps/')) {
-    return url; // ده صح بيشتغل على الموبايل
-  }
+  // goo.gl/maps/ ده تمام بيشتغل على الموبايل
   return url;
 }
 
 function isValidMapUrl(url) {
   if(!url) return false;
   const u = url.toLowerCase();
+  // ❌ Firebase links مش صح
+  if(u.includes('goo.gl/app/maps')) return false;
   return u.includes('maps.google') || 
          u.includes('goo.gl/maps') || 
          u.includes('maps.app.goo.gl') || 
@@ -1539,7 +1541,7 @@ function checkMapUrl(input) {
     hint.style.background = '#f0fdf4';
     hint.style.color = '#64748b';
     hint.innerHTML = '📱 <b>إزاي تجيب رابط صح:</b><br>1️⃣ افتح تطبيق <b>Google Maps</b><br>2️⃣ ابحث عن موقعك<br>3️⃣ اضغط <b>مشاركة</b> ثم <b>نسخ الرابط</b><br>✅ الرابط الصح يبدأ بـ <b>maps.google.com</b> أو <b>maps.app.goo.gl</b>';
-  } else if(v.includes('goo.gl/app/maps') || (v.includes('firebase') && !v.includes('maps'))) {
+  } else if(v.includes('goo.gl/app/maps') || v.includes('firebase')) {
     hint.style.background = '#fef2f2';
     hint.style.color = '#dc2626';
     hint.innerHTML = '❌ الرابط ده Firebase مش هيشتغل على الموبايل!<br>افتح Google Maps واضغط <b>مشاركة → نسخ الرابط</b>';
@@ -6238,16 +6240,6 @@ setTimeout(function() {
   if(s) s.style.display = 'none';
 }, 5000);
 </script>
-<!-- DYNAMIC PAGE -->
-<div class="dyn-page" id="dynamicPage"></div>
-
-<!-- DETAILS MODAL -->
-<div class="details-modal" id="detailsModal" onclick="if(event.target===this)closeDetails()"></div>
-
-<!-- ADD MODAL -->
-<div class="add-modal" id="addModal" onclick="if(event.target===this)closeAddModal()"></div>
-
-<div class="toast" id="toast"></div>
 
 
 </body>
