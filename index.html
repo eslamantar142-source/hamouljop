@@ -5162,7 +5162,14 @@ function buildSpecsGrid() {
 
 async function showDoctorAds(subName) {
   await loadAds();
-  const filtered = allAds.filter(a => a.status==='approved' && a.category==='doctors' && a.subcategory===subName);
+  // فلترة صارمة: القسم الفرعي لازم يساوي subName بالظبط (case-sensitive, no null)
+  const filtered = allAds.filter(a => {
+    if(a.status !== 'approved') return false;
+    if(a.category !== 'doctors') return false;
+    const adSub = (a.subcategory || '').trim();
+    const targetSub = (subName || '').trim();
+    return adSub === targetSub;
+  });
   const fakeCat = {id:'doctors', name:'أطباء', icon:'🩺', color:'#fee2e2', subs:[]};
   const page = document.getElementById('dynamicPage');
   page.innerHTML = `
@@ -5174,6 +5181,12 @@ async function showDoctorAds(subName) {
     <div id="catBanner"></div>
     <div class="dyn-content" style="padding:16px 16px 80px;" id="adsContent">
       ${renderAdsList(filtered, fakeCat)}
+      ${isAdmin && filtered.length < allAds.filter(a=>a.status==='approved'&&a.category==='doctors').length ? 
+        '<div style="background:#fef3c7;border:2px dashed #ca8a04;border-radius:10px;padding:12px;margin-top:12px;font-size:11px;color:#92400e;">' +
+        '<strong>🔍 ملاحظة للمشرف:</strong> الإعلانات التالية في قسم أطباء بقسم فرعي مختلف:<br>' +
+        allAds.filter(a=>a.status==='approved'&&a.category==='doctors'&&(a.subcategory||'').trim()!==subName.trim())
+          .map(a=>'• '+a.title+' → ['+( a.subcategory||'بدون قسم فرعي')+']').join('<br>') +
+        '</div>' : ''}
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
@@ -6052,7 +6065,7 @@ async function loadAdminBanners() {
             '<div style="flex:1;">' +
             '<div style="font-size:13px;font-weight:900;color:#1e293b;">'+(b.title||'بدون عنوان')+'</div>' +
             (b.subtitle?'<div style="font-size:12px;color:var(--gray);margin-top:2px;">'+b.subtitle+'</div>':'') +
-            '<div style="font-size:11px;color:#64748b;margin-top:4px;">📂 '+b.category+(b.subcategory?' ← '+b.subcategory:'')+(b.phone?' | 📞 '+b.phone:'')+'</div>' +
+            '<div style="font-size:11px;color:#64748b;margin-top:4px;">📂 '+b.category+(b.subcategory?' ← <strong style=\"color:#1d4ed8;\">'+b.subcategory+'</strong>':' <span style=\"background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-weight:700;\">⚠️ بيظهر في كل '+b.category+'</span>')+(b.phone?' | 📞 '+b.phone:'')+'</div>' +
             '</div>' +
             '<span style="background:'+(b.is_active?'#dcfce7':'#f3f4f6')+';color:'+(b.is_active?'#166534':'#94a3b8')+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;flex-shrink:0;margin-right:8px;">'+(b.is_active?'✅ مفعّل':'⏸ متوقف')+'</span>' +
             '</div>' +
@@ -6087,6 +6100,54 @@ async function deleteBanner(id) {
   } catch(e) { showToast('خطأ في الحذف','error'); }
 }
 
+
+// BANNER CATEGORY HELPER FUNCTIONS
+function getBannerSubcatOptions(catId, selectedSub) {
+  const subsMap = {
+    'doctors': ['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','عام'],
+    'medservices': ['صيدليات','معامل تحاليل','مراكز أشعة','مراكز تخاطب','مستلزمات طبية','معامل نظارات','تمريض منزلي','الطب التكميلي'],
+    'food_rest': ['مطاعم بروست','مطاعم مشويات','مطاعم فول وطعمية','مطاعم كشري','مطاعم بيتزا وكريب','مطاعم شاورما','مطاعم سمك','مطاعم وجبات سريعة','حلويات ومخبوزات','عصائر ومشروبات'],
+    'food_cafe': ['كافيهات قهوة','كافيهات مشروبات','كافيهات متكاملة'],
+    'building': ['بناء','محارة','سيراميك','رخام','جبس','عزل','مقاولات عامة'],
+    'home_goods': ['ماركت','عطارة','خضار وفاكهة','مقلة وتسالي','حلويات','شوايات سمك','فراخ وطيور','لحوم','مستحضرات تجميل'],
+  };
+  const subs = subsMap[catId] || [];
+  if(!subs.length) return '<option value="">— للقسم كله —</option>';
+  let opts = '<option value="">— للقسم كله (كل الأقسام الفرعية) —</option>';
+  subs.forEach(function(s) { opts += '<option value="'+s+'"'+(s===selectedSub?' selected':'')+'>'+s+'</option>'; });
+  return opts;
+}
+
+function updateBannerSubcatDropdown(selectId, catId, selectedSub) {
+  const el = document.getElementById(selectId);
+  if(el) el.innerHTML = getBannerSubcatOptions(catId, selectedSub||'');
+}
+
+function getBannerCategorySelect(fieldId, selectedVal, onchangeCall) {
+  const opts = [
+    {v:'home', n:'🏠 الصفحة الرئيسية'},
+    {v:'doctors', n:'🩺 أطباء'},
+    {v:'medservices', n:'🏥 خدمات طبية'},
+    {v:'jobs', n:'💼 وظائف'},
+    {v:'realestate', n:'🏘️ عقارات'},
+    {v:'food_rest', n:'🍽️ مطاعم'},
+    {v:'food_cafe', n:'☕ كافيهات'},
+    {v:'crafts', n:'🔧 صيانة وحرفيين'},
+    {v:'building', n:'🏗️ بناء وتشطيب'},
+    {v:'online', n:'🛍️ البيع أونلاين'},
+    {v:'transport', n:'🚗 مواصلات'},
+    {v:'market', n:'📦 سوق'},
+    {v:'teachers_hub', n:'📚 مدرسين'},
+    {v:'charity', n:'🤍 خيرية'},
+    {v:'charity_orgs', n:'🕌 جمعيات خيرية'},
+    {v:'all', n:'📢 كل الأقسام'},
+  ];
+  let html = '<select id="'+fieldId+'" onchange="'+onchangeCall+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">';
+  opts.forEach(function(o){ html += '<option value="'+o.v+'"'+(o.v===selectedVal?' selected':'')+'>'+o.n+'</option>'; });
+  html += '</select>';
+  return html;
+}
+
 function openAddBannerModal() {
   const old = document.getElementById('addBannerModal');
   if(old) old.remove();
@@ -6101,8 +6162,8 @@ function openAddBannerModal() {
     '<div class="fg"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">العنوان *</label><input id="bnrTitle" placeholder="مثال: أفضل مطعم في الحامول" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
     '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">الوصف</label><input id="bnrSubtitle" placeholder="وصف قصير" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
     '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">رقم الواتساب</label><input id="bnrPhone" placeholder="01xxxxxxxxx" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
-    '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">القسم (home = الصفحة الرئيسية، أو id القسم)</label><input id="bnrCategory" placeholder="home" value="home" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
-    '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">القسم الفرعي (اختياري)</label><input id="bnrSubcat" placeholder="مثال: مطاعم" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+    '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📂 القسم</label>' + getBannerCategorySelect("bnrCategory","home","updateBannerSubcatDropdown('bnrSubcat',this.value,'')") + '</div>' +
+    '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📁 القسم الفرعي</label><select id="bnrSubcat" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;"><option value="">— للقسم كله —</option></select></div>' +
     '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">🖼️ صورة البانر</label>' +
     '<input type="file" id="bnrImageInput" accept="image/*" style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;" onchange="previewBnrImage(this)">' +
     '<div id="bnrImagePreview" style="margin-top:8px;display:none;"><img id="bnrPreviewImg" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;display:block;"></div>' +
@@ -6186,8 +6247,8 @@ async function editBanner(id) {
       '<div class="fg"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">العنوان *</label><input id="eBnrTitle" value="'+(b.title||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
       '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">الوصف</label><input id="eBnrSubtitle" value="'+(b.subtitle||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
       '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">رقم الواتساب</label><input id="eBnrPhone" value="'+(b.phone||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
-      '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">القسم</label><input id="eBnrCategory" value="'+(b.category||'home')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
-      '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">القسم الفرعي</label><input id="eBnrSubcat" value="'+(b.subcategory||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+      '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📂 القسم</label>' + getBannerCategorySelect("eBnrCategory",(b.category||'home'),"updateBannerSubcatDropdown('eBnrSubcat',this.value,'')") + '</div>' +
+      '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📁 القسم الفرعي</label><select id="eBnrSubcat" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">' + getBannerSubcatOptions((b.category||'home'),(b.subcategory||'')) + '</select></div>' +
       (b.image_url?'<div style="margin-top:10px;"><div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">الصورة الحالية:</div><img src="'+b.image_url+'" style="width:100%;max-height:80px;object-fit:cover;border-radius:8px;display:block;" onerror="this.style.display=\'none\'"></div>':'') +
       '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">🖼️ تغيير الصورة</label>' +
       '<input type="file" id="eBnrImageInput" accept="image/*" style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;"></div>' +
@@ -6208,7 +6269,10 @@ async function saveEditBanner(id) {
   const btn = document.getElementById('eBnrSubmitBtn');
   if(btn) { btn.textContent='⏳ جاري الحفظ...'; btn.disabled=true; }
   try {
-    const updates = { title, subtitle: subtitle||null, phone: phone||null, category, subcategory: subcategory||null };
+    const updates = { title, category };
+    if(subtitle) updates.subtitle = subtitle;
+    if(phone) updates.phone = phone;
+    if(subcategory) updates.subcategory = subcategory;
     const fileInput = document.getElementById('eBnrImageInput');
     if(fileInput && fileInput.files && fileInput.files[0]) {
       try {
@@ -6275,12 +6339,15 @@ async function loadCatBanner(catId, subName) {
   try {
     const allBanners = await sbFetch('GET', 'banners?select=*') || [];
     const active = allBanners.filter(function(b){ return b.is_active; });
-    // أولوية البحث: subcategory محدد → category محدد → all → أي بانر
+    // أولوية البحث:
+    // 1. بانر خاص بالـ subcategory بالظبط
+    // 2. بانر للـ category بدون subcategory (عام للقسم كله)
+    // 3. بانر category = all (عام لكل الأقسام)
+    // مش بنعرض بانر subcategory تاني حتى لو نفس الـ category
     const banner = (subName ? active.find(function(b){ return b.category === catId && b.subcategory === subName; }) : null)
-                || active.find(function(b){ return b.category === catId && !b.subcategory; })
-                || active.find(function(b){ return b.category === catId; })
-                || active.find(function(b){ return b.category === 'all'; })
-                || (active.length > 0 ? active[0] : null);
+                || active.find(function(b){ return b.category === catId && (!b.subcategory || b.subcategory === ''); })
+                || active.find(function(b){ return b.category === 'all' && (!b.subcategory || b.subcategory === ''); })
+                || null;
 
     if(!banner) {
       // Fallback: hardcoded paidBanner
