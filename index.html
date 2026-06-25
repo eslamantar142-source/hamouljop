@@ -1301,7 +1301,13 @@ function openAddModal(catId='', sub='') {
         <div class="fg" style="margin-bottom:0;">
           <label>رابط الخريطة</label>
           <input type="url" id="fLocation" placeholder="https://maps.google.com/..." style="font-size:13px;" oninput="checkMapUrl(this)">
-          <div id="mapUrlHint" style="font-size:11px;color:var(--gray);margin-top:6px;line-height:1.6;">📍 افتح جوجل ماب ← حدد موقعك ← اضغط <b>مشاركة</b> ← انسخ الرابط</div>
+          <div id="mapUrlHint" style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.8;background:#f0fdf4;border-radius:8px;padding:8px;">
+            📱 <b>إزاي تجيب رابط صح:</b><br>
+            1️⃣ افتح تطبيق <b>Google Maps</b><br>
+            2️⃣ ابحث عن موقعك<br>
+            3️⃣ اضغط <b>مشاركة</b> ثم <b>نسخ الرابط</b><br>
+            ✅ الرابط الصح يبدأ بـ <b>maps.google.com</b> أو <b>maps.app.goo.gl</b>
+          </div>
         </div>
 
         <!-- روابط الفيديو -->
@@ -1509,14 +1515,24 @@ function checkMapUrl(input) {
   if(!hint) return;
   const v = input.value.trim();
   if(!v) {
-    hint.style.color = 'var(--gray)';
-    hint.innerHTML = '📍 افتح جوجل ماب ← حدد موقعك ← اضغط <b>مشاركة</b> ← انسخ الرابط';
-  } else if(isValidMapUrl(v)) {
-    hint.style.color = '#16a34a';
-    hint.innerHTML = '✅ رابط صحيح';
-  } else {
+    hint.style.background = '#f0fdf4';
+    hint.style.color = '#64748b';
+    hint.innerHTML = '📱 <b>إزاي تجيب رابط صح:</b><br>1️⃣ افتح تطبيق <b>Google Maps</b><br>2️⃣ ابحث عن موقعك<br>3️⃣ اضغط <b>مشاركة</b> ثم <b>نسخ الرابط</b><br>✅ الرابط الصح يبدأ بـ <b>maps.google.com</b> أو <b>maps.app.goo.gl</b>';
+  } else if(v.includes('goo.gl/app/maps') || v.includes('firebase') || v.includes('_nr=')) {
+    hint.style.background = '#fef2f2';
     hint.style.color = '#dc2626';
-    hint.innerHTML = '❌ الرابط غلط — لازم يكون رابط Google Maps مش Firebase';
+    hint.innerHTML = '❌ الرابط ده Firebase مش هيشتغل على الموبايل!<br>افتح Google Maps واضغط <b>مشاركة → نسخ الرابط</b>';
+    input.style.borderColor = '#dc2626';
+  } else if(isValidMapUrl(v)) {
+    hint.style.background = '#f0fdf4';
+    hint.style.color = '#16a34a';
+    hint.innerHTML = '✅ رابط صح — هيشتغل على الموبايل والكمبيوتر';
+    input.style.borderColor = '#16a34a';
+  } else {
+    hint.style.background = '#fff7ed';
+    hint.style.color = '#92400e';
+    hint.innerHTML = '⚠️ تأكد إن الرابط من Google Maps';
+    input.style.borderColor = '#f59e0b';
   }
 }
 
@@ -1582,7 +1598,7 @@ async function submitNewAd() {
       image_url: null,
       is_offer: isAdmin && document.getElementById('fIsOffer')?.checked ? true : false,
       address: document.getElementById('fAddress')?.value.trim() || null,
-      location_url: document.getElementById('fLocation')?.value.trim() || null,
+      location_url: (function(){ var v = document.getElementById('fLocation')?.value.trim()||''; if(!v) return null; if(v.includes('goo.gl/app/maps')||v.includes('_nr=')) return null; return v; })()
       video_links: videoLks.length > 0 ? JSON.stringify(videoLks) : null,
       price: document.getElementById('fPrice')?.value ? parseFloat(document.getElementById('fPrice').value) : null,
       quantity: document.getElementById('fQty')?.value ? parseInt(document.getElementById('fQty').value) : null,
