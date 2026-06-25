@@ -1598,12 +1598,17 @@ async function submitNewAd() {
       image_url: null,
       is_offer: isAdmin && document.getElementById('fIsOffer')?.checked ? true : false,
       address: document.getElementById('fAddress')?.value.trim() || null,
-      location_url: (function(){ var v = document.getElementById('fLocation')?.value.trim()||''; if(!v) return null; if(v.includes('goo.gl/app/maps')||v.includes('_nr=')) return null; return v; })()
+      location_url: null,
       video_links: videoLks.length > 0 ? JSON.stringify(videoLks) : null,
       price: document.getElementById('fPrice')?.value ? parseFloat(document.getElementById('fPrice').value) : null,
       quantity: document.getElementById('fQty')?.value ? parseInt(document.getElementById('fQty').value) : null,
       condition: document.getElementById('fCondition')?.value || null
     };
+    // إضافة رابط الخريطة بعد التحقق
+    var locVal = document.getElementById('fLocation')?.value.trim() || '';
+    if(locVal && !locVal.includes('goo.gl/app/maps') && !locVal.includes('_nr=')) {
+      adData.location_url = locVal;
+    }
     console.log('Sending adData:', JSON.stringify(adData));
     const res = await fetch(SB_URL+'/rest/v1/ads', {
       method:'POST',
