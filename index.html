@@ -1718,7 +1718,12 @@ async function uploadImage(file) {
   const safeExt = ['jpg','jpeg','png','gif','webp','bmp'].includes(ext) ? ext : 'jpg';
   const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${safeExt}`;
   const res = await fetch(`${SB_URL}/storage/v1/object/ads-images/${fileName}`, {
-    method:'POST', headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg'}, body:file
+    method:'POST', headers:{
+      'apikey':SB_KEY,
+      'Authorization':'Bearer '+SB_KEY,
+      'Content-Type':file.type||'image/jpeg',
+      'x-upsert':'true'
+    }, body:file
   });
   if(!res.ok) {
     const errText = await res.text().catch(()=>'');
@@ -2521,8 +2526,14 @@ function openAdminEditAd(adId) {
     '<input id="aePhone" value="' + (ad.phone||'') + '" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
     (ad.image_url ? '<div style="margin-bottom:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">الصورة الحالية</label><img src="' + ad.image_url + '" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;" onerror="this.style.display=\'none\'"></div>' : '') +
     '<div style="margin-bottom:16px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">🖼️ تغيير الصورة (اختياري)</label>' +
-    '<input type="file" id="aeImageInput" accept="image/*" style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;" onchange="previewAdminEditImg(this)">' +
-    '<div id="aeImgPreview" style="margin-top:8px;display:none;"><img id="aePreviewImg" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;"></div></div>' +
+    '<label id="aeImgLabel" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#f0fdf4;border:2px dashed #16a34a;border-radius:12px;padding:14px;cursor:pointer;font-family:Cairo,sans-serif;font-size:13px;color:#15803d;font-weight:700;">' +
+    '📷 اضغط لاختيار صورة' +
+    '<input type="file" id="aeImageInput" accept="image/*" capture="environment" style="display:none;" onchange="previewAdminEditImg(this)">' +
+    '</label>' +
+    '<div id="aeImgPreview" style="margin-top:10px;display:none;text-align:center;">' +
+    '<img id="aePreviewImg" style="max-width:100%;max-height:150px;object-fit:cover;border-radius:10px;border:2px solid #16a34a;">' +
+    '<div style="font-size:11px;color:#16a34a;font-weight:700;margin-top:4px;">✅ تم اختيار الصورة</div>' +
+    '</div></div>' +
     '<button data-adid="' + adId + '" onclick="saveAdminEditAd(this.dataset.adid)" id="aeSubmitBtn" style="width:100%;background:var(--primary);color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💾 حفظ التعديلات</button>' +
     '</div>';
   modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
@@ -2532,11 +2543,52 @@ function openAdminEditAd(adId) {
 function previewAdminEditImg(input) {
   const preview = document.getElementById('aeImgPreview');
   const img = document.getElementById('aePreviewImg');
+  const label = document.getElementById('aeImgLabel');
   if(input.files && input.files[0]) {
-    const reader = new FileReader();
-    reader.onload = e => { img.src = e.target.result; if(preview) preview.style.display='block'; };
-    reader.readAsDataURL(input.files[0]);
+    const file = input.files[0];
+    // Compress if too large
+    if(file.size > 1.5 * 1024 * 1024) {
+      compressAndPreview(file, img, preview, label);
+    } else {
+      const reader = new FileReader();
+      reader.onload = e => {
+        img.src = e.target.result;
+        if(preview) preview.style.display = 'block';
+        if(label) label.style.borderColor = '#16a34a';
+      };
+      reader.readAsDataURL(file);
+    }
   }
+}
+
+function compressAndPreview(file, imgEl, previewEl, labelEl) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const image = new Image();
+    image.onload = function() {
+      const canvas = document.createElement('canvas');
+      let w = image.width, h = image.height;
+      const maxDim = 1200;
+      if(w > maxDim || h > maxDim) {
+        if(w > h) { h = Math.round(h * maxDim/w); w = maxDim; }
+        else { w = Math.round(w * maxDim/h); h = maxDim; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(image, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.8);
+      // Replace file input with compressed blob
+      canvas.toBlob(function(blob) {
+        const dt = new DataTransfer();
+        dt.items.add(new File([blob], 'compressed.jpg', {type:'image/jpeg'}));
+        document.getElementById('aeImageInput').files = dt.files;
+      }, 'image/jpeg', 0.8);
+      if(imgEl) imgEl.src = compressed;
+      if(previewEl) previewEl.style.display = 'block';
+      if(labelEl) labelEl.style.borderColor = '#16a34a';
+    };
+    image.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 async function saveAdminEditAd(adId) {
@@ -2561,10 +2613,13 @@ async function saveAdminEditAd(adId) {
     showAdminPanel('approved');
   } catch(e) {
     const msg = e?.message || '';
-    if(msg.includes('image upload')) {
-      showToast('❌ خطأ في رفع الصورة — جرب صورة أصغر حجم','error');
+    console.error('saveAdminEditAd error:', msg);
+    if(msg.includes('image upload') || msg.includes('413') || msg.includes('storage')) {
+      showToast('❌ خطأ في رفع الصورة: ' + msg.slice(0,60),'error');
+    } else if(msg.includes('401') || msg.includes('403')) {
+      showToast('❌ خطأ في الصلاحيات — تأكد من إعدادات Supabase','error');
     } else {
-      showToast('❌ خطأ في الحفظ — ' + msg.slice(0,40),'error');
+      showToast('❌ خطأ: ' + msg.slice(0,60),'error');
     }
     if(btn) { btn.textContent='💾 حفظ التعديلات'; btn.disabled=false; }
   }
@@ -5061,7 +5116,7 @@ function showDoctorsHub() {
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
   buildSpecsGrid();
-  loadCatBanner('doctors', subName);
+  loadCatBanner('doctors', null);
 }
 
 function buildSpecsGrid() {
