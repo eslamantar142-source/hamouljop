@@ -565,7 +565,7 @@ async function sbFetch(method, path, body=null) {
     }
   };
   if(body) opts.body = JSON.stringify(body);
-  if(method==='POST') opts.headers['Prefer'] = 'return=minimal';
+  if(method==='POST' || method==='PATCH' || method==='DELETE') opts.headers['Prefer'] = 'return=minimal';
   const res = await fetch(SB_URL+'/rest/v1/'+path, opts);
   if(method==='GET') return res.json();
   if(!res.ok) { const err = await res.text(); throw new Error(err); }
@@ -6136,7 +6136,22 @@ async function submitNewBanner() {
     let imageUrl = null;
     const fileInput = document.getElementById('bnrImageInput');
     if(fileInput && fileInput.files && fileInput.files[0]) {
-      imageUrl = await uploadImage(fileInput.files[0]);
+      try {
+        imageUrl = await uploadImage(fileInput.files[0]);
+      } catch(imgErr) {
+        if(btn) { btn.textContent='💾 حفظ البانر'; btn.disabled=false; }
+        const errMsg = imgErr.message || '';
+        if(errMsg.includes('400') || errMsg.includes('404') || errMsg.includes('bucket')) {
+          showToast('❌ خطأ في رفع الصورة — تأكد أن bucket اسمه ads-images موجود في Supabase Storage وعامل Public', 'error');
+        } else if(errMsg.includes('401') || errMsg.includes('403')) {
+          showToast('❌ مش مسموح برفع الصور — افتح Supabase > Storage > ads-images > Policies وأضف Policy للرفع', 'error');
+        } else if(errMsg.includes('413')) {
+          showToast('❌ الصورة كبيرة جداً — اختار صورة أصغر من 5MB', 'error');
+        } else {
+          showToast('❌ فشل رفع الصورة: ' + errMsg.slice(0,60), 'error');
+        }
+        return;
+      }
     }
     await sbFetch('POST', 'banners', {
       title, subtitle: subtitle||null, phone: phone||null,
@@ -6148,7 +6163,7 @@ async function submitNewBanner() {
     showToast('✅ تم إضافة البانر!');
     loadAdminBanners();
   } catch(e) {
-    showToast('خطأ في الحفظ — تأكد من الاتصال','error');
+    showToast('❌ خطأ في الحفظ: ' + (e.message||'').slice(0,60), 'error');
     if(btn) { btn.textContent='💾 حفظ البانر'; btn.disabled=false; }
   }
 }
@@ -6196,14 +6211,29 @@ async function saveEditBanner(id) {
     const updates = { title, subtitle: subtitle||null, phone: phone||null, category, subcategory: subcategory||null };
     const fileInput = document.getElementById('eBnrImageInput');
     if(fileInput && fileInput.files && fileInput.files[0]) {
-      updates.image_url = await uploadImage(fileInput.files[0]);
+      try {
+        updates.image_url = await uploadImage(fileInput.files[0]);
+      } catch(imgErr) {
+        if(btn) { btn.textContent='💾 حفظ التعديلات'; btn.disabled=false; }
+        const errMsg = imgErr.message || '';
+        if(errMsg.includes('400') || errMsg.includes('404') || errMsg.includes('bucket')) {
+          showToast('❌ خطأ في رفع الصورة — تأكد أن bucket اسمه ads-images موجود في Supabase Storage وعامل Public', 'error');
+        } else if(errMsg.includes('401') || errMsg.includes('403')) {
+          showToast('❌ مش مسموح برفع الصور — افتح Supabase > Storage > ads-images > Policies وأضف Policy للرفع', 'error');
+        } else if(errMsg.includes('413')) {
+          showToast('❌ الصورة كبيرة جداً — اختار صورة أصغر من 5MB', 'error');
+        } else {
+          showToast('❌ فشل رفع الصورة: ' + errMsg.slice(0,60), 'error');
+        }
+        return;
+      }
     }
     await sbFetch('PATCH', 'banners?id=eq.'+id, updates);
     document.getElementById('editBannerModal')?.remove();
     showToast('✅ تم حفظ التعديلات!');
     loadAdminBanners();
   } catch(e) {
-    showToast('خطأ في الحفظ','error');
+    showToast('❌ خطأ في الحفظ: ' + (e.message||'').slice(0,60), 'error');
     if(btn) { btn.textContent='💾 حفظ التعديلات'; btn.disabled=false; }
   }
 }
