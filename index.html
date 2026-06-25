@@ -1441,6 +1441,31 @@ function updateFSub() {
   }
 }
 
+function addVideoLink() {
+  const container = document.getElementById('videoLinksContainer');
+  if(!container) return;
+  const rows = container.querySelectorAll('.video-link-row');
+  if(rows.length >= 5) { showToast('أقصى عدد 5 روابط فيديو','error'); return; }
+  const div = document.createElement('div');
+  div.className = 'video-link-row';
+  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
+  div.innerHTML = '<input type="url" placeholder="يوتيوب / تيك توك / فيسبوك ..." style="flex:1;padding:8px;border:1px solid #d97706;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">' +
+    '<button type="button" onclick="this.parentElement.remove()" style="background:#ef4444;color:white;border:none;width:34px;height:34px;border-radius:8px;font-size:18px;cursor:pointer;flex-shrink:0;">−</button>';
+  container.appendChild(div);
+}
+
+function getVideoLinks() {
+  const container = document.getElementById('videoLinksContainer');
+  if(!container) return [];
+  const inputs = container.querySelectorAll('input[type="url"]');
+  const links = [];
+  inputs.forEach(inp => {
+    const v = inp.value.trim();
+    if(v) links.push(v);
+  });
+  return links;
+}
+
 let addSelectedFiles = [];
 function previewAddImages(input) {
   const files = Array.from(input.files).slice(0,10);
@@ -1467,7 +1492,24 @@ async function submitNewAd() {
   const btn = document.getElementById('fSubmit');
   btn.disabled=true; btn.textContent='جاري الإرسال...';
   try {
-    const adData = {title, description:desc||null, phone, category:catId, subcategory:sub||null, status:'pending', image_url:null, is_offer: isAdmin && document.getElementById('fIsOffer')?.checked ? true : false, address: document.getElementById('fAddress')?.value.trim()||null, location_url: document.getElementById('fLocation')?.value.trim()||null, video_links: getVideoLinks().length > 0 ? JSON.stringify(getVideoLinks()) : null, price: document.getElementById('fPrice')?.value ? parseFloat(document.getElementById('fPrice').value) : null, quantity: document.getElementById('fQty')?.value ? parseInt(document.getElementById('fQty').value) : null, condition: document.getElementById('fCondition')?.value || null};
+    const videoLks = getVideoLinks();
+    const adData = {
+      title,
+      description: desc || null,
+      phone: phone || null,
+      category: catId,
+      subcategory: sub || null,
+      status: 'pending',
+      image_url: null,
+      is_offer: isAdmin && document.getElementById('fIsOffer')?.checked ? true : false,
+      address: document.getElementById('fAddress')?.value.trim() || null,
+      location_url: document.getElementById('fLocation')?.value.trim() || null,
+      video_links: videoLks.length > 0 ? JSON.stringify(videoLks) : null,
+      price: document.getElementById('fPrice')?.value ? parseFloat(document.getElementById('fPrice').value) : null,
+      quantity: document.getElementById('fQty')?.value ? parseInt(document.getElementById('fQty').value) : null,
+      condition: document.getElementById('fCondition')?.value || null
+    };
+    console.log('Sending adData:', JSON.stringify(adData));
     const res = await fetch(SB_URL+'/rest/v1/ads', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Prefer':'return=representation' },
@@ -1523,17 +1565,41 @@ async function submitNewAd() {
     } else {
       hideDynPage();
     }
-  } catch(e) { showToast('خطأ في الإرسال','error'); }
+  } catch(e) {
+    console.error('submitNewAd error full:', e);
+    const msg = e?.message || String(e) || '';
+    if(msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.toLowerCase().includes('network')) {
+      showToast('❌ خطأ في الاتصال — تأكد من الإنترنت','error');
+    } else if(msg.includes('image upload failed')) {
+      showToast('❌ خطأ في رفع الصورة — جرب بدون صورة','error');
+    } else if(msg.toLowerCase().includes('violates') || msg.includes('duplicate')) {
+      showToast('❌ الإعلان ده موجود بالفعل','error');
+    } else if(msg.includes('"code"')) {
+      // Supabase JSON error
+      try {
+        const errObj = JSON.parse(msg);
+        showToast('❌ ' + (errObj.message || errObj.hint || errObj.details || msg.slice(0,80)), 'error');
+      } catch(_) {
+        showToast('❌ خطأ: ' + msg.slice(0,80), 'error');
+      }
+    } else {
+      showToast('❌ ' + (msg.slice(0,80) || 'خطأ غير معروف'), 'error');
+    }
+  }
   btn.disabled=false; btn.textContent='إرسال للمراجعة 🚀';
 }
 
 async function uploadImage(file) {
-  const ext = file.name.split('.').pop();
-  const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${ext}`;
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const safeExt = ['jpg','jpeg','png','gif','webp','bmp'].includes(ext) ? ext : 'jpg';
+  const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${safeExt}`;
   const res = await fetch(`${SB_URL}/storage/v1/object/ads-images/${fileName}`, {
-    method:'POST', headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type}, body:file
+    method:'POST', headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'image/jpeg'}, body:file
   });
-  if(!res.ok) throw new Error();
+  if(!res.ok) {
+    const errText = await res.text().catch(()=>'');
+    throw new Error('image upload failed: ' + res.status + ' ' + errText.slice(0,100));
+  }
   return `${SB_URL}/storage/v1/object/public/ads-images/${fileName}`;
 }
 
@@ -1587,12 +1653,148 @@ async function showAdminPanel(tab='pending') {
     const ads = tab==='pending' ? pending : tab==='approved' ? approved : rejected;
     renderAdminAdsList(cont, ads, tab);
   } else if(tab === 'banners') {
-    cont.innerHTML = '<div id="bannersAdminContent"></div>';
-    loadAdminBanners();
+    cont.innerHTML = '<div id="bannersAdminContent"><div style="text-align:center;padding:30px;color:var(--gray);"><div style="font-size:28px;">⏳</div><p>جاري تحميل البانرات...</p></div></div>';
+    setTimeout(loadAdminBanners, 50);
   } else if(tab === 'marriage') {
     loadAdminMarriage(page);
   } else if(tab === 'stats') {
     loadAdminStatsContent(cont);
+  }
+}
+
+async function loadAdminStatsContent(cont) {
+  cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray);"><div style="font-size:28px;margin-bottom:8px;">⏳</div><p>جاري تحميل الإحصائيات...</p></div>';
+  try {
+    const pending = allAds.filter(a=>a.status==='pending');
+    const approved = allAds.filter(a=>a.status==='approved');
+    const rejected = allAds.filter(a=>a.status==='rejected');
+
+    let adStats=[], likes=[], reviews=[], marriageProfiles=[], marriageLikes=[], marriageRequests=[];
+    [adStats, likes, reviews, marriageProfiles, marriageLikes, marriageRequests] = await Promise.all([
+      sbFetch('GET', 'ad_stats?select=ad_id,event_type').catch(()=>[]) || [],
+      sbFetch('GET', 'ad_likes?select=ad_id').catch(()=>[]) || [],
+      sbFetch('GET', 'reviews?select=id,rating').catch(()=>[]) || [],
+      sbFetch('GET', 'marriage_profiles?select=id,status,gender,city').catch(()=>[]) || [],
+      sbFetch('GET', 'marriage_likes?select=id').catch(()=>[]) || [],
+      sbFetch('GET', 'marriage_requests?select=id,status').catch(()=>[]) || [],
+    ]);
+
+    const totalViews = (adStats||[]).filter(s=>s.event_type==='view').length;
+    const totalWA = (adStats||[]).filter(s=>s.event_type==='whatsapp').length;
+    const totalLikes = (likes||[]).length;
+    const avgRating = (reviews||[]).length ? ((reviews||[]).reduce((s,r)=>s+(r.rating||0),0)/(reviews||[]).length).toFixed(1) : '—';
+
+    const viewsPerAd = {};
+    (adStats||[]).filter(s=>s.event_type==='view').forEach(s => viewsPerAd[s.ad_id]=(viewsPerAd[s.ad_id]||0)+1);
+    const topAds = Object.entries(viewsPerAd).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([id,v])=>({
+      ad: allAds.find(a=>String(a.id)===String(id)), views: v
+    })).filter(x=>x.ad);
+
+    const catCount = {};
+    approved.forEach(a => catCount[a.category]=(catCount[a.category]||0)+1);
+    const topCat = Object.entries(catCount).sort((a,b)=>b[1]-a[1])[0];
+    const topCatObj = topCat ? CATEGORIES.find(c=>c.id===topCat[0]) : null;
+
+    const mApproved = (marriageProfiles||[]).filter(p=>p.status==='approved').length;
+    const mPending = (marriageProfiles||[]).filter(p=>p.status==='pending').length;
+    const mMale = (marriageProfiles||[]).filter(p=>p.gender==='male').length;
+    const mFemale = (marriageProfiles||[]).filter(p=>p.gender==='female').length;
+    const mReqPending = (marriageRequests||[]).filter(r=>r.status==='pending').length;
+
+    cont.innerHTML = `
+      <div style="background:linear-gradient(135deg,#1a7a4a,#22c55e);border-radius:14px;padding:14px;margin-bottom:12px;color:white;">
+        <div style="font-size:13px;font-weight:900;margin-bottom:10px;opacity:.9;">📊 دليل الحامول — الإجمالي</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;">${allAds.length}</div>
+            <div style="font-size:10px;opacity:.85;">📋 إعلانات</div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;">${totalViews}</div>
+            <div style="font-size:10px;opacity:.85;">👁️ مشاهدة</div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;">${totalWA}</div>
+            <div style="font-size:10px;opacity:.85;">📞 تواصل</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;">${totalLikes}</div>
+            <div style="font-size:10px;opacity:.85;">❤️ إعجاب</div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;">${(reviews||[]).length}</div>
+            <div style="font-size:10px;opacity:.85;">⭐ تقييم</div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;">${avgRating}</div>
+            <div style="font-size:10px;opacity:.85;">📈 متوسط</div>
+          </div>
+        </div>
+        ${topCatObj?'<div style="margin-top:8px;background:rgba(255,255,255,.15);border-radius:8px;padding:8px;text-align:center;font-size:12px;">🏆 أكتر قسم: <strong>'+topCatObj.icon+' '+topCatObj.name+'</strong> ('+topCat[1]+' إعلان)</div>':''}
+      </div>
+
+      <div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">
+        <div style="font-size:13px;font-weight:900;margin-bottom:10px;">📋 حالة الإعلانات</div>
+        <div style="display:flex;gap:3px;height:12px;border-radius:6px;overflow:hidden;margin-bottom:10px;">
+          <div style="background:#10b981;width:${allAds.length?(approved.length/allAds.length*100):0}%;"></div>
+          <div style="background:#f59e0b;width:${allAds.length?(pending.length/allAds.length*100):0}%;"></div>
+          <div style="background:#ef4444;width:${allAds.length?(rejected.length/allAds.length*100):0}%;"></div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:12px;">
+          <span>✅ معتمدة: <strong>${approved.length}</strong></span>
+          <span>⏳ انتظار: <strong style="color:#f59e0b;">${pending.length}</strong></span>
+          <span>❌ مرفوضة: <strong style="color:#ef4444;">${rejected.length}</strong></span>
+        </div>
+      </div>
+
+      ${topAds.length ? '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);"><div style="font-size:13px;font-weight:900;margin-bottom:10px;">🔥 أكتر إعلانات مشاهدة</div>' +
+        topAds.map((item,i)=>'<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;" onclick="openAdDetails(\''+item.ad.id+'\')"><div style="width:28px;height:28px;border-radius:50%;background:'+(i===0?'#fef9c3':i===1?'#f3f4f6':'#f9fafb')+';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:'+(i===0?'#d97706':'var(--gray)')+'">'+(i+1)+'</div><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(item.ad.title||'—')+'</div><div style="font-size:11px;color:var(--gray);">'+(item.ad.phone||'')+'</div></div><div style="text-align:left;flex-shrink:0;"><div style="font-size:13px;font-weight:900;color:var(--primary);">'+item.views+'</div><div style="font-size:10px;color:var(--gray);">مشاهدة</div></div></div>').join('') +
+      '</div>' : ''}
+
+      <div style="background:linear-gradient(135deg,#be185d,#ec4899);border-radius:14px;padding:14px;margin-bottom:12px;color:white;">
+        <div style="font-size:13px;font-weight:900;margin-bottom:10px;opacity:.9;">💍 بيت الحلال</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:22px;font-weight:900;">${(marriageProfiles||[]).length}</div>
+            <div style="font-size:10px;opacity:.85;">إجمالي</div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:22px;font-weight:900;color:#bbf7d0;">${mApproved}</div>
+            <div style="font-size:10px;opacity:.85;">✅ معتمدة</div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:22px;font-weight:900;color:#fef08a;">${mPending}</div>
+            <div style="font-size:10px;opacity:.85;">⏳ انتظار</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:22px;font-weight:900;">👨 ${mMale}</div>
+            <div style="font-size:10px;opacity:.85;">طالب زواج</div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:22px;font-weight:900;">👩 ${mFemale}</div>
+            <div style="font-size:10px;opacity:.85;">طالبة زواج</div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:22px;font-weight:900;color:${mReqPending>0?'#fef08a':'white'};">📩 ${mReqPending}</div>
+            <div style="font-size:10px;opacity:.85;">طلبات جديدة</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <div style="flex:1;background:rgba(255,255,255,.15);border-radius:8px;padding:8px;text-align:center;font-size:12px;">❤️ ${(marriageLikes||[]).length} إعجاب</div>
+          <div style="flex:1;background:rgba(255,255,255,.15);border-radius:8px;padding:8px;text-align:center;font-size:12px;">📩 ${(marriageRequests||[]).length} طلب تواصل</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:8px;font-size:11px;color:var(--gray);">
+        آخر تحديث: ${new Date().toLocaleTimeString('ar-EG')}
+        <button onclick="loadAdminStatsContent(document.getElementById('adminContent'))" style="margin-right:8px;background:#f3f4f6;border:none;padding:4px 10px;border-radius:6px;font-family:Cairo,sans-serif;font-size:11px;cursor:pointer;">↺ تحديث</button>
+      </div>`;
+  } catch(e) {
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);font-family:Cairo,sans-serif;"><p>خطأ في تحميل الإحصائيات</p><button onclick="loadAdminStatsContent(document.getElementById(\'adminContent\'))" style="margin-top:12px;background:#f3f4f6;border:none;padding:8px 16px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">↺ إعادة المحاولة</button></div>';
   }
 }
 
@@ -1632,82 +1834,53 @@ async function loadAdminMarriage(page) {
       </div>
     </div>`;
 
-  // جلب ملفات الزواج
+  // جلب إحصائيات بيت الحلال
+  const cont = document.getElementById('marriageAdminContent');
+  let stats = { total:0, approved:0, pending:0, rejected:0, likes:0, requests:0, newRequests:0, cities:{} };
   try {
-    const profiles = await sbFetch('GET', 'marriage_profiles?select=*&order=created_at.desc');  // جلب إحصائيات بيت الحلال
-  let stats = { total:0, approved:0, pending:0, rejected:0, likes:0, requests:0, cities:{} };
-  try {
-    const [profiles, likes, requests] = await Promise.all([
-      sbFetch('GET', 'marriage_profiles?select=id,status,city') || [],
-      sbFetch('GET', 'marriage_likes?select=id') || [],
-      sbFetch('GET', 'marriage_requests?select=id,status') || []
+    const [mProfiles, mLikes, mRequests] = await Promise.all([
+      sbFetch('GET', 'marriage_profiles?select=id,status,city').catch(()=>[]) || [],
+      sbFetch('GET', 'marriage_likes?select=id').catch(()=>[]) || [],
+      sbFetch('GET', 'marriage_requests?select=id,status').catch(()=>[]) || []
     ]);
-    stats.total = profiles.length;
-    stats.approved = profiles.filter(p=>p.status==='approved').length;
-    stats.pending = profiles.filter(p=>p.status==='pending').length;
-    stats.rejected = profiles.filter(p=>p.status==='rejected').length;
-    stats.likes = likes.length;
-    stats.requests = requests.length;
-    stats.newRequests = requests.filter(r=>r.status==='pending').length;
-    profiles.forEach(p => { if(p.city) stats.cities[p.city] = (stats.cities[p.city]||0)+1; });
-  } catch(e) {}
+    stats.total = (mProfiles||[]).length;
+    stats.approved = (mProfiles||[]).filter(p=>p.status==='approved').length;
+    stats.pending = (mProfiles||[]).filter(p=>p.status==='pending').length;
+    stats.rejected = (mProfiles||[]).filter(p=>p.status==='rejected').length;
+    stats.likes = (mLikes||[]).length;
+    stats.requests = (mRequests||[]).length;
+    stats.newRequests = (mRequests||[]).filter(r=>r.status==='pending').length;
+    (mProfiles||[]).forEach(p => { if(p.city) stats.cities[p.city] = (stats.cities[p.city]||0)+1; });
+  } catch(e) { console.warn('marriage stats error:', e); }
 
   const topCity = Object.entries(stats.cities).sort((a,b)=>b[1]-a[1])[0];
 
-  cont.innerHTML = `
-    <!-- إحصائيات سريعة -->
-    <div style="background:linear-gradient(135deg,#be185d,#ec4899);border-radius:14px;padding:14px;margin-bottom:14px;color:white;">
-      <div style="font-size:13px;font-weight:900;margin-bottom:10px;opacity:.9;">📊 إحصائيات بيت الحلال</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;">${stats.total}</div>
-          <div style="font-size:10px;opacity:.85;">إجمالي الملفات</div>
-        </div>
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:#bbf7d0;">${stats.approved}</div>
-          <div style="font-size:10px;opacity:.85;">✅ معتمدة</div>
-        </div>
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:#fef08a;">${stats.pending}</div>
-          <div style="font-size:10px;opacity:.85;">⏳ انتظار</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;">❤️ ${stats.likes}</div>
-          <div style="font-size:10px;opacity:.85;">إجمالي اهتمام</div>
-        </div>
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;">📩 ${stats.requests}</div>
-          <div style="font-size:10px;opacity:.85;">طلبات تواصل</div>
-        </div>
-        <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:#fef08a;">🔔 ${stats.newRequests}</div>
-          <div style="font-size:10px;opacity:.85;">طلبات جديدة</div>
-        </div>
-      </div>
-      ${topCity?`<div style="margin-top:10px;background:rgba(255,255,255,.15);border-radius:8px;padding:8px;text-align:center;font-size:12px;">📍 أكتر بلد: <strong>${topCity[0]}</strong> (${topCity[1]} ملف)</div>`:''}
-    </div>
+  if(cont) cont.innerHTML =
+    '<div style="background:linear-gradient(135deg,#be185d,#ec4899);border-radius:14px;padding:14px;margin-bottom:14px;color:white;">' +
+    '<div style="font-size:13px;font-weight:900;margin-bottom:10px;opacity:.9;">📊 إحصائيات بيت الحلال</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">' +
+    '<div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;">'+stats.total+'</div><div style="font-size:10px;opacity:.85;">إجمالي الملفات</div></div>' +
+    '<div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;color:#bbf7d0;">'+stats.approved+'</div><div style="font-size:10px;opacity:.85;">✅ معتمدة</div></div>' +
+    '<div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;color:#fef08a;">'+stats.pending+'</div><div style="font-size:10px;opacity:.85;">⏳ انتظار</div></div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">' +
+    '<div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;">❤️ '+stats.likes+'</div><div style="font-size:10px;opacity:.85;">إجمالي اهتمام</div></div>' +
+    '<div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;">📩 '+stats.requests+'</div><div style="font-size:10px;opacity:.85;">طلبات تواصل</div></div>' +
+    '<div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:900;color:#fef08a;">🔔 '+stats.newRequests+'</div><div style="font-size:10px;opacity:.85;">طلبات جديدة</div></div>' +
+    '</div>' +
+    (topCity?'<div style="margin-top:10px;background:rgba(255,255,255,.15);border-radius:8px;padding:8px;text-align:center;font-size:12px;">📍 أكتر بلد: <strong>'+topCity[0]+'</strong> ('+topCity[1]+' ملف)</div>':'') +
+    '</div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;">' +
+    '<button onclick="filterMarriageAdmin(\'all\')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:none;background:#1e293b;color:white;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">الكل ('+stats.total+')</button>' +
+    '<button onclick="filterMarriageAdmin(\'pending\')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid #fbbf24;background:white;color:#92400e;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">⏳ انتظار ('+stats.pending+')</button>' +
+    '<button onclick="filterMarriageAdmin(\'approved\')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--green);background:white;color:var(--green);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">✅ معتمدة ('+stats.approved+')</button>' +
+    '<button onclick="filterMarriageAdmin(\'rejected\')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--red);background:white;color:var(--red);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">❌ مرفوضة ('+stats.rejected+')</button>' +
+    '<button onclick="loadContactRequests()" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid #7c3aed;background:'+(stats.newRequests>0?'#7c3aed':'white')+';color:'+(stats.newRequests>0?'white':'#7c3aed')+';font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📩 طلبات'+(stats.newRequests>0?' ('+stats.newRequests+')':'')+'</button>' +
+    '</div>' +
+    '<div id="marriageProfilesList"><div>'+skeletonCards(3)+'</div></div>';
 
-    <!-- فلاتر الملفات -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;">
-      <button onclick="filterMarriageAdmin('all')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:none;background:#1e293b;color:white;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">الكل (${stats.total})</button>
-      <button onclick="filterMarriageAdmin('pending')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid #fbbf24;background:white;color:#92400e;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">⏳ انتظار (${stats.pending})</button>
-      <button onclick="filterMarriageAdmin('approved')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--green);background:white;color:var(--green);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">✅ معتمدة (${stats.approved})</button>
-      <button onclick="filterMarriageAdmin('rejected')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--red);background:white;color:var(--red);font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">❌ مرفوضة (${stats.rejected})</button>
-      <button onclick="loadContactRequests()" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid #7c3aed;background:${stats.newRequests>0?'#7c3aed':'white'};color:${stats.newRequests>0?'white':'#7c3aed'};font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📩 طلبات${stats.newRequests>0?' ('+stats.newRequests+')':''}</button>
-    </div>
-    <div id="marriageProfilesList">
-      <div>${skeletonCards(3)}</div>
-    </div>`;
-
-    // تحميل الملفات تلقائياً
-    setTimeout(() => filterMarriageAdmin('all'), 100);
-
-  } catch(e) {
-    const cont = document.getElementById('marriageAdminContent');
-    if(cont) cont.innerHTML = `<div style="text-align:center;padding:40px;color:var(--red);"><p>خطأ في تحميل الإحصائيات</p></div>`;
-  }
+  // تحميل الملفات تلقائياً
+  setTimeout(() => filterMarriageAdmin('all'), 100);
 }
 
 async function filterMarriageAdmin(status) {
@@ -3130,6 +3303,9 @@ async function loadPrayerBar() {
     if(bar) bar.innerHTML = '<span style="opacity:.6;">اضغط لعرض المواقيت</span>';
   }
 }
+
+// alias لأن الـ init بينادي loadPrayerTimes
+const loadPrayerTimes = loadPrayerBar;
 
 // PRAYER TIMES PAGE
 async function showPrayerTimes() {
@@ -5600,6 +5776,186 @@ function getTimeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('ar-EG');
 }
 
+// ADMIN BANNERS
+async function loadAdminBanners() {
+  const cont = document.getElementById('bannersAdminContent');
+  if(!cont) return;
+  cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray);"><div style="font-size:28px;">⏳</div><p>جاري تحميل البانرات...</p></div>';
+  try {
+    const banners = await sbFetch('GET', 'banners?select=*&order=created_at.desc') || [];
+    cont.innerHTML = `
+      <div style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:14px;padding:14px;margin-bottom:16px;color:white;">
+        <div style="font-size:14px;font-weight:900;margin-bottom:4px;">📢 إدارة البانرات الممولة</div>
+        <div style="font-size:12px;opacity:.85;">${banners.length} بانر — ${banners.filter(b=>b.is_active).length} مفعّل</div>
+      </div>
+
+      <button onclick="openAddBannerModal()" style="width:100%;background:var(--primary);color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;margin-bottom:16px;">+ إضافة بانر جديد</button>
+
+      ${!banners.length ? '<div style="text-align:center;padding:40px;color:var(--gray);"><div style="font-size:40px;margin-bottom:12px;">📢</div><p style="font-weight:700;">مفيش بانرات لحد دلوقتي</p></div>' :
+        banners.map(b => {
+          const statusColor = b.is_active ? '#10b981' : '#94a3b8';
+          return '<div style="background:white;border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);border-right:4px solid '+statusColor+';">' +
+            '<div style="padding:12px;">' +
+            '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">' +
+            '<div style="flex:1;">' +
+            '<div style="font-size:13px;font-weight:900;color:#1e293b;">'+(b.title||'بدون عنوان')+'</div>' +
+            (b.subtitle?'<div style="font-size:12px;color:var(--gray);margin-top:2px;">'+b.subtitle+'</div>':'') +
+            '<div style="font-size:11px;color:#64748b;margin-top:4px;">📂 '+b.category+(b.subcategory?' ← '+b.subcategory:'')+(b.phone?' | 📞 '+b.phone:'')+'</div>' +
+            '</div>' +
+            '<span style="background:'+(b.is_active?'#dcfce7':'#f3f4f6')+';color:'+(b.is_active?'#166534':'#94a3b8')+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;flex-shrink:0;margin-right:8px;">'+(b.is_active?'✅ مفعّل':'⏸ متوقف')+'</span>' +
+            '</div>' +
+            (b.image_url?'<img src="'+b.image_url+'" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;display:block;" onerror="this.style.display=\'none\'">':'') +
+            '<div style="display:flex;gap:6px;">' +
+            '<button data-bid="'+b.id+'" onclick="editBanner(this.dataset.bid)" style="flex:1;background:#dbeafe;color:#1d4ed8;border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">✏️ تعديل</button>' +
+            '<button data-bid="'+b.id+'" data-active="'+(b.is_active?'1':'0')+'" onclick="toggleBanner(this.dataset.bid,this.dataset.active===\'1\')" style="flex:1;background:'+(b.is_active?'#fef3c7':'#dcfce7')+';color:'+(b.is_active?'#92400e':'#166534')+';border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">'+(b.is_active?'⏸ إيقاف':'▶️ تفعيل')+'</button>' +
+            '<button data-bid="'+b.id+'" onclick="deleteBanner(this.dataset.bid)" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 12px;border-radius:8px;font-size:14px;cursor:pointer;">🗑️</button>' +
+            '</div>' +
+            '</div></div>';
+        }).join('')
+      }`;
+  } catch(e) {
+    cont.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);"><p>خطأ في تحميل البانرات</p><button onclick="loadAdminBanners()" style="margin-top:10px;background:#f3f4f6;border:none;padding:8px 16px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">↺ إعادة المحاولة</button></div>';
+  }
+}
+
+async function toggleBanner(id, isActive) {
+  try {
+    await sbFetch('PATCH', 'banners?id=eq.'+id, {is_active: !isActive});
+    showToast(isActive ? '⏸ تم إيقاف البانر' : '✅ تم تفعيل البانر');
+    loadAdminBanners();
+  } catch(e) { showToast('خطأ في التحديث','error'); }
+}
+
+async function deleteBanner(id) {
+  if(!confirm('حذف البانر نهائياً؟')) return;
+  try {
+    await sbFetch('DELETE', 'banners?id=eq.'+id);
+    showToast('🗑️ تم الحذف');
+    loadAdminBanners();
+  } catch(e) { showToast('خطأ في الحذف','error'); }
+}
+
+function openAddBannerModal() {
+  const old = document.getElementById('addBannerModal');
+  if(old) old.remove();
+  const modal = document.createElement('div');
+  modal.id = 'addBannerModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;';
+  modal.innerHTML = '<div style="background:white;border-radius:20px 20px 0 0;width:100%;padding:20px;max-height:90vh;overflow-y:auto;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+    '<div style="font-size:16px;font-weight:900;">📢 إضافة بانر جديد</div>' +
+    '<button onclick="document.getElementById(\'addBannerModal\').remove()" style="background:#f3f4f6;border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;">✕</button>' +
+    '</div>' +
+    '<div class="fg"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">العنوان *</label><input id="bnrTitle" placeholder="مثال: أفضل مطعم في الحامول" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+    '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">الوصف</label><input id="bnrSubtitle" placeholder="وصف قصير" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+    '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">رقم الواتساب</label><input id="bnrPhone" placeholder="01xxxxxxxxx" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+    '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">القسم (home = الصفحة الرئيسية، أو id القسم)</label><input id="bnrCategory" placeholder="home" value="home" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+    '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">القسم الفرعي (اختياري)</label><input id="bnrSubcat" placeholder="مثال: مطاعم" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+    '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">🖼️ صورة البانر</label>' +
+    '<input type="file" id="bnrImageInput" accept="image/*" style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;" onchange="previewBnrImage(this)">' +
+    '<div id="bnrImagePreview" style="margin-top:8px;display:none;"><img id="bnrPreviewImg" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;display:block;"></div>' +
+    '</div>' +
+    '<button onclick="submitNewBanner()" style="width:100%;background:var(--primary);color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;margin-top:16px;" id="bnrSubmitBtn">💾 حفظ البانر</button>' +
+    '</div>';
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function previewBnrImage(input) {
+  const preview = document.getElementById('bnrImagePreview');
+  const img = document.getElementById('bnrPreviewImg');
+  if(input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; if(preview) preview.style.display='block'; };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+async function submitNewBanner() {
+  const title = document.getElementById('bnrTitle')?.value.trim();
+  const subtitle = document.getElementById('bnrSubtitle')?.value.trim();
+  const phone = document.getElementById('bnrPhone')?.value.trim();
+  const category = document.getElementById('bnrCategory')?.value.trim() || 'home';
+  const subcategory = document.getElementById('bnrSubcat')?.value.trim();
+  if(!title) { showToast('اكتب عنوان البانر','error'); return; }
+  const btn = document.getElementById('bnrSubmitBtn');
+  if(btn) { btn.textContent='⏳ جاري الحفظ...'; btn.disabled=true; }
+  try {
+    let imageUrl = null;
+    const fileInput = document.getElementById('bnrImageInput');
+    if(fileInput && fileInput.files && fileInput.files[0]) {
+      imageUrl = await uploadImage(fileInput.files[0]);
+    }
+    await sbFetch('POST', 'banners', {
+      title, subtitle: subtitle||null, phone: phone||null,
+      category, subcategory: subcategory||null,
+      image_url: imageUrl, is_active: true,
+      bg_color: '#1a7a4a'
+    });
+    document.getElementById('addBannerModal')?.remove();
+    showToast('✅ تم إضافة البانر!');
+    loadAdminBanners();
+  } catch(e) {
+    showToast('خطأ في الحفظ — تأكد من الاتصال','error');
+    if(btn) { btn.textContent='💾 حفظ البانر'; btn.disabled=false; }
+  }
+}
+
+async function editBanner(id) {
+  try {
+    const banners = await sbFetch('GET', 'banners?id=eq.'+id+'&select=*') || [];
+    const b = banners[0];
+    if(!b) { showToast('البانر مش موجود','error'); return; }
+    const old = document.getElementById('editBannerModal');
+    if(old) old.remove();
+    const modal = document.createElement('div');
+    modal.id = 'editBannerModal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;';
+    modal.innerHTML = '<div style="background:white;border-radius:20px 20px 0 0;width:100%;padding:20px;max-height:90vh;overflow-y:auto;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+      '<div style="font-size:16px;font-weight:900;">✏️ تعديل البانر</div>' +
+      '<button onclick="document.getElementById(\'editBannerModal\').remove()" style="background:#f3f4f6;border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;">✕</button>' +
+      '</div>' +
+      '<div class="fg"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">العنوان *</label><input id="eBnrTitle" value="'+(b.title||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+      '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">الوصف</label><input id="eBnrSubtitle" value="'+(b.subtitle||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+      '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">رقم الواتساب</label><input id="eBnrPhone" value="'+(b.phone||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+      '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">القسم</label><input id="eBnrCategory" value="'+(b.category||'home')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+      '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">القسم الفرعي</label><input id="eBnrSubcat" value="'+(b.subcategory||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+      (b.image_url?'<div style="margin-top:10px;"><div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">الصورة الحالية:</div><img src="'+b.image_url+'" style="width:100%;max-height:80px;object-fit:cover;border-radius:8px;display:block;" onerror="this.style.display=\'none\'"></div>':'') +
+      '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">🖼️ تغيير الصورة</label>' +
+      '<input type="file" id="eBnrImageInput" accept="image/*" style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;"></div>' +
+      '<button data-bid="'+id+'" onclick="saveEditBanner(this.dataset.bid)" style="width:100%;background:var(--primary);color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;margin-top:16px;" id="eBnrSubmitBtn">💾 حفظ التعديلات</button>' +
+      '</div>';
+    modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+    document.body.appendChild(modal);
+  } catch(e) { showToast('خطأ في تحميل البانر','error'); }
+}
+
+async function saveEditBanner(id) {
+  const title = document.getElementById('eBnrTitle')?.value.trim();
+  const subtitle = document.getElementById('eBnrSubtitle')?.value.trim();
+  const phone = document.getElementById('eBnrPhone')?.value.trim();
+  const category = document.getElementById('eBnrCategory')?.value.trim() || 'home';
+  const subcategory = document.getElementById('eBnrSubcat')?.value.trim();
+  if(!title) { showToast('اكتب عنوان البانر','error'); return; }
+  const btn = document.getElementById('eBnrSubmitBtn');
+  if(btn) { btn.textContent='⏳ جاري الحفظ...'; btn.disabled=true; }
+  try {
+    const updates = { title, subtitle: subtitle||null, phone: phone||null, category, subcategory: subcategory||null };
+    const fileInput = document.getElementById('eBnrImageInput');
+    if(fileInput && fileInput.files && fileInput.files[0]) {
+      updates.image_url = await uploadImage(fileInput.files[0]);
+    }
+    await sbFetch('PATCH', 'banners?id=eq.'+id, updates);
+    document.getElementById('editBannerModal')?.remove();
+    showToast('✅ تم حفظ التعديلات!');
+    loadAdminBanners();
+  } catch(e) {
+    showToast('خطأ في الحفظ','error');
+    if(btn) { btn.textContent='💾 حفظ التعديلات'; btn.disabled=false; }
+  }
+}
+
 // BANNERS SYSTEM
 async function loadHomeBanners() {
   const cont = document.getElementById('homeBanners');
@@ -5740,6 +6096,7 @@ function renderAdminAdsList(cont, ads, tab) {
 
 // ===== INIT =====
 buildCatsGrid();
+try { buildSlider(); } catch(e) { console.warn('slider err:', e); }
 loadAds().then(function() {
   try { checkNewAds(); } catch(e) {}
   try { loadHomeBanners(); } catch(e) {}
