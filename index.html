@@ -1800,7 +1800,7 @@ async function loadAdminStatsContent(cont) {
 
     let adStats=[], likes=[], reviews=[], marriageProfiles=[], marriageLikes=[], marriageRequests=[];
     [adStats, likes, reviews, marriageProfiles, marriageLikes, marriageRequests] = await Promise.all([
-      sbFetch('GET', 'ad_stats?select=ad_id,event_type').catch(()=>[]) || [],
+      sbFetch('GET', 'ad_stats?select=ad_id,event_type,created_at').catch(()=>[]) || [],
       sbFetch('GET', 'ad_likes?select=ad_id').catch(()=>[]) || [],
       sbFetch('GET', 'reviews?select=id,rating').catch(()=>[]) || [],
       sbFetch('GET', 'marriage_profiles?select=id,status,gender,city').catch(()=>[]) || [],
@@ -1809,6 +1809,7 @@ async function loadAdminStatsContent(cont) {
     ]);
 
     const totalViews = (adStats||[]).filter(s=>s.event_type==='view').length;
+    setTimeout(()=>renderViewsChart(adStats), 100);
     const totalWA = (adStats||[]).filter(s=>s.event_type==='whatsapp').length;
     const totalLikes = (likes||[]).length;
     const avgRating = (reviews||[]).length ? ((reviews||[]).reduce((s,r)=>s+(r.rating||0),0)/(reviews||[]).length).toFixed(1) : '—';
@@ -1881,6 +1882,47 @@ async function loadAdminStatsContent(cont) {
       ${topAds.length ? '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);"><div style="font-size:13px;font-weight:900;margin-bottom:10px;">🔥 أكتر إعلانات مشاهدة</div>' +
         topAds.map((item,i)=>'<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;" onclick="openAdDetails(\''+item.ad.id+'\')"><div style="width:28px;height:28px;border-radius:50%;background:'+(i===0?'#fef9c3':i===1?'#f3f4f6':'#f9fafb')+';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:'+(i===0?'#d97706':'var(--gray)')+'">'+(i+1)+'</div><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(item.ad.title||'—')+'</div><div style="font-size:11px;color:var(--gray);">'+(item.ad.phone||'')+'</div></div><div style="text-align:left;flex-shrink:0;"><div style="font-size:13px;font-weight:900;color:var(--primary);">'+item.views+'</div><div style="font-size:10px;color:var(--gray);">مشاهدة</div></div></div>').join('') +
       '</div>' : ''}
+
+      <div id="statsChartSection" style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">
+        <div style="font-size:13px;font-weight:900;margin-bottom:10px;">📈 إحصائيات المشاهدات والتواصل</div>
+        <!-- فلاتر سريعة -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="chartQuickFilters">
+          <button onclick="setChartPeriod('7d')" id="cf_7d" style="padding:5px 10px;border-radius:20px;border:1px solid #0284c7;background:#0284c7;color:white;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">آخر 7 أيام</button>
+          <button onclick="setChartPeriod('30d')" id="cf_30d" style="padding:5px 10px;border-radius:20px;border:1px solid #e2e8f0;background:white;color:#64748b;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">آخر شهر</button>
+          <button onclick="setChartPeriod('3m')" id="cf_3m" style="padding:5px 10px;border-radius:20px;border:1px solid #e2e8f0;background:white;color:#64748b;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">آخر 3 شهور</button>
+          <button onclick="setChartPeriod('1y')" id="cf_1y" style="padding:5px 10px;border-radius:20px;border:1px solid #e2e8f0;background:white;color:#64748b;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">آخر سنة</button>
+          <button onclick="setChartPeriod('custom')" id="cf_custom" style="padding:5px 10px;border-radius:20px;border:1px solid #e2e8f0;background:white;color:#64748b;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">📅 تاريخ محدد</button>
+        </div>
+        <!-- فلتر تاريخ مخصص -->
+        <div id="customDateRange" style="display:none;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:4px;font-size:12px;color:#64748b;">من:</div>
+          <input type="date" id="chartDateFrom" style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">
+          <div style="display:flex;align-items:center;gap:4px;font-size:12px;color:#64748b;">إلى:</div>
+          <input type="date" id="chartDateTo" style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">
+          <button onclick="applyCustomDateRange()" style="padding:5px 12px;background:#0284c7;color:white;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">عرض</button>
+        </div>
+        <!-- إجمالي الفترة -->
+        <div id="chartTotals" style="display:flex;gap:8px;margin-bottom:10px;">
+          <div style="flex:1;background:#eff6ff;border-radius:10px;padding:8px;text-align:center;">
+            <div id="totalViewsNum" style="font-size:20px;font-weight:900;color:#0284c7;">0</div>
+            <div style="font-size:10px;color:#64748b;">👁️ مشاهدات</div>
+          </div>
+          <div style="flex:1;background:#f0fdf4;border-radius:10px;padding:8px;text-align:center;">
+            <div id="totalWaNum" style="font-size:20px;font-weight:900;color:#166534;">0</div>
+            <div style="font-size:10px;color:#64748b;">📞 تواصل</div>
+          </div>
+          <div style="flex:1;background:#fef3c7;border-radius:10px;padding:8px;text-align:center;">
+            <div id="convRateNum" style="font-size:20px;font-weight:900;color:#d97706;">0%</div>
+            <div style="font-size:10px;color:#64748b;">💡 معدل تحويل</div>
+          </div>
+        </div>
+        <!-- الرسم البياني -->
+        <canvas id="viewsChart" height="160"></canvas>
+        <div style="display:flex;gap:12px;margin-top:8px;justify-content:center;">
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;"><div style="width:12px;height:12px;border-radius:3px;background:#0284c7;"></div>مشاهدات</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;"><div style="width:12px;height:12px;border-radius:3px;background:#25D366;"></div>تواصل واتساب</div>
+        </div>
+      </div>
 
       <div style="background:linear-gradient(135deg,#be185d,#ec4899);border-radius:14px;padding:14px;margin-bottom:12px;color:white;">
         <div style="font-size:13px;font-weight:900;margin-bottom:10px;opacity:.9;">💍 بيت الحلال</div>
@@ -2204,7 +2246,7 @@ async function loadAdminStatsPage(page, tab='stats') {
     let adStats=[], likes=[], reviews=[], marriageProfiles=[], marriageLikes=[], marriageRequests=[];
     if(tab === 'stats') {
       [adStats, likes, reviews, marriageProfiles, marriageLikes, marriageRequests] = await Promise.all([
-        sbFetch('GET', 'ad_stats?select=ad_id,event_type') || [],
+        sbFetch('GET', 'ad_stats?select=ad_id,event_type,created_at') || [],
         sbFetch('GET', 'ad_likes?select=ad_id') || [],
         sbFetch('GET', 'reviews?select=id,rating') || [],
         sbFetch('GET', 'marriage_profiles?select=id,status,gender,city') || [],
@@ -6058,6 +6100,15 @@ async function loadAdminBanners() {
             '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">' +
             '<div style="flex:1;">' +
             '<div style="font-size:13px;font-weight:900;color:#1e293b;">'+(b.title||'بدون عنوان')+'</div>' +
+            (function(){
+              if(!b.expires_at) return '<div style="font-size:10px;color:#94a3b8;margin-top:2px;">⏳ بدون تاريخ انتهاء</div>';
+              const exp = new Date(b.expires_at);
+              const now = new Date();
+              const diff = Math.ceil((exp - now) / (1000*60*60*24));
+              if(diff < 0) return '<div style="font-size:10px;background:#fee2e2;color:#dc2626;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:2px;font-weight:700;">⛔ انتهى منذ '+Math.abs(diff)+' يوم</div>';
+              if(diff <= 3) return '<div style="font-size:10px;background:#fef3c7;color:#d97706;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:2px;font-weight:700;">⚠️ ينتهي خلال '+diff+' يوم</div>';
+              return '<div style="font-size:10px;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:2px;font-weight:700;">📅 ينتهي '+exp.toLocaleDateString("ar-EG")+' ('+diff+' يوم)</div>';
+            })() +
             (b.subtitle?'<div style="font-size:12px;color:var(--gray);margin-top:2px;">'+b.subtitle+'</div>':'') +
             '<div style="font-size:11px;color:#64748b;margin-top:4px;">📂 '+b.category+(b.subcategory?' ← <strong style=\"color:#1d4ed8;\">'+b.subcategory+'</strong>':' <span style=\"background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-weight:700;\">⚠️ بيظهر في كل '+b.category+'</span>')+(b.phone?' | 📞 '+b.phone:'')+'</div>' +
             (function(){
@@ -6164,6 +6215,7 @@ function openAddBannerModal(catId, subName) {
     '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">رقم الواتساب</label><input id="bnrPhone" placeholder="01xxxxxxxxx" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
     '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📂 القسم</label>' + getBannerCategorySelect("bnrCategory","home","updateBannerSubcatDropdown('bnrSubcat',this.value,'')") + '</div>' +
     '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📁 القسم الفرعي</label><select id="bnrSubcat" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;"><option value="">— للقسم كله —</option></select></div>' +
+    '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📅 تاريخ الانتهاء</label><input type="date" id="bnrExpiry" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
     '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">🖼️ صورة البانر</label>' +
     '<input type="file" id="bnrImageInput" accept="image/*" style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;" onchange="previewBnrImage(this)">' +
     '<div id="bnrImagePreview" style="margin-top:8px;display:none;"><img id="bnrPreviewImg" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;display:block;"></div>' +
@@ -6223,7 +6275,8 @@ async function submitNewBanner() {
       title, subtitle: subtitle||null, phone: phone||null,
       category, subcategory: subcategory||null,
       image_url: imageUrl, is_active: true,
-      bg_color: '#1a7a4a'
+      bg_color: '#1a7a4a',
+      expires_at: (document.getElementById('bnrExpiry')?.value ? new Date(document.getElementById('bnrExpiry').value).toISOString() : null)
     });
     document.getElementById('addBannerModal')?.remove();
     showToast('✅ تم إضافة البانر!');
@@ -6252,6 +6305,7 @@ async function editBanner(id) {
       '<div class="fg"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">العنوان *</label><input id="eBnrTitle" value="'+(b.title||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
       '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">الوصف</label><input id="eBnrSubtitle" value="'+(b.subtitle||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
       '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">رقم الواتساب</label><input id="eBnrPhone" value="'+(b.phone||'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
+      '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📅 تاريخ الانتهاء</label><input type="date" id="eBnrExpiry" value="'+(b.expires_at?b.expires_at.split("T")[0]:'')+'" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;"></div>' +
       '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📂 القسم</label>' + getBannerCategorySelect("eBnrCategory",(b.category||'home'),"updateBannerSubcatDropdown('eBnrSubcat',this.value,'')") + '</div>' +
       '<div class="fg" style="margin-top:10px;"><label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📁 القسم الفرعي</label><select id="eBnrSubcat" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">' + getBannerSubcatOptions((b.category||'home'),(b.subcategory||'')) + '</select></div>' +
       (b.image_url?'<div style="margin-top:10px;"><div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">الصورة الحالية:</div><img src="'+b.image_url+'" style="width:100%;max-height:80px;object-fit:cover;border-radius:8px;display:block;" onerror="this.style.display=\'none\'"></div>':'') +
@@ -6275,9 +6329,11 @@ async function saveEditBanner(id) {
   const btn = document.getElementById('eBnrSubmitBtn');
   if(btn) { btn.textContent='⏳ جاري الحفظ...'; btn.disabled=true; }
   try {
+    const expiryInput = document.getElementById('eBnrExpiry')?.value;
     const updates = { title, category, subcategory: subcategory || null };
     if(subtitle) updates.subtitle = subtitle; else updates.subtitle = null;
     if(phone) updates.phone = phone; else updates.phone = null;
+    if(expiryInput) updates.expires_at = new Date(expiryInput).toISOString(); else updates.expires_at = null;
     const fileInput = document.getElementById('eBnrImageInput');
     if(fileInput && fileInput.files && fileInput.files[0]) {
       try {
@@ -6359,6 +6415,162 @@ async function loadHomeBanners() {
 }
 
 
+
+// ===== STATS CHART =====
+// ===== CHART SYSTEM =====
+let _chartAdStats = [];
+let _currentChartPeriod = '7d';
+
+function renderViewsChart(adStats) {
+  _chartAdStats = adStats || [];
+  setChartPeriod('7d');
+}
+
+function setChartPeriod(period) {
+  _currentChartPeriod = period;
+  // Update button styles
+  ['7d','30d','3m','1y','custom'].forEach(p => {
+    const btn = document.getElementById('cf_'+p);
+    if(!btn) return;
+    if(p === period) {
+      btn.style.background = '#0284c7'; btn.style.color = 'white'; btn.style.borderColor = '#0284c7';
+    } else {
+      btn.style.background = 'white'; btn.style.color = '#64748b'; btn.style.borderColor = '#e2e8f0';
+    }
+  });
+  const customDiv = document.getElementById('customDateRange');
+  if(customDiv) customDiv.style.display = period === 'custom' ? 'flex' : 'none';
+  if(period !== 'custom') drawChart(period, null, null);
+}
+
+function applyCustomDateRange() {
+  const from = document.getElementById('chartDateFrom')?.value;
+  const to = document.getElementById('chartDateTo')?.value;
+  if(!from || !to) { showToast('اختار تاريخ البداية والنهاية','error'); return; }
+  drawChart('custom', from, to);
+}
+
+function drawChart(period, customFrom, customTo) {
+  const canvas = document.getElementById('viewsChart');
+  if(!canvas) return;
+
+  const now = new Date();
+  let fromDate, toDate = new Date(now);
+  toDate.setHours(23,59,59,999);
+
+  if(period === '7d')  { fromDate = new Date(now); fromDate.setDate(fromDate.getDate()-6); }
+  else if(period === '30d') { fromDate = new Date(now); fromDate.setDate(fromDate.getDate()-29); }
+  else if(period === '3m')  { fromDate = new Date(now); fromDate.setMonth(fromDate.getMonth()-3); }
+  else if(period === '1y')  { fromDate = new Date(now); fromDate.setFullYear(fromDate.getFullYear()-1); }
+  else if(period === 'custom') { fromDate = new Date(customFrom); toDate = new Date(customTo); toDate.setHours(23,59,59,999); }
+
+  fromDate.setHours(0,0,0,0);
+
+  // فلتر البيانات حسب الفترة
+  const filtered = _chartAdStats.filter(s => {
+    if(!s.created_at) return false;
+    const d = new Date(s.created_at);
+    return d >= fromDate && d <= toDate;
+  });
+
+  // حساب الإجماليات
+  const totalV = filtered.filter(s=>s.event_type==='view').length;
+  const totalW = filtered.filter(s=>s.event_type==='whatsapp').length;
+  const convRate = totalV > 0 ? Math.round((totalW/totalV)*100) : 0;
+  const tvEl = document.getElementById('totalViewsNum');
+  const twEl = document.getElementById('totalWaNum');
+  const crEl = document.getElementById('convRateNum');
+  if(tvEl) tvEl.textContent = totalV.toLocaleString('ar-EG');
+  if(twEl) twEl.textContent = totalW.toLocaleString('ar-EG');
+  if(crEl) crEl.textContent = convRate + '%';
+
+  // تحديد عدد النقاط والتجميع
+  const diffDays = Math.ceil((toDate - fromDate) / (1000*60*60*24));
+  let points, groupBy;
+  if(diffDays <= 31)       { points = diffDays+1; groupBy = 'day'; }
+  else if(diffDays <= 100) { points = Math.ceil(diffDays/7); groupBy = 'week'; }
+  else                     { points = Math.ceil(diffDays/30); groupBy = 'month'; }
+  points = Math.min(points, 24);
+
+  const labels = [], viewsData = [], waData = [];
+  for(let i=0; i<points; i++) {
+    const start = new Date(fromDate);
+    const end = new Date(fromDate);
+    if(groupBy==='day')   { start.setDate(start.getDate()+i); end.setDate(end.getDate()+i+1); }
+    else if(groupBy==='week')  { start.setDate(start.getDate()+i*7); end.setDate(end.getDate()+i*7+7); }
+    else if(groupBy==='month') { start.setMonth(start.getMonth()+i); end.setMonth(end.getMonth()+i+1); }
+
+    let label;
+    if(groupBy==='day') label = start.toLocaleDateString('ar-EG',{day:'numeric',month:'numeric'});
+    else if(groupBy==='week') label = start.toLocaleDateString('ar-EG',{day:'numeric',month:'numeric'});
+    else label = start.toLocaleDateString('ar-EG',{month:'short'});
+
+    labels.push(label);
+    const grpStats = filtered.filter(s => { const d=new Date(s.created_at); return d>=start && d<end; });
+    viewsData.push(grpStats.filter(s=>s.event_type==='view').length);
+    waData.push(grpStats.filter(s=>s.event_type==='whatsapp').length);
+  }
+
+  // رسم الـ canvas
+  const ctx = canvas.getContext('2d');
+  const W = canvas.parentElement.offsetWidth - 28 || 300;
+  canvas.width = W;
+  canvas.height = 160;
+  const H = 160;
+
+  const maxVal = Math.max(...viewsData, ...waData, 1);
+  const padL = 32, padR = 8, padT = 12, padB = 28;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const n = labels.length;
+  const barW = Math.max(3, Math.min(14, (chartW/n)*0.3));
+  const gap = chartW / n;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  for(let i=0; i<=4; i++) {
+    const y = padT + chartH - (i/4)*chartH;
+    ctx.strokeStyle = '#f1f5f9'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W-padR, y); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '9px Cairo'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxVal*i/4), padL-3, y+3);
+  }
+
+  // Bars
+  for(let i=0; i<n; i++) {
+    const x = padL + i*gap + gap/2;
+    const vH = Math.max(2, (viewsData[i]/maxVal)*chartH);
+    const wH = Math.max(waData[i]>0?2:0, (waData[i]/maxVal)*chartH);
+
+    // Views
+    const vGrad = ctx.createLinearGradient(0, padT+chartH-vH, 0, padT+chartH);
+    vGrad.addColorStop(0,'#38bdf8'); vGrad.addColorStop(1,'#0284c7');
+    ctx.fillStyle = vGrad;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(x-barW-1, padT+chartH-vH, barW, vH, [3,3,0,0]);
+    else ctx.rect(x-barW-1, padT+chartH-vH, barW, vH);
+    ctx.fill();
+
+    // WA
+    if(waData[i] > 0) {
+      const wGrad = ctx.createLinearGradient(0, padT+chartH-wH, 0, padT+chartH);
+      wGrad.addColorStop(0,'#4ade80'); wGrad.addColorStop(1,'#16a34a');
+      ctx.fillStyle = wGrad;
+      ctx.beginPath();
+      if(ctx.roundRect) ctx.roundRect(x+1, padT+chartH-wH, barW, wH, [3,3,0,0]);
+      else ctx.rect(x+1, padT+chartH-wH, barW, wH);
+      ctx.fill();
+    }
+
+    // Label (كل كذا نقطة)
+    if(i % Math.ceil(n/8) === 0 || i === n-1) {
+      ctx.fillStyle = '#64748b'; ctx.font = '8px Cairo'; ctx.textAlign = 'center';
+      ctx.fillText(labels[i], x, H-8);
+    }
+  }
+}
+
 // ===== POPUP BANNER SYSTEM =====
 async function trackBannerStat(bannerId, eventType) {
   try {
@@ -6373,7 +6585,8 @@ async function trackBannerStat(bannerId, eventType) {
 async function showPopupBanner(catId, subName, onClose) {
   try {
     const allBanners = await sbFetch('GET', 'banners?select=*') || [];
-    const active = allBanners.filter(b => b.is_active);
+    const now = new Date();
+    const active = allBanners.filter(b => b.is_active && (!b.expires_at || new Date(b.expires_at) > now));
     // نفس أولوية البحث
     const banner = (subName ? active.find(b => b.category === catId && b.subcategory === subName) : null)
                 || active.find(b => b.category === catId && (!b.subcategory || b.subcategory === ''))
@@ -6449,7 +6662,8 @@ async function loadCatBanner(catId, subName) {
   if(!cont) return;
   try {
     const allBanners = await sbFetch('GET', 'banners?select=*') || [];
-    const active = allBanners.filter(function(b){ return b.is_active; });
+    const nowDate = new Date();
+    const active = allBanners.filter(function(b){ return b.is_active && (!b.expires_at || new Date(b.expires_at) > nowDate); });
     // أولوية البحث:
     // 1. بانر خاص بالـ subcategory بالظبط
     // 2. بانر للـ category بدون subcategory (عام للقسم كله)
