@@ -6425,7 +6425,7 @@ function renderHomeBannerSlide() {
     var slide = '<div style="min-width:100%;position:relative;background:#000;">';
     slide += '<div style="position:absolute;top:8px;right:10px;background:rgba(0,0,0,.55);color:white;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;z-index:2;">إعلان ممول</div>';
     if(b.image_url) {
-      slide += '<img src="'+b.image_url+'" style="width:100%;height:200px;object-fit:cover;display:block;" onerror="this.style.display='none'">';
+      slide += '<img src="'+b.image_url+'" style="width:100%;height:200px;object-fit:cover;display:block;" onerror="this.remove()">';
     } else {
       slide += '<div style="background:'+(b.bg_color||'#1a7a4a')+';padding:20px 16px;display:flex;align-items:center;gap:12px;">' +
         '<div style="font-size:32px;">📢</div>' +
@@ -6433,7 +6433,7 @@ function renderHomeBannerSlide() {
         (b.subtitle?'<div style="font-size:12px;color:rgba(255,255,255,.85);margin-top:3px;">'+b.subtitle+'</div>':'')+'</div></div>';
     }
     if(waUrl) {
-      slide += '<a href="'+waUrl+'" target="_blank" onclick="trackBannerStat(''+b.id+'','whatsapp')" style="display:block;background:#25D366;color:white;text-align:center;padding:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-decoration:none;">📞 تواصل واتساب</a>';
+      slide += '<a href="'+waUrl+'" target="_blank" onclick="trackBannerStat(\''+b.id+'\',\'whatsapp\')" style="display:block;background:#25D366;color:white;text-align:center;padding:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-decoration:none;">📞 تواصل واتساب</a>';
     }
     slide += '</div>';
     return slide;
