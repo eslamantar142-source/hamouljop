@@ -6385,34 +6385,91 @@ async function saveEditBanner(id) {
 }
 
 // BANNERS SYSTEM
+let _homeBannersData = [];
+let _homeBannerIndex = 0;
+let _homeBannerTimer = null;
+
 async function loadHomeBanners() {
   const cont = document.getElementById('homeBanners');
   if(!cont) return;
   try {
+    const nowDate = new Date();
     const allBanners = await sbFetch('GET', 'banners?select=*') || [];
-    const homeBanners = allBanners.filter(function(b){ return b.is_active && b.category === 'home'; });
-    if(!homeBanners.length) { cont.style.display='none'; return; }
-    cont.style.display = 'flex';
-    cont.innerHTML = homeBanners.map(function(b) {
-      var phone = b.phone || '';
-      if(phone.startsWith('01')) phone = '20' + phone.substring(1);
-      var clickAction = phone ? "window.open('https://wa.me/" + phone + "','_blank')" : '';
-      if(b.image_url) {
-        return '<div onclick="'+clickAction+'" style="border-radius:12px;overflow:hidden;cursor:'+(phone?'pointer':'default')+';box-shadow:0 2px 8px rgba(0,0,0,.1);position:relative;">' +
-          '<div style="position:absolute;top:6px;right:8px;background:rgba(0,0,0,.5);color:white;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">إعلان ممول</div>' +
-          '<img src="'+b.image_url+'" style="width:100%;max-height:220px;object-fit:contain;background:#f8fafc;display:block;">' +
-          (phone ? '<div style="background:#25D366;color:white;text-align:center;padding:6px;font-size:12px;font-weight:700;">📞 تواصل واتساب</div>' : '') +
-          '</div>';
-      } else {
-        return '<div onclick="'+clickAction+'" style="background:'+(b.bg_color||'#1a7a4a')+';border-radius:12px;padding:14px 16px;cursor:'+(phone?'pointer':'default')+';display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);">' +
-          '<div style="font-size:32px;">📢</div>' +
-          '<div style="flex:1;"><div style="font-size:14px;font-weight:900;color:white;">'+b.title+'</div>' +
-          (b.subtitle ? '<div style="font-size:11px;color:rgba(255,255,255,.85);margin-top:2px;">'+b.subtitle+'</div>' : '') + '</div>' +
-          (phone ? '<div style="background:rgba(255,255,255,.2);color:white;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;">تواصل ›</div>' : '') +
-          '</div>';
-      }
-    }).join('');
+    _homeBannersData = allBanners.filter(function(b){
+      return b.is_active && b.category === 'home' && (!b.expires_at || new Date(b.expires_at) > nowDate);
+    });
+    if(!_homeBannersData.length) { cont.style.display='none'; return; }
+    cont.style.display = 'block';
+    cont.style.margin = '0';
+    cont.innerHTML = '<div id="homeBannerSlider" style="position:relative;overflow:hidden;border-radius:0;">' +
+      '<div id="homeBannerInner" style="display:flex;transition:transform .45s ease;"></div>' +
+      '<div id="homeBannerDots" style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2;"></div>' +
+      '</div>';
+    renderHomeBannerSlide();
+    if(_homeBannersData.length > 1) {
+      if(_homeBannerTimer) clearInterval(_homeBannerTimer);
+      _homeBannerTimer = setInterval(function(){ moveHomeBanner(1); }, 4000);
+    }
   } catch(e) { console.warn('homeBanners err:', e); }
+}
+
+function renderHomeBannerSlide() {
+  const inner = document.getElementById('homeBannerInner');
+  const dots = document.getElementById('homeBannerDots');
+  if(!inner) return;
+
+  inner.innerHTML = _homeBannersData.map(function(b) {
+    var phone = b.phone || '';
+    if(phone.startsWith('01')) phone = '20' + phone.substring(1);
+    var waUrl = phone ? "https://wa.me/"+phone : '';
+    var slide = '<div style="min-width:100%;position:relative;background:#000;">';
+    slide += '<div style="position:absolute;top:8px;right:10px;background:rgba(0,0,0,.55);color:white;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;z-index:2;">إعلان ممول</div>';
+    if(b.image_url) {
+      slide += '<img src="'+b.image_url+'" style="width:100%;height:200px;object-fit:cover;display:block;" onerror="this.style.display='none'">';
+    } else {
+      slide += '<div style="background:'+(b.bg_color||'#1a7a4a')+';padding:20px 16px;display:flex;align-items:center;gap:12px;">' +
+        '<div style="font-size:32px;">📢</div>' +
+        '<div style="flex:1;"><div style="font-size:15px;font-weight:900;color:white;">'+b.title+'</div>' +
+        (b.subtitle?'<div style="font-size:12px;color:rgba(255,255,255,.85);margin-top:3px;">'+b.subtitle+'</div>':'')+'</div></div>';
+    }
+    if(waUrl) {
+      slide += '<a href="'+waUrl+'" target="_blank" onclick="trackBannerStat(''+b.id+'','whatsapp')" style="display:block;background:#25D366;color:white;text-align:center;padding:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-decoration:none;">📞 تواصل واتساب</a>';
+    }
+    slide += '</div>';
+    return slide;
+  }).join('');
+
+  inner.style.transform = 'translateX(0%)';
+  _homeBannerIndex = 0;
+
+  // dots
+  if(dots) {
+    dots.innerHTML = _homeBannersData.map(function(_,i){
+      return '<div onclick="goHomeBanner('+i+')" style="width:'+(i===0?'18':'8')+'px;height:8px;border-radius:4px;background:'+(i===0?'white':'rgba(255,255,255,.5)')+';cursor:pointer;transition:all .3s;"></div>';
+    }).join('');
+  }
+
+  // track view for first banner
+  if(_homeBannersData[0]) trackBannerStat(_homeBannersData[0].id, 'view');
+}
+
+function goHomeBanner(idx) {
+  _homeBannerIndex = idx;
+  const inner = document.getElementById('homeBannerInner');
+  if(inner) inner.style.transform = 'translateX(-'+idx+'00%)';
+  const dots = document.querySelectorAll('#homeBannerDots div');
+  dots.forEach(function(d,i){
+    d.style.width = i===idx?'18px':'8px';
+    d.style.background = i===idx?'white':'rgba(255,255,255,.5)';
+  });
+  if(_homeBannersData[idx]) trackBannerStat(_homeBannersData[idx].id, 'view');
+}
+
+function moveHomeBanner(dir) {
+  var next = _homeBannerIndex + dir;
+  if(next < 0) next = _homeBannersData.length - 1;
+  if(next >= _homeBannersData.length) next = 0;
+  goHomeBanner(next);
 }
 
 
