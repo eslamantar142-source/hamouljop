@@ -6395,6 +6395,7 @@ async function loadHomeBanners() {
   try {
     const nowDate = new Date();
     const allBanners = await sbFetch('GET', 'banners?select=*') || [];
+    _homeBannerIndex = 0;
     _homeBannersData = allBanners.filter(function(b){
       return b.is_active && b.category === 'home' && (!b.expires_at || new Date(b.expires_at) > nowDate);
     });
@@ -6402,12 +6403,13 @@ async function loadHomeBanners() {
     cont.style.display = 'block';
 
     // بناء الـ slider
-    var html = '<div style="position:relative;overflow:hidden;width:100%;background:#000;" id="homeBannerSlider">';
-    html += '<div id="homeBannerInner" style="display:flex;transition:transform .4s ease;">';
+    var totalBanners = _homeBannersData.length;
+    var html = '<div style="position:relative;overflow:hidden;width:100%;border-radius:14px;" id="homeBannerSlider">';
+    html += '<div id="homeBannerInner" style="display:flex;width:' + (totalBanners * 100) + '%;transition:transform .4s ease;">';
     _homeBannersData.forEach(function(b) {
       var phone = b.phone || '';
       if(phone.startsWith('01')) phone = '20' + phone.substring(1);
-      html += '<div style="min-width:100%;flex-shrink:0;position:relative;">';
+      html += '<div style="width:' + (100 / totalBanners) + '%;flex-shrink:0;position:relative;">';
       if(b.image_url) {
         html += '<img src="' + b.image_url + '" style="width:100%;height:220px;object-fit:cover;display:block;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
       } else {
@@ -6446,7 +6448,8 @@ async function loadHomeBanners() {
 function goHomeBanner(idx) {
   _homeBannerIndex = idx;
   var inner = document.getElementById('homeBannerInner');
-  if(inner) inner.style.transform = 'translateX(-' + idx + '00%)';
+  var pct = _homeBannersData.length > 0 ? (idx * 100 / _homeBannersData.length) : 0;
+  if(inner) inner.style.transform = 'translateX(-' + pct + '%)';
   var dots = document.querySelectorAll('#homeBannerDots div');
   dots.forEach(function(d,i){
     d.style.width = i===idx ? '18px' : '8px';
