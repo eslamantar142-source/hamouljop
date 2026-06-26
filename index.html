@@ -5177,16 +5177,13 @@ async function showDoctorAds(subName) {
       <span>👨‍⚕️ ${subName}</span>
       <button onclick="openAddModal('doctors','${subName}')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ أضف</button>
     </div>
-    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:16px 16px 80px;" id="adsContent">
       ${renderAdsList(filtered, fakeCat)}
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
-  // أول ما يفتح القسم يظهر البوب أب الممول
-  showPopupBanner('doctors', subName, function() {
-    loadCatBanner('doctors', subName);
-  });
+  // أول ما يفتح القسم يظهر البوب أب الممول بس (بدون بانر ثاني)
+  showPopupBanner('doctors', subName, null);
 }
 
 function showDoctorsCommunity() {
@@ -5504,7 +5501,6 @@ async function showCharityAds(subName) {
       <span>🤍 ${subName}</span>
       <button onclick="openAddModal('charity','${subName}')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ تبرع</button>
     </div>
-    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:16px 16px 80px;" id="adsContent">
       ${renderAdsList(filtered, fakeCat)}
     </div>`;
@@ -5619,7 +5615,6 @@ async function showTeacherAds(subName) {
       <span>👨‍🏫 ${subName}</span>
       <button onclick="openAddModal()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ أضف</button>
     </div>
-    <div id="catBanner"></div>
     <div class="dyn-content" style="padding:16px 16px 80px;" id="adsContent">
       ${renderAdsList(filtered, fakeCat)}
     </div>`;
