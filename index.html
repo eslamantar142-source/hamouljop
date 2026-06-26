@@ -6402,35 +6402,30 @@ async function loadHomeBanners() {
     if(!_homeBannersData.length) { cont.style.display='none'; return; }
     cont.style.display = 'block';
 
-    // بناء الـ slider
-    var totalBanners = _homeBannersData.length;
-    var html = '<div style="position:relative;overflow:hidden;width:100%;border-radius:14px;" id="homeBannerSlider">';
-    html += '<div id="homeBannerInner" style="display:flex;width:' + (totalBanners * 100) + '%;transition:transform .4s ease;">';
-    _homeBannersData.forEach(function(b) {
+    var html = '<div style="position:relative;width:100%;border-radius:14px;overflow:hidden;" id="homeBannerSlider">';
+    _homeBannersData.forEach(function(b, i) {
       var phone = b.phone || '';
       if(phone.startsWith('01')) phone = '20' + phone.substring(1);
-      html += '<div style="width:' + (100 / totalBanners) + '%;flex-shrink:0;position:relative;">';
+      html += '<div class="hb-slide" id="hbslide-'+i+'" style="display:'+(i===0?'block':'none')+';width:100%;">';
       if(b.image_url) {
-        html += '<img src="' + b.image_url + '" style="width:100%;height:220px;object-fit:cover;display:block;background:#f0f0f0;" onerror="this.style.display=\'none\'">';
+        html += '<img src="'+b.image_url+'" style="width:100%;height:220px;object-fit:cover;display:block;" onerror="this.style.background=\'#eee\'">';
       } else {
-        html += '<div style="background:' + (b.bg_color||'#1a7a4a') + ';padding:20px;min-height:100px;display:flex;align-items:center;gap:12px;">';
+        html += '<div style="background:'+(b.bg_color||'#1a7a4a')+';padding:20px;min-height:120px;display:flex;align-items:center;gap:12px;">';
         html += '<div style="font-size:32px;">📢</div>';
-        html += '<div><div style="font-size:15px;font-weight:900;color:white;">' + (b.title||'') + '</div>';
-        if(b.subtitle) html += '<div style="font-size:12px;color:rgba(255,255,255,.85);margin-top:3px;">' + b.subtitle + '</div>';
+        html += '<div><div style="font-size:15px;font-weight:900;color:white;">'+(b.title||'')+'</div>';
+        if(b.subtitle) html += '<div style="font-size:12px;color:rgba(255,255,255,.85);margin-top:3px;">'+b.subtitle+'</div>';
         html += '</div></div>';
       }
       html += '<div style="position:absolute;top:8px;right:10px;background:rgba(0,0,0,.55);color:white;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">إعلان ممول</div>';
       if(phone) {
-        html += '<a href="https://wa.me/' + phone + '" target="_blank" onclick="trackBannerStat(this.dataset.bid,this.dataset.ev)" data-bid="' + b.id + '" data-ev="whatsapp" style="display:block;background:#25D366;color:white;text-align:center;padding:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-decoration:none;">📞 تواصل واتساب</a>';
+        html += '<a href="https://wa.me/'+phone+'" target="_blank" onclick="trackBannerStat(this.dataset.bid,this.dataset.ev)" data-bid="'+b.id+'" data-ev="whatsapp" style="display:block;background:#25D366;color:white;text-align:center;padding:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-decoration:none;">📞 تواصل واتساب</a>';
       }
       html += '</div>';
     });
-    html += '</div>';
-    // dots
     if(_homeBannersData.length > 1) {
       html += '<div id="homeBannerDots" style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2;">';
       _homeBannersData.forEach(function(_,i) {
-        html += '<div onclick="goHomeBanner(' + i + ')" style="width:' + (i===0?'18':'8') + 'px;height:8px;border-radius:4px;background:' + (i===0?'white':'rgba(255,255,255,.5)') + ';cursor:pointer;transition:all .3s;"></div>';
+        html += '<div onclick="goHomeBanner('+i+')" style="width:'+(i===0?'18':'8')+'px;height:8px;border-radius:4px;background:'+(i===0?'white':'rgba(255,255,255,.5)')+';cursor:pointer;transition:all .3s;"></div>';
       });
       html += '</div>';
     }
@@ -6446,10 +6441,9 @@ async function loadHomeBanners() {
 }
 
 function goHomeBanner(idx) {
+  var slides = document.querySelectorAll('.hb-slide');
+  slides.forEach(function(s,i){ s.style.display = i===idx ? 'block' : 'none'; });
   _homeBannerIndex = idx;
-  var inner = document.getElementById('homeBannerInner');
-  var pct = _homeBannersData.length > 0 ? (idx * 100 / _homeBannersData.length) : 0;
-  if(inner) inner.style.transform = 'translateX(-' + pct + '%)';
   var dots = document.querySelectorAll('#homeBannerDots div');
   dots.forEach(function(d,i){
     d.style.width = i===idx ? '18px' : '8px';
