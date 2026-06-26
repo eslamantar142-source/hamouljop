@@ -576,7 +576,8 @@ async function sbFetch(method, path, body=null) {
 // LOAD ADS
 async function loadAds() {
   try {
-    allAds = await sbFetch('GET','ads?select=*&order=created_at.desc') || [];
+    const rawAds = await sbFetch('GET','ads?select=*&order=created_at.desc') || [];
+    allAds = rawAds.filter(a => a.status !== 'deleted');
     updateCatCounts();
   } catch(e) { console.error(e); }
 }
@@ -1209,11 +1210,11 @@ function toggleDynSearch() {
 async function deleteAdAdmin(id) {
   if(!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
   try {
-    await sbFetch('DELETE', `ads?id=eq.${id}`);
+    // نستخدم PATCH بدل DELETE عشان يشتغل على الموبايل
+    await sbFetch('PATCH', `ads?id=eq.${id}`, {status: 'deleted'});
     showToast('تم الحذف 🗑️');
     allAds = allAds.filter(a => a.id !== id);
     loadAds();
-    // refresh الصفحة الحالية لو مفتوحة
     try {
       const state = JSON.parse(sessionStorage.getItem('dynState') || '{}');
       if(state.type === 'doctors' || state.type === 'docSub') {
