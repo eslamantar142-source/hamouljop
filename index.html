@@ -6437,6 +6437,18 @@ async function loadHomeBanners() {
       _homeBannerTimer = setInterval(function(){ moveHomeBanner(1); }, 4000);
     }
     if(_homeBannersData[0]) trackBannerStat(_homeBannersData[0].id, 'view');
+
+    // DEBUG: اعرض معلومات البانرات
+    var dbg = document.createElement('div');
+    dbg.id = 'bannerDebug';
+    dbg.style.cssText = 'background:#fff3cd;border:2px solid #f90;padding:10px;font-size:11px;direction:ltr;word-break:break-all;';
+    dbg.innerHTML = '<b>DEBUG: ' + _homeBannersData.length + ' banners</b><br>' +
+      _homeBannersData.map(function(b,i){
+        return 'Banner '+(i+1)+': <a href="'+b.image_url+'" target="_blank">'+
+          (b.image_url ? b.image_url.slice(-30) : 'NO URL')+'</a>';
+      }).join('<br>');
+    cont.parentNode.insertBefore(dbg, cont.nextSibling);
+
   } catch(e) { console.warn('homeBanners err:', e); }
 }
 
