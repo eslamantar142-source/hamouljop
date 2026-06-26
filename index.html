@@ -1208,10 +1208,28 @@ function toggleDynSearch() {
 // DELETE AD (ADMIN)
 async function deleteAdAdmin(id) {
   if(!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
-  await sbFetch('DELETE', `ads?id=eq.${id}`);
-  showToast('تم الحذف 🗑️');
-  allAds = allAds.filter(a => a.id !== id);
-  loadAds();
+  try {
+    await sbFetch('DELETE', `ads?id=eq.${id}`);
+    showToast('تم الحذف 🗑️');
+    allAds = allAds.filter(a => a.id !== id);
+    loadAds();
+    // refresh الصفحة الحالية لو مفتوحة
+    try {
+      const state = JSON.parse(sessionStorage.getItem('dynState') || '{}');
+      if(state.type === 'doctors' || state.type === 'docSub') {
+        setTimeout(function(){ showDoctorsHub(); }, 300);
+      } else if(state.type === 'cat') {
+        setTimeout(function(){ showCat(state.catId); }, 300);
+      } else if(state.type === 'sub') {
+        setTimeout(function(){ showSub(state.catId, state.sub); }, 300);
+      } else {
+        const page = document.getElementById('dynamicPage');
+        if(page && page.classList.contains('active')) page.classList.remove('active');
+      }
+    } catch(e2) {}
+  } catch(e) {
+    showToast('❌ خطأ في الحذف: ' + (e.message||'').slice(0,40), 'error');
+  }
 }
 
 // ADD FORM AS FULL PAGE
