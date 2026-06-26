@@ -3268,7 +3268,7 @@ async function doGlobalSearch() {
             ${ad.description?`<div class="ad-desc">${ad.description.substring(0,80)}...</div>`:''}
             <div style="margin-top:8px;display:flex;gap:6px;">
               <button class="btn-details" onclick="event.stopPropagation();openAdDetails('${ad.id}')">التفاصيل</button>
-              ${phone?`<a href="https://wa.me/${phone}" target="_blank" class="btn-wa" onclick="event.stopPropagation()">واتساب</a>`:''}
+              ${phone?`<a href="https://wa.me/${phone}?text=%D8%A7%D9%84%D8%B3%D9%84%D8%A7%D9%85+%D8%B9%D9%84%D9%8A%D9%83%D9%85%D8%8C+%D8%B1%D8%A3%D9%8A%D8%AA+%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D9%83%D9%85+%D8%B9%D9%84%D9%89+%D8%AF%D9%84%D9%8A%D9%84+%D8%A7%D9%84%D8%AD%D8%A7%D9%85%D9%88%D9%84+%D9%88%D8%A3%D8%B1%D9%8A%D8%AF+%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1" target="_blank" class="btn-wa" onclick="event.stopPropagation()">واتساب</a>`:''}
             </div>
           </div>
         </div>`;
@@ -6418,7 +6418,8 @@ async function loadHomeBanners() {
       }
       html += '<div style="position:absolute;top:8px;right:10px;background:rgba(0,0,0,.55);color:white;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">إعلان ممول</div>';
       if(phone) {
-        html += '<a href="https://wa.me/'+phone+'" target="_blank" onclick="trackBannerStat(this.dataset.bid,this.dataset.ev)" data-bid="'+b.id+'" data-ev="whatsapp" style="display:block;background:#25D366;color:white;text-align:center;padding:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-decoration:none;">📞 تواصل واتساب</a>';
+        var waMsg = encodeURIComponent('السلام عليكم، رأيت إعلانكم على دليل الحامول وأريد الاستفسار');
+        html += '<a href="https://wa.me/'+phone+'?text='+waMsg+'" target="_blank" onclick="trackBannerStat(this.dataset.bid,this.dataset.ev)" data-bid="'+b.id+'" data-ev="whatsapp" style="display:block;background:#25D366;color:white;text-align:center;padding:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-decoration:none;">📞 تواصل واتساب</a>';
       }
       html += '</div>';
     });
@@ -6664,7 +6665,7 @@ async function showPopupBanner(catId, subName, onClose) {
           <div style="font-size:16px;font-weight:900;color:#1e293b;margin-bottom:4px;">${banner.title}</div>
           ${banner.subtitle ? `<div style="font-size:13px;color:#64748b;margin-bottom:12px;">${banner.subtitle}</div>` : '<div style="margin-bottom:12px;"></div>'}
           <div style="display:flex;gap:10px;">
-            ${phone ? `<a href="https://wa.me/${phone}" target="_blank" id="popupWaBtn" style="flex:1;background:#25D366;color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;display:block;">📞 تواصل واتساب</a>` : ''}
+            ${phone ? `<a href="https://wa.me/${phone}?text=%D8%A7%D9%84%D8%B3%D9%84%D8%A7%D9%85+%D8%B9%D9%84%D9%8A%D9%83%D9%85%D8%8C+%D8%B1%D8%A3%D9%8A%D8%AA+%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D9%83%D9%85+%D8%B9%D9%84%D9%89+%D8%AF%D9%84%D9%8A%D9%84+%D8%A7%D9%84%D8%AD%D8%A7%D9%85%D9%88%D9%84+%D9%88%D8%A3%D8%B1%D9%8A%D8%AF+%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1" target="_blank" id="popupWaBtn" style="flex:1;background:#25D366;color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;text-align:center;text-decoration:none;display:block;">📞 تواصل واتساب</a>` : ''}
             <button id="popupSkipBtn" style="flex:1;background:#f3f4f6;color:#374151;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">تخطي ←</button>
           </div>
         </div>
