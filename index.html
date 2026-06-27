@@ -1755,9 +1755,18 @@ async function uploadImage(file) {
 // ADMIN
 function openAdmin() {
   if(isAdmin) { showAdminPanel('pending'); return; }
+  // تحقق من الـ localStorage أول
+  const saved = localStorage.getItem('hamoul_admin_auth');
+  if(saved === ADMIN_PASS) {
+    isAdmin = true;
+    showToast('✅ أهلاً يا مشرف إسلام!');
+    loadAds().then(() => showAdminPanel('pending'));
+    return;
+  }
   const pass = prompt('كلمة مرور المشرف:');
   if(pass === ADMIN_PASS) {
     isAdmin = true;
+    localStorage.setItem('hamoul_admin_auth', pass);
     showToast('✅ أهلاً يا مشرف إسلام!');
     loadAds().then(() => showAdminPanel('pending'));
   } else if(pass !== null) { showToast('كلمة المرور غلط ❌'); }
@@ -6840,6 +6849,11 @@ buildCatsGrid();
 try { buildSlider(); } catch(e) { console.warn('slider err:', e); }
 loadAds().then(function() {
   try { checkNewAds(); } catch(e) {}
+  // تحقق من الـ admin session المحفوظة
+  try {
+    const savedAuth = localStorage.getItem('hamoul_admin_auth');
+    if(savedAuth === ADMIN_PASS) { isAdmin = true; }
+  } catch(e) {}
   try { loadHomeBanners(); } catch(e) {}
   try { loadPrayerTimes(); } catch(e) {}
   try { loadGoldPrice(); } catch(e) {}
