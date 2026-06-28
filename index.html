@@ -543,7 +543,7 @@ const CATEGORIES = [
   { id:'gold',       name:'محلات الدهب',          icon:'💍', color:'#fef9c3', subs:['دهب','فضة','مشغولات ذهبية','إصلاح مجوهرات','شراء دهب قديم'] },
   { id:'emergency',     name:'أرقام الطوارئ',         icon:'🚨', color:'#fee2e2', subs:[] },
   { id:'news',       name:'أخبار الحامول',         icon:'📰', color:'#e0f2fe', subs:[] },
-  { id:'transport_news', name:'الموقف والعربيات',  icon:'🚌', color:'#f0fdf4', subs:[] },
+  { id:'transport_news', name:'موقف الحامول كفرالشيخ',  icon:'🚌', color:'#f0fdf4', subs:[] },
   { id:'market_prices', name:'أسعار السوق',        icon:'🛒', color:'#fef9c3', subs:['خضار وفاكهة','سمك','فراخ وطيور','لحوم','بيض ومنتجات ألبان','بقوليات وحبوب'] },
   { id:'prayer',        name:'مواقيت الصلاة',       icon:'🕌', color:'#e0f2fe', subs:[] },
   { id:'marriage',      name:'بيت الحلال',           icon:'💍', color:'#fce7f3', subs:[] },
@@ -5213,7 +5213,7 @@ function showTransportPage() {
   page.innerHTML = `
     <div class="dyn-header">
       <button class="dyn-back" onclick="hideDynPage()">←</button>
-      <span>🚌 الموقف والعربيات</span>
+      <span>🚌 موقف الحامول كفرالشيخ</span>
       <span></span>
     </div>
     <div class="dyn-content" style="padding:0 0 80px;">
@@ -7209,21 +7209,18 @@ let _lastGoldPrices = null;
 
 async function loadGoldPrices() {
   try {
-    // نجيب سعر الأوقية + سعر الدولار/جنيه
     const [goldRes, fxRes] = await Promise.all([
       fetch('https://api.gold-api.com/price/XAU'),
       fetch('https://api.exchangerate-api.com/v4/latest/USD')
     ]);
     const goldData = await goldRes.json();
     const fxData = await fxRes.json();
-    
     const priceUSD = parseFloat(goldData.price);
-    // دولار الصاغة أعلى من سعر البنك بحوالي 0.5 جنيه
-    const usdToEgp = (fxData.rates && fxData.rates.EGP ? fxData.rates.EGP : 50.5) + 0.5;
+    const usdToEgp = (fxData.rates && fxData.rates.EGP ? fxData.rates.EGP : 49.45);
     const gramsPerOunce = 31.1035;
     const pricePerGram24 = (priceUSD / gramsPerOunce) * usdToEgp;
-    // نضيف هامش البيع (حوالي 0.4% فوق سعر السوق) عشان يطابق سعر البيع في المحلات
-    const sellMargin = 1.004;
+    // هامش البيع المحسوب من أسعار السوق الفعلية 28/6/2026 (24=6583، 21=5760، 18=4937)
+    const sellMargin = 1.0128;
     const prices = {
       k24: Math.round(pricePerGram24 * sellMargin),
       k21: Math.round(pricePerGram24 * 21/24 * sellMargin),
@@ -7251,7 +7248,11 @@ function renderGoldBar(prices, prev) {
     '<span style="background:rgba(255,255,255,.15);padding:3px 8px;border-radius:8px;font-weight:700;">عيار 24 ' + arrow('k24') + ' ' + prices.k24.toLocaleString() + ' ج</span>' +
     '<span style="background:rgba(255,255,255,.22);padding:3px 8px;border-radius:8px;font-weight:900;">عيار 21 ' + arrow('k21') + ' ' + prices.k21.toLocaleString() + ' ج</span>' +
     '<span style="background:rgba(255,255,255,.15);padding:3px 8px;border-radius:8px;font-weight:700;">عيار 18 ' + arrow('k18') + ' ' + prices.k18.toLocaleString() + ' ج</span>';
-  setTimeout(function(){ loadGoldPrices(); }, 5 * 60 * 1000);
+}
+
+// تحديث الذهب كل 30 دقيقة بـ setInterval ثابت — مش بيوقف حتى لو API فشلت مرة
+if(!window._goldTimer) {
+  window._goldTimer = setInterval(function(){ loadGoldPrices(); }, 30 * 60 * 1000);
 }
 
 function showGoldPrices() {
