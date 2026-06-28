@@ -1105,11 +1105,14 @@ async function openAdDetails(adId) {
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
   // زرار فركة كعب في المطاعم والكافيهات
-  if(true) { // مؤقت: يظهر في كل الإعلانات للتجربة
+  var isFood = ad.category && (ad.category.indexOf('food') !== -1 || (ad.subcategory && ad.subcategory.indexOf('food') !== -1));
+  var isDoctor = ad.category && (ad.category === 'doctors' || ad.category === 'medservices' || (ad.subcategory && (ad.subcategory === 'doctors' || ad.subcategory === 'medservices')));
+  if(isFood || isDoctor) {
+    var farketLabel = isDoctor ? '🏥 احجز الآن من فركة كعب — أسهل وأسرع!' : '🛵 اطلب الآن من فركة كعب — أسهل وأسرع!';
     var farketMsg = encodeURIComponent('السلام عليكم فركة كعب 🛵' + ' - أنا شايف إعلان: ' + ad.title + ' - وعايز أطلب منكم');
     var farketBtn = document.createElement('div');
     farketBtn.style.cssText = 'padding:0 16px 80px;';
-    farketBtn.innerHTML = '<a href="https://wa.me/201014185158?text=' + farketMsg + '" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#ff6b35,#f7931e);color:white;padding:13px;border-radius:12px;font-size:14px;font-weight:900;text-decoration:none;margin-top:12px;">🛵 اطلب الآن من فركة كعب — أسهل وأسرع!</a>';
+    farketBtn.innerHTML = '<a href="https://wa.me/201014185158?text=' + farketMsg + '" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#ff6b35,#f7931e);color:white;padding:13px;border-radius:12px;font-size:14px;font-weight:900;text-decoration:none;margin-top:12px;">' + farketLabel + '</a>';
     page.appendChild(farketBtn);
   }
   window._detSlideIdx = 0;
