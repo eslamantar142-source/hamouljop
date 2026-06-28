@@ -1929,7 +1929,7 @@ async function showAdminPanel(tab='pending') {
 
   const tabList = [
     ['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],
-    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات']
+    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار']
   ];
 
   // بناء الهيكل دايماً من أول
@@ -1965,7 +1965,79 @@ async function showAdminPanel(tab='pending') {
     loadAdminMarriage(page);
   } else if(tab === 'stats') {
     loadAdminStatsContent(cont);
+  } else if(tab === 'merchants') {
+    loadAdminMerchants(cont);
   }
+}
+
+function loadAdminMerchants(cont) {
+  // جيب كل أجهزة التجار المفعلة من localStorage — الأدمن بيشوف كودهم
+  cont.innerHTML = `
+    <div style="background:white;border-radius:14px;padding:16px;margin-bottom:14px;">
+      <div style="font-size:14px;font-weight:900;margin-bottom:10px;">🏪 تفعيل حساب تاجر</div>
+      <p style="font-size:12px;color:#64748b;margin-bottom:12px;">
+        التاجر يفتح الموقع على موبايله وبيبعتلك كود الجهاز. أنت بتضيفه هنا وهو هيقدر يضيف أسعار السوق.
+      </p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input id="merchantCodeInput" type="text" placeholder="كود الجهاز..." style="flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;">
+        <input id="merchantNameInput" type="text" placeholder="اسم التاجر..." style="flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;">
+      </div>
+      <button onclick="addMerchantCode()" style="width:100%;background:#16a34a;color:white;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;">✅ تفعيل التاجر</button>
+    </div>
+    <div style="background:white;border-radius:14px;padding:16px;">
+      <div style="font-size:14px;font-weight:900;margin-bottom:10px;">📋 التجار المفعلون</div>
+      <div id="merchantsList">${renderMerchantsList()}</div>
+    </div>
+    <div style="background:#fef9c3;border-radius:14px;padding:14px;margin-top:14px;border:1px solid #fde047;">
+      <div style="font-size:12px;font-weight:900;margin-bottom:6px;">📱 كودك أنت على الجهاز ده:</div>
+      <div style="font-size:14px;font-weight:900;color:#92400e;letter-spacing:1px;">${getDeviceCode()}</div>
+      <div style="font-size:11px;color:#92400e;margin-top:4px;">ابعته للتاجر عشان يديك كوده</div>
+    </div>`;
+}
+
+function getDeviceCode() {
+  var code = localStorage.getItem('hamoul_device_code');
+  if(!code) {
+    code = Math.random().toString(36).substr(2,8).toUpperCase();
+    localStorage.setItem('hamoul_device_code', code);
+  }
+  return code;
+}
+
+function renderMerchantsList() {
+  try {
+    var merchants = JSON.parse(localStorage.getItem('hamoul_merchants') || '[]');
+    if(!merchants.length) return '<p style="color:var(--gray);font-size:13px;">مفيش تجار مفعلين لحد دلوقتي</p>';
+    return merchants.map((m,i) => 
+      '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<div style="flex:1;"><div style="font-size:13px;font-weight:700;">' + m.name + '</div>' +
+      '<div style="font-size:11px;color:#64748b;">' + m.code + '</div></div>' +
+      '<button onclick="removeMerchant(' + i + ')" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;">حذف</button>' +
+      '</div>'
+    ).join('');
+  } catch(e) { return ''; }
+}
+
+function addMerchantCode() {
+  var code = document.getElementById('merchantCodeInput').value.trim().toUpperCase();
+  var name = document.getElementById('merchantNameInput').value.trim();
+  if(!code || !name) { showToast('اكتب الكود والاسم', 'error'); return; }
+  var merchants = JSON.parse(localStorage.getItem('hamoul_merchants') || '[]');
+  if(merchants.find(m => m.code === code)) { showToast('الكود ده موجود بالفعل', 'error'); return; }
+  merchants.push({code, name});
+  localStorage.setItem('hamoul_merchants', JSON.stringify(merchants));
+  showToast('✅ تم تفعيل التاجر ' + name);
+  document.getElementById('merchantsList').innerHTML = renderMerchantsList();
+  document.getElementById('merchantCodeInput').value = '';
+  document.getElementById('merchantNameInput').value = '';
+}
+
+function removeMerchant(idx) {
+  var merchants = JSON.parse(localStorage.getItem('hamoul_merchants') || '[]');
+  merchants.splice(idx, 1);
+  localStorage.setItem('hamoul_merchants', JSON.stringify(merchants));
+  document.getElementById('merchantsList').innerHTML = renderMerchantsList();
+  showToast('تم حذف التاجر');
 }
 
 async function loadAdminStatsContent(cont) {
@@ -4905,121 +4977,308 @@ async function submitMarriageProfile() {
 }
 
 // MARKET PRICES PAGE
-function showMarketPrices() {
+// ===== أسعار السوق — النظام الجديد =====
+// ===== سوق التجار — النظام الجديد =====
+const MARKET_SECTIONS = [
+  { id:'فراخ وطيور', icon:'🐔', color:'#fef9c3', items:['فراخ بلدي','فراخ رومي','بط','حمام','ديك رومي'] },
+  { id:'لحوم',       icon:'🥩', color:'#fee2e2', items:['لحم ضاني','لحم بتلو','كبدة','كوارع','رأس'] },
+  { id:'سمك',        icon:'🐟', color:'#dbeafe', items:['بلطي','بوري','مكرونة','قاروص','جمبري','فسيخ','رنجة'] },
+  { id:'خضار',       icon:'🥦', color:'#dcfce7', items:['طماطم','بطاطس','بصل','جزر','كوسة','باذنجان','فلفل','فاصوليا خضرا','ملوخية','سبانخ'] },
+  { id:'فاكهة',      icon:'🍎', color:'#fce7f3', items:['موز','تفاح','برتقال','مانجو','عنب','بطيخ','شمام','فراولة'] },
+  { id:'بيض وألبان', icon:'🥚', color:'#fef3c7', items:['بيض بلدي','بيض أبيض','جبن أبيض','لبن','زبادي','قشطة'] },
+  { id:'بقوليات',    icon:'🌾', color:'#f0fdf4', items:['عدس','فول','لوبيا','حمص','أرز','سكر','زيت'] },
+];
+
+function formatLastUpdate(date, isToday) {
+  if(!date) return '';
+  if(isToday) {
+    const t = date.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+    return '🟢 آخر تحديث النهارده الساعة ' + t;
+  }
+  const diff = Math.floor((Date.now() - date) / 86400000);
+  if(diff === 1) return '🟡 آخر تحديث: أمس — الأسعار لم تُحدَّث اليوم بعد';
+  return '🟠 آخر تحديث: منذ ' + diff + ' أيام — قد تكون قديمة';
+}
+
+// جيب كل أسعار التجار (مش مرتبطة بيوم — كل تاجر عنده آخر سعر بتاعه)
+async function loadMarketPricesData() {
+  try {
+    const rows = await sbFetch('GET', 'market_traders?order=updated_at.desc&limit=500') || [];
+    const lastUpdate = rows.length ? new Date(rows[0].updated_at) : null;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isToday = lastUpdate ? lastUpdate.toISOString().startsWith(todayStr) : false;
+    return { rows, lastUpdate, isToday };
+  } catch(e) { return { rows:[], lastUpdate:null, isToday:false }; }
+}
+
+// ===== سوق التجار — عرض وتفاعل =====
+
+async function showMarketPrices() {
   sessionStorage.setItem('dynState', JSON.stringify({type:'market_prices'}));
   const page = document.getElementById('dynamicPage');
-
-  const marketAds = allAds.filter(a => {
-    if(a.status !== 'approved' && !isAdmin) return false;
-    return a.category === 'market_prices';
-  });
-
-  const sections = [
-    { id:'خضار وفاكهة', icon:'🥦', color:'#dcfce7' },
-    { id:'سمك', icon:'🐟', color:'#dbeafe' },
-    { id:'فراخ وطيور', icon:'🐔', color:'#fef9c3' },
-    { id:'لحوم', icon:'🥩', color:'#fee2e2' },
-    { id:'بيض ومنتجات ألبان', icon:'🥚', color:'#fef3c7' },
-    { id:'بقوليات وحبوب', icon:'🌾', color:'#f0fdf4' },
-  ];
-
   const today = new Date().toLocaleDateString('ar-EG', {weekday:'long', day:'numeric', month:'long'});
 
-  page.innerHTML = `
-    <div class="dyn-header">
-      <button class="dyn-back" onclick="hideDynPage()">←</button>
-      <span>🛒 أسعار السوق اليوم</span>
-      ${isAdmin ? `<button onclick="openAddModal('market_prices','')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ سعر</button>` : '<span></span>'}
-    </div>
-    <div style="background:linear-gradient(135deg,#c8922a,#f59e0b);padding:14px 16px;color:white;display:flex;align-items:center;gap:10px;">
-      <span style="font-size:28px;">🛒</span>
-      <div>
-        <div style="font-size:14px;font-weight:900;">أسعار سوق الحامول</div>
-        <div style="font-size:12px;opacity:.85;">${today}</div>
-      </div>
-    </div>
-
-    <!-- تبويبات الأقسام -->
-    <div style="background:white;overflow-x:auto;display:flex;gap:0;border-bottom:2px solid var(--border);position:sticky;top:0;z-index:10;">
-      <button onclick="filterMarket('all',this)" class="market-tab active" style="padding:10px 14px;border:none;background:transparent;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--primary);border-bottom:2px solid var(--primary);">الكل</button>
-      ${sections.map(s=>`<button onclick="filterMarket('${s.id}',this)" class="market-tab" style="padding:10px 14px;border:none;background:transparent;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--gray);">${s.icon} ${s.id}</button>`).join('')}
-    </div>
-
-    <div id="catBanner"></div>
-    <div class="dyn-content" id="marketContent">
-      ${marketAds.length === 0 ? `
-        <div style="text-align:center;padding:60px 20px;color:var(--gray);">
-          <div style="font-size:48px;margin-bottom:12px;">🛒</div>
-          <p style="font-size:15px;font-weight:700;">مفيش أسعار متاحة دلوقتي</p>
-          ${isAdmin ? `<button onclick="openAddModal('market_prices','')" style="margin-top:14px;background:var(--primary);color:white;border:none;padding:10px 20px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">+ أضف أسعار اليوم</button>` : ''}
-        </div>` :
-        renderMarketAds(marketAds, sections)}
-    </div>
-    ${isAdmin ? `<button class="fab-add" onclick="openAddModal('market_prices','')">+</button>` : ''}`;
+  page.innerHTML =
+    '<div class="dyn-header">' +
+      '<button class="dyn-back" onclick="hideDynPage()">←</button>' +
+      '<span>🛒 سوق الحامول</span>' +
+      (isAdmin ? '<button onclick="showAddTraderDialog()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ تاجر</button>' : '<span></span>') +
+    '</div>' +
+    '<div style="background:linear-gradient(135deg,#c8922a,#f59e0b);padding:12px 16px;color:white;display:flex;align-items:center;gap:10px;">' +
+      '<span style="font-size:26px;">🛒</span>' +
+      '<div style="flex:1;"><div style="font-size:14px;font-weight:900;">سوق الحامول — قارن الأسعار</div>' +
+      '<div style="font-size:11px;opacity:.85;">' + today + '</div></div>' +
+    '</div>' +
+    '<div id="marketUpdateBar" style="background:#f8fafc;padding:7px 16px;font-size:12px;color:#64748b;text-align:center;border-bottom:1px solid var(--border);">⏳ جاري التحميل...</div>' +
+    '<div id="merchantBtnWrap"></div>' +
+    '<div style="background:white;overflow-x:auto;display:flex;gap:0;border-bottom:2px solid var(--border);position:sticky;top:56px;z-index:10;" id="marketTabs">' +
+      '<button onclick="filterMarket('all',this)" class="market-tab active" style="padding:10px 14px;border:none;background:transparent;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--primary);border-bottom:2px solid var(--primary);">الكل</button>' +
+      MARKET_SECTIONS.map(function(s){ return '<button onclick="filterMarket(''+s.id+'',this)" class="market-tab" style="padding:10px 14px;border:none;background:transparent;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--gray);">'+s.icon+' '+s.id+'</button>'; }).join('') +
+    '</div>' +
+    '<div id="catBanner"></div>' +
+    '<div class="dyn-content" id="marketContent" style="padding:0 0 80px;">' +
+      '<div style="text-align:center;padding:40px;color:var(--gray);">⏳ جاري تحميل الأسعار...</div>' +
+    '</div>';
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
   loadCatBanner('market');
+  await refreshMarketContent('all');
 }
 
-function renderMarketAds(ads, sections, filter='all') {
-  const filtered = filter === 'all' ? ads : ads.filter(a => a.subcategory === filter);
-  if(!filtered.length) return `<div style="text-align:center;padding:40px;color:var(--gray);">مفيش أسعار في هذا القسم</div>`;
+async function refreshMarketContent(filter) {
+  const { rows, lastUpdate, isToday } = await loadMarketPricesData();
+  window._marketRows = rows;
 
-  // تجميع حسب القسم
-  const grouped = {};
-  filtered.forEach(ad => {
-    const sec = ad.subcategory || 'أخرى';
-    if(!grouped[sec]) grouped[sec] = [];
-    grouped[sec].push(ad);
+  // شريط آخر تحديث
+  var bar = document.getElementById('marketUpdateBar');
+  if(bar) bar.textContent = lastUpdate ? formatLastUpdate(lastUpdate, isToday) : '⚪ لم تُسجَّل أسعار بعد';
+
+  // زر التاجر المسجل — يعدل أسعاره
+  var wrap = document.getElementById('merchantBtnWrap');
+  if(wrap) {
+    var myPhone = localStorage.getItem('trader_phone');
+    var myPass  = localStorage.getItem('trader_pass');
+    if(myPhone && myPass) {
+      wrap.innerHTML = '<div style="padding:8px 16px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;display:flex;gap:8px;">' +
+        '<div style="flex:1;font-size:12px;color:#166534;font-weight:700;display:flex;align-items:center;">👋 أهلاً بك يا تاجر</div>' +
+        '<button onclick="showTraderUpdateDialog()" style="background:#16a34a;color:white;border:none;padding:7px 14px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">✏️ حدّث أسعارك</button>' +
+      '</div>';
+    } else {
+      wrap.innerHTML = '<div style="padding:8px 16px;background:#fef9c3;border-bottom:1px solid #fde047;text-align:center;">' +
+        '<button onclick="showTraderLoginDialog()" style="background:#92400e;color:white;border:none;padding:7px 18px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">🏪 أنا تاجر — دخول</button>' +
+      '</div>';
+    }
+  }
+
+  // عرض الأسعار
+  var content = document.getElementById('marketContent');
+  if(content) content.innerHTML = renderTraderMarket(rows, filter || 'all');
+}
+
+function renderTraderMarket(rows, filter) {
+  var filtered = filter === 'all' ? rows : rows.filter(function(r){ return r.section === filter; });
+  if(!filtered.length) return '<div style="text-align:center;padding:60px 20px;color:var(--gray);"><div style="font-size:48px;margin-bottom:12px;">🛒</div><p style="font-size:15px;font-weight:700;">مفيش أسعار في هذا القسم دلوقتي</p></div>';
+
+  // تجميع حسب القسم ثم المنتج
+  var bySec = {};
+  filtered.forEach(function(r) {
+    var sec = r.section || 'أخرى';
+    if(!bySec[sec]) bySec[sec] = {};
+    var prod = r.product_name || 'منتج';
+    if(!bySec[sec][prod]) bySec[sec][prod] = [];
+    bySec[sec][prod].push(r);
   });
 
-  return Object.entries(grouped).map(([sec, secAds]) => {
-    const secInfo = sections?.find(s=>s.id===sec) || {icon:'🛒', color:'#f3f4f6'};
-    const date = secAds[0] ? new Date(secAds[0].created_at).toLocaleDateString('ar-EG', {day:'numeric', month:'long', hour:'2-digit', minute:'2-digit'}) : '';
-    return `
-      <div style="margin-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <div style="width:36px;height:36px;border-radius:10px;background:${secInfo.color};display:flex;align-items:center;justify-content:center;font-size:20px;">${secInfo.icon}</div>
-          <div style="font-size:14px;font-weight:900;">${sec}</div>
-          <div style="font-size:11px;color:#aaa;margin-right:auto;">🕐 ${date}</div>
-        </div>
-        ${secAds.map(ad => `
-          <div class="ad-card" style="border-right:4px solid ${secInfo.color.replace('c7','a0')};margin-bottom:8px;">
-            ${ad.image_url ? `<img src="${ad.image_url}" class="ad-img" style="max-height:160px;" onerror="this.style.display='none'">` : ''}
-            <div class="ad-body">
-              <div class="ad-title">${ad.title||''}</div>
-              <div class="ad-desc">${ad.description||''}</div>
-              <div class="ad-footer">
-                <span></span>
-                <div style="display:flex;gap:6px;">
-                  ${adminDelBtn}
-                  <button onclick="shareAdWA('${ad.id}')" style="background:#f3f4f6;color:var(--dark);border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📤 شارك</button>
-                </div>
-              </div>
-            </div>
-          </div>`).join('')}
-      </div>`;
+  return Object.entries(bySec).map(function(entry) {
+    var sec = entry[0], products = entry[1];
+    var secInfo = MARKET_SECTIONS.find(function(s){ return s.id === sec; }) || {icon:'🛒', color:'#f3f4f6'};
+    return '<div style="margin-bottom:6px;">' +
+      '<div style="background:' + secInfo.color + ';padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:95px;z-index:5;">' +
+        '<span style="font-size:20px;">' + secInfo.icon + '</span>' +
+        '<span style="font-size:14px;font-weight:900;">' + sec + '</span>' +
+      '</div>' +
+      Object.entries(products).map(function(pe) {
+        var prodName = pe[0], traders = pe[1];
+        // رتب من الأرخص للأغلى
+        traders.sort(function(a,b){ return (parseFloat(a.price)||999) - (parseFloat(b.price)||999); });
+        var minPrice = parseFloat(traders[0].price);
+        return '<div style="margin:0 12px 10px;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;">' +
+          '<div style="background:#1a7a4a;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">' +
+            '<span style="color:white;font-size:13px;font-weight:900;">' + prodName + '</span>' +
+            '<span style="background:rgba(255,255,255,.2);color:white;padding:2px 10px;border-radius:20px;font-size:11px;">أفضل سعر: ' + minPrice.toLocaleString() + ' ج</span>' +
+          '</div>' +
+          traders.map(function(t, idx) {
+            var isBest = parseFloat(t.price) === minPrice && idx === 0;
+            var updTime = t.updated_at ? new Date(t.updated_at).toLocaleDateString('ar-EG',{day:'numeric',month:'short'}) : '';
+            return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #f1f5f9;background:' + (isBest?'#f0fdf4':'white') + ';">' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:13px;font-weight:900;color:#1e293b;">' + (isBest?'🏆 ':'') + (t.trader_name||'تاجر') + '</div>' +
+                '<div style="font-size:11px;color:#64748b;margin-top:2px;">📍 ' + (t.address||'') + (t.address&&t.phone?' • ':'') + (t.phone?'📞 '+t.phone:'') + '</div>' +
+                '<div style="font-size:10px;color:#94a3b8;margin-top:1px;">آخر تحديث: ' + updTime + '</div>' +
+              '</div>' +
+              '<div style="text-align:left;flex-shrink:0;">' +
+                '<div style="font-size:16px;font-weight:900;color:' + (isBest?'#16a34a':'#1e293b') + ';">' + parseFloat(t.price).toLocaleString() + ' ج</div>' +
+                '<div style="font-size:10px;color:#94a3b8;">للكيلو</div>' +
+              '</div>' +
+              (t.phone ? '<a href="tel:' + t.phone + '" style="background:#dcfce7;color:#16a34a;border:none;padding:8px 10px;border-radius:8px;font-size:16px;text-decoration:none;flex-shrink:0;">📞</a>' : '') +
+              (isAdmin ? '<button onclick="deleteTrader(''+t.id+'')" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">🗑️</button>' : '') +
+            '</div>';
+          }).join('') +
+        '</div>';
+      }).join('') +
+    '</div>';
   }).join('');
 }
 
-function filterMarket(filter, btn) {
-  document.querySelectorAll('.market-tab').forEach(b => {
+async function filterMarket(filter, btn) {
+  document.querySelectorAll('.market-tab').forEach(function(b){
     b.style.color = 'var(--gray)';
     b.style.borderBottom = 'none';
   });
   btn.style.color = 'var(--primary)';
   btn.style.borderBottom = '2px solid var(--primary)';
-  const marketAds = allAds.filter(a => (a.status==='approved'||isAdmin) && a.category==='market_prices');
-  const sections = [
-    { id:'خضار وفاكهة', icon:'🥦', color:'#dcfce7' },
-    { id:'سمك', icon:'🐟', color:'#dbeafe' },
-    { id:'فراخ وطيور', icon:'🐔', color:'#fef9c3' },
-    { id:'لحوم', icon:'🥩', color:'#fee2e2' },
-    { id:'بيض ومنتجات ألبان', icon:'🥚', color:'#fef3c7' },
-    { id:'بقوليات وحبوب', icon:'🌾', color:'#f0fdf4' },
-  ];
-  document.getElementById('marketContent').innerHTML = renderMarketAds(marketAds, sections, filter);
+  var rows = window._marketRows || [];
+  var content = document.getElementById('marketContent');
+  if(content) content.innerHTML = renderTraderMarket(rows, filter);
+}
+
+// ===== إضافة تاجر جديد (أدمن) =====
+function showAddTraderDialog() {
+  var secs = MARKET_SECTIONS.map(function(s){ return '<option value="'+s.id+'">'+s.icon+' '+s.id+'</option>'; }).join('');
+  var overlay = document.createElement('div');
+  overlay.id = 'traderAddOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;">' +
+      '<div style="font-size:16px;font-weight:900;margin-bottom:14px;text-align:center;">🏪 إضافة تاجر جديد</div>' +
+      '<select id="ta_sec" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;"><option value="">— اختار القسم —</option>' + secs + '</select>' +
+      '<input id="ta_prod" type="text" placeholder="اسم المنتج (مثال: فراخ بلدي، بلطي، طماطم...)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="ta_name" type="text" placeholder="اسم التاجر" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="ta_phone" type="tel" placeholder="رقم الموبايل" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;" dir="ltr">' +
+      '<input id="ta_pass" type="text" placeholder="كلمة سر التاجر (هو بس يعرفها)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="ta_addr" type="text" placeholder="العنوان / الموقع" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="ta_price" type="number" placeholder="السعر الحالي للكيلو (جنيه)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:14px;">' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="submitAddTrader()" style="flex:1;background:#1a7a4a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ إضافة</button>' +
+        '<button onclick="document.getElementById('traderAddOverlay').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function submitAddTrader() {
+  var sec   = document.getElementById('ta_sec').value;
+  var prod  = document.getElementById('ta_prod').value.trim();
+  var name  = document.getElementById('ta_name').value.trim();
+  var phone = document.getElementById('ta_phone').value.trim();
+  var pass  = document.getElementById('ta_pass').value.trim();
+  var addr  = document.getElementById('ta_addr').value.trim();
+  var price = document.getElementById('ta_price').value.trim();
+  if(!sec||!prod||!name||!phone||!pass||!price){ showToast('اكمل البيانات كلها', 'error'); return; }
+  try {
+    await sbFetch('POST', 'market_traders', {
+      section: sec, product_name: prod, trader_name: name,
+      phone: phone, password_hash: pass, address: addr,
+      price: parseFloat(price), updated_at: new Date().toISOString()
+    });
+    document.getElementById('traderAddOverlay').remove();
+    showToast('✅ تم إضافة التاجر ' + name);
+    await refreshMarketContent('all');
+  } catch(e) { showToast('خطأ في الإضافة', 'error'); }
+}
+
+// ===== دخول التاجر وتحديث سعره =====
+function showTraderLoginDialog() {
+  var overlay = document.createElement('div');
+  overlay.id = 'traderLoginOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:340px;text-align:center;">' +
+      '<div style="font-size:32px;margin-bottom:8px;">🏪</div>' +
+      '<div style="font-size:16px;font-weight:900;margin-bottom:14px;">دخول التاجر</div>' +
+      '<input id="tl_phone" type="tel" placeholder="رقم موبايلك" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:8px;text-align:center;" dir="ltr">' +
+      '<input id="tl_pass" type="password" placeholder="كلمة السر" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:14px;text-align:center;">' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="doTraderLogin()" style="flex:1;background:#1a7a4a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">دخول</button>' +
+        '<button onclick="document.getElementById('traderLoginOverlay').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function doTraderLogin() {
+  var phone = document.getElementById('tl_phone').value.trim();
+  var pass  = document.getElementById('tl_pass').value.trim();
+  if(!phone||!pass){ showToast('اكتب الموبايل وكلمة السر', 'error'); return; }
+  try {
+    var rows = await sbFetch('GET', 'market_traders?phone=eq.'+encodeURIComponent(phone)+'&password_hash=eq.'+encodeURIComponent(pass)+'&select=id,trader_name&limit=1') || [];
+    if(!rows.length){ showToast('رقم الموبايل أو كلمة السر غلط ❌', 'error'); return; }
+    localStorage.setItem('trader_phone', phone);
+    localStorage.setItem('trader_pass', pass);
+    localStorage.setItem('trader_name', rows[0].trader_name);
+    document.getElementById('traderLoginOverlay').remove();
+    showToast('أهلاً يا '+rows[0].trader_name+' 👋');
+    await refreshMarketContent('all');
+  } catch(e) { showToast('خطأ في الدخول', 'error'); }
+}
+
+function showTraderUpdateDialog() {
+  var phone = localStorage.getItem('trader_phone');
+  var pass  = localStorage.getItem('trader_pass');
+  var name  = localStorage.getItem('trader_name');
+  var myRows = (window._marketRows||[]).filter(function(r){ return r.phone===phone; });
+  if(!myRows.length){ showToast('مفيش منتجات مسجلة باسمك', 'error'); return; }
+
+  var items = myRows.map(function(r){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9;">' +
+      '<div style="flex:1;font-size:13px;font-weight:700;">' + r.product_name + '<span style="font-size:11px;color:#94a3b8;margin-right:4px;">(' + r.section + ')</span></div>' +
+      '<input type="number" value="'+r.price+'" data-id="'+r.id+'" class="price-upd-inp" style="width:80px;padding:6px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-align:center;">' +
+      '<span style="font-size:11px;color:#64748b;">ج/كيلو</span>' +
+    '</div>';
+  }).join('');
+
+  var overlay = document.createElement('div');
+  overlay.id = 'traderUpdateOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;">' +
+      '<div style="font-size:15px;font-weight:900;margin-bottom:4px;text-align:center;">✏️ تحديث أسعارك</div>' +
+      '<div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:14px;">يا '+name+'</div>' +
+      items +
+      '<div style="display:flex;gap:8px;margin-top:14px;">' +
+        '<button onclick="submitTraderPrices()" style="flex:1;background:#1a7a4a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💾 حفظ الأسعار</button>' +
+        '<button onclick="document.getElementById('traderUpdateOverlay').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+      '</div>' +
+      '<button onclick="localStorage.removeItem('trader_phone');localStorage.removeItem('trader_pass');localStorage.removeItem('trader_name');document.getElementById('traderUpdateOverlay').remove();refreshMarketContent('all');" style="width:100%;margin-top:8px;background:#fee2e2;color:#dc2626;border:none;padding:8px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">خروج من حساب التاجر</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function submitTraderPrices() {
+  var inputs = document.querySelectorAll('.price-upd-inp');
+  var now = new Date().toISOString();
+  var errors = 0;
+  for(var i=0; i<inputs.length; i++){
+    var inp = inputs[i];
+    var id = inp.getAttribute('data-id');
+    var price = parseFloat(inp.value);
+    if(!price||price<=0) continue;
+    try {
+      await sbFetch('PATCH', 'market_traders?id=eq.'+id, {price: price, updated_at: now});
+    } catch(e) { errors++; }
+  }
+  document.getElementById('traderUpdateOverlay').remove();
+  if(errors) showToast('بعض الأسعار مش اتحفظت ⚠️', 'error');
+  else showToast('✅ تم تحديث الأسعار!');
+  await refreshMarketContent('all');
+}
+
+async function deleteTrader(id) {
+  if(!confirm('تمسح التاجر ده؟')) return;
+  await sbFetch('DELETE', 'market_traders?id=eq.'+id, null);
+  showToast('تم الحذف');
+  await refreshMarketContent('all');
 }
 
 // TRANSPORT NEWS PAGE
