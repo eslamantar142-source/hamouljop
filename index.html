@@ -5044,49 +5044,117 @@ async function loadTransportStatus() {
 }
 
 async function submitTransportVote(status) {
-  // منع التصويت المتكرر كل 15 دقيقة
   const lastVote = localStorage.getItem('transport_last_vote');
   if(lastVote) {
     const diff = (Date.now() - parseInt(lastVote)) / 1000 / 60;
     if(diff < 15) {
       const remaining = Math.ceil(15 - diff);
-      showToast('قدر تصوت تاني بعد ' + remaining + ' دقيقة ⏳', 'error');
+      showToast('تقدر تصوت تاني بعد ' + remaining + ' دقيقة ⏳', 'error');
       return;
     }
+  }
+  
+  // اسم المصوت
+  var voterName = localStorage.getItem('transport_voter_name');
+  if(!voterName) {
+    voterName = prompt('اكتب اسمك عشان يظهر لو بقيت عمدة الموقف 👑\n(اكتب اسمك الأول بس)');
+    if(!voterName || !voterName.trim()) voterName = 'مجهول';
+    voterName = voterName.trim().substring(0, 20);
+    localStorage.setItem('transport_voter_name', voterName);
   }
   
   try {
     await sbFetch('POST', 'transport_votes', {
       status: status,
+      voter_name: voterName,
       created_at: new Date().toISOString()
     });
     localStorage.setItem('transport_last_vote', Date.now().toString());
-    showToast(status === 'green' ? '✅ تم — الموقف فاضي' : status === 'yellow' ? '⚠️ تم — الموقف مزدحم' : '🔴 تم — الموقف مقفل', 'success');
+    
+    // احسب عدد تصويتات المصوت النهارده
+    const today = new Date().toISOString().split('T')[0];
+    const myVotes = await sbFetch('GET', 'transport_votes?voter_name=eq.' + encodeURIComponent(voterName) + '&created_at=gte.' + today + 'T00:00:00&select=id') || [];
+    
+    showToast(status === 'green' ? '✅ شكراً — صوتك بيساعد الناس!' : status === 'yellow' ? '⚠️ شكراً — صوتك بيساعد الناس!' : '🔴 شكراً — صوتك بيساعد الناس!');
+    showToast('عندك ' + myVotes.length + ' تصويت النهارده 🏆', 'success');
+    
     updateTransportUI();
+    loadTransportMayor();
   } catch(e) {
     showToast('خطأ في التصويت', 'error');
   }
 }
 
+async function loadTransportMayor() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const votes = await sbFetch('GET', 'transport_votes?created_at=gte.' + today + 'T00:00:00&select=voter_name') || [];
+    
+    if(!votes.length) {
+      var mayorDiv = document.getElementById('transportMayor');
+      if(mayorDiv) mayorDiv.style.display = 'none';
+      return;
+    }
+    
+    // احسب أكتر شخص صوّت
+    const counts = {};
+    votes.forEach(v => {
+      if(v.voter_name && v.voter_name !== 'مجهول') {
+        counts[v.voter_name] = (counts[v.voter_name] || 0) + 1;
+      }
+    });
+    
+    const mayor = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+    if(!mayor) return;
+    
+    var mayorDiv = document.getElementById('transportMayor');
+    var mayorName = document.getElementById('mayorName');
+    var mayorCount = document.getElementById('mayorCount');
+    if(mayorDiv) mayorDiv.style.display = 'block';
+    if(mayorName) mayorName.textContent = mayor[0];
+    if(mayorCount) mayorCount.textContent = mayor[1] + ' تصويت';
+    
+    // لو الشخص نفسه هو العمدة
+    var myName = localStorage.getItem('transport_voter_name');
+    if(myName && myName === mayor[0]) {
+      showToast('👑 إنت عمدة الموقف دلوقتي!');
+    }
+  } catch(e) {}
+}
+
 async function updateTransportUI() {
-  const status = await loadTransportStatus();
-  const colors = {
-    green: {bg:'#22c55e', text:'الموقف فاضي والعربيات متوفرة', emoji:'🟢', label:'فاضي'},
-    yellow: {bg:'#f59e0b', text:'الموقف مزدحم بس الحركة مستمرة', emoji:'🟡', label:'مزدحم'},
-    red: {bg:'#ef4444', text:'الموقف مكدس ومفيش عربيات!', emoji:'🔴', label:'مكدس'}
-  };
-  const c = colors[status];
-  
-  const statusDiv = document.getElementById('transportStatus');
-  const statusText = document.getElementById('transportStatusText');
-  if(statusDiv) statusDiv.style.background = c.bg;
-  if(statusText) statusText.innerHTML = c.emoji + ' ' + c.text;
-  
-  // تحديث الأزرار
-  ['green','yellow','red'].forEach(s => {
-    const btn = document.getElementById('tvote_' + s);
-    if(btn) btn.style.opacity = s === status ? '1' : '0.6';
-  });
+  try {
+    const now = new Date();
+    const since = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const votes = await sbFetch('GET', 'transport_votes?created_at=gte.' + since + '&select=status') || [];
+    
+    let status = 'green';
+    if(votes.length > 0) {
+      const counts = {red:0, yellow:0, green:0};
+      votes.forEach(v => { if(counts[v.status] !== undefined) counts[v.status]++; });
+      if(counts.red >= counts.yellow && counts.red >= counts.green) status = 'red';
+      else if(counts.yellow >= counts.red && counts.yellow >= counts.green) status = 'yellow';
+    }
+    
+    const colors = {
+      green: {bg:'#22c55e', text:'الموقف فاضي والعربيات متوفرة', emoji:'🟢'},
+      yellow: {bg:'#f59e0b', text:'الموقف مزدحم بس الحركة مستمرة', emoji:'🟡'},
+      red: {bg:'#ef4444', text:'الموقف مكدس ومفيش عربيات!', emoji:'🔴'}
+    };
+    const c = colors[status];
+    
+    const statusDiv = document.getElementById('transportStatus');
+    const statusText = document.getElementById('transportStatusText');
+    const voteCount = document.getElementById('transportVoteCount');
+    if(statusDiv) statusDiv.style.background = c.bg;
+    if(statusText) statusText.innerHTML = c.emoji + ' ' + c.text;
+    if(voteCount) voteCount.textContent = votes.length > 0 ? votes.length + ' شخص صوّت في آخر ساعة' : 'مفيش تصويتات — الموقف فاضي افتراضياً';
+    
+    ['green','yellow','red'].forEach(s => {
+      const btn = document.getElementById('tvote_' + s);
+      if(btn) btn.style.opacity = s === status ? '1' : '0.65';
+    });
+  } catch(e) {}
 }
 
 function showTransportPage() {
@@ -5105,11 +5173,22 @@ function showTransportPage() {
     </div>
     <div class="dyn-content" style="padding:0 0 80px;">
     
+      <!-- عمدة الموقف -->
+      <div id="transportMayor" style="display:none;background:linear-gradient(135deg,#92400e,#d97706);padding:10px 16px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:24px;">👑</span>
+        <div style="color:white;">
+          <div style="font-size:11px;opacity:.85;">عمدة الموقف النهارده</div>
+          <div style="font-size:14px;font-weight:900;" id="mayorName">...</div>
+        </div>
+        <div style="margin-right:auto;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:20px;color:white;font-size:11px;font-weight:700;" id="mayorCount">0 تصويت</div>
+      </div>
+      
       <!-- حالة الموقف الحالية -->
       <div id="transportStatus" style="background:#22c55e;padding:20px 16px;text-align:center;transition:background .5s;">
-        <div style="font-size:13px;color:rgba(255,255,255,.85);margin-bottom:6px;">الحالة الحالية للموقف</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.85);margin-bottom:4px;">📍 موقف الحامول — كفر الشيخ</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.85);margin-bottom:6px;">الحالة الحالية</div>
         <div id="transportStatusText" style="font-size:16px;font-weight:900;color:white;">🟢 جاري التحميل...</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:6px;">بيتحدث تلقائياً • لو مفيش تصويت 60 دقيقة = أخضر</div>
+        <div id="transportVoteCount" style="font-size:11px;color:rgba(255,255,255,.7);margin-top:6px;">بيتحدث تلقائياً</div>
       </div>
       
       <!-- أزرار التصويت -->
@@ -5160,9 +5239,9 @@ function showTransportPage() {
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
   updateTransportUI();
-  // تحديث كل 2 دقيقة
+  loadTransportMayor();
   if(window._transportTimer) clearInterval(window._transportTimer);
-  window._transportTimer = setInterval(updateTransportUI, 2 * 60 * 1000);
+  window._transportTimer = setInterval(function(){ updateTransportUI(); loadTransportMayor(); }, 2 * 60 * 1000);
 }
 
 // NEWS PAGE
