@@ -5057,12 +5057,43 @@ async function submitTransportVote(status) {
   // اسم المصوت
   var voterName = localStorage.getItem('transport_voter_name');
   if(!voterName) {
-    voterName = prompt('اكتب اسمك عشان يظهر لو بقيت عمدة الموقف 👑\n(اكتب اسمك الأول بس)');
-    if(!voterName || !voterName.trim()) voterName = 'مجهول';
-    voterName = voterName.trim().substring(0, 30);
-    localStorage.setItem('transport_voter_name', voterName);
+    // إظهار dialog مخصص بدل prompt
+    showVoterNameDialog(status);
+    return;
   }
   
+  await doTransportVote(status, voterName);
+}
+
+function showVoterNameDialog(status) {
+  // إنشاء dialog مخصص
+  var overlay = document.createElement('div');
+  overlay.id = 'voterNameOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = '<div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:340px;text-align:center;">' +
+    '<div style="font-size:32px;margin-bottom:8px;">👑</div>' +
+    '<div style="font-size:16px;font-weight:900;margin-bottom:6px;">اكتب اسمك</div>' +
+    '<div style="font-size:13px;color:#666;margin-bottom:16px;">اسمك هيظهر للناس لو بقيت عمدة الموقف</div>' +
+    '<input id="voterNameInput" type="text" placeholder="اكتب اسمك هنا..." maxlength="30" style="width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:12px;font-family:Cairo,sans-serif;font-size:15px;text-align:center;box-sizing:border-box;margin-bottom:12px;">' +
+    '<div style="display:flex;gap:8px;">' +
+    '<button onclick="saveVoterName(\'' + status + '\')" style="flex:1;background:#22c55e;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">تأكيد 👍</button>' +
+    '<button onclick="saveVoterName(\'' + status + '\',true)" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">بدون اسم</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){ var inp = document.getElementById('voterNameInput'); if(inp) inp.focus(); }, 100);
+}
+
+async function saveVoterName(status, anonymous) {
+  var overlay = document.getElementById('voterNameOverlay');
+  var input = document.getElementById('voterNameInput');
+  var name = anonymous ? 'مجهول' : (input ? input.value.trim() : '');
+  if(!name) name = 'مجهول';
+  localStorage.setItem('transport_voter_name', name);
+  if(overlay) overlay.remove();
+  await doTransportVote(status, name);
+}
+
+async function doTransportVote(status, voterName) {
   try {
     await sbFetch('POST', 'transport_votes', {
       status: status,
@@ -5071,17 +5102,16 @@ async function submitTransportVote(status) {
     });
     localStorage.setItem('transport_last_vote', Date.now().toString());
     
-    // احسب عدد تصويتات المصوت النهارده
     const today = new Date().toISOString().split('T')[0];
     const myVotes = await sbFetch('GET', 'transport_votes?voter_name=eq.' + encodeURIComponent(voterName) + '&created_at=gte.' + today + 'T00:00:00&select=id') || [];
     
     showToast('✅ شكراً — صوتك بيساعد الناس!');
-    showToast('عندك ' + myVotes.length + ' تصويت النهارده 🏆', 'success');
+    if(voterName !== 'مجهول') showToast('عندك ' + myVotes.length + ' تصويت النهارده 🏆', 'success');
     
     updateTransportUI();
     loadTransportMayor();
   } catch(e) {
-    showToast('خطأ في التصويت', 'error');
+    showToast('خطأ في التصويت — جرب تاني', 'error');
   }
 }
 
@@ -5180,13 +5210,13 @@ function showTransportPage() {
     <div class="dyn-content" style="padding:0 0 80px;">
     
       <!-- عمدة الموقف -->
-      <div id="transportMayor" style="display:none;background:linear-gradient(135deg,#92400e,#d97706);padding:10px 16px;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:24px;">👑</span>
-        <div style="color:white;">
-          <div style="font-size:11px;opacity:.85;">عمدة الموقف النهارده</div>
-          <div style="font-size:14px;font-weight:900;" id="mayorName">...</div>
+      <div id="transportMayor" style="display:none;background:linear-gradient(135deg,#92400e,#d97706);padding:12px 16px;align-items:center;gap:10px;">
+        <span style="font-size:26px;">👑</span>
+        <div style="color:white;flex:1;">
+          <div style="font-size:11px;opacity:.85;">عمدة الموقف</div>
+          <div style="font-size:15px;font-weight:900;" id="mayorName">...</div>
         </div>
-        <div style="margin-right:auto;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:20px;color:white;font-size:11px;font-weight:700;" id="mayorCount">0 تصويت</div>
+        <div style="background:rgba(255,255,255,.2);padding:4px 12px;border-radius:20px;color:white;font-size:12px;font-weight:700;" id="mayorCount">0 تصويت</div>
       </div>
       
       <!-- حالة الموقف الحالية -->
