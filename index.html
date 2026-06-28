@@ -323,6 +323,17 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
   <div id="nextPrayerBadge" style="background:var(--green);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;flex-shrink:0;display:none;"></div>
 </div>
 
+<!-- أسعار الذهب -->
+<div id="goldPriceBar" style="background:linear-gradient(135deg,#92400e,#d97706);color:white;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;" onclick="showGoldPrices()">
+  <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+    <span style="font-size:18px;">💛</span>
+    <span style="font-size:12px;font-weight:700;">أسعار الذهب اليوم</span>
+  </div>
+  <div id="goldPricesBar" style="display:flex;gap:10px;font-size:11px;flex-wrap:wrap;justify-content:flex-end;">
+    <span style="opacity:.7;">جاري التحميل...</span>
+  </div>
+</div>
+
 <!-- FARKET WIDGET -->
 <div class="farket-bar">
   <div class="farket-bar-inner">
@@ -504,6 +515,8 @@ const CATEGORIES = [
       {name:'صيانة أجهزة', icon:'📺'},
       {name:'صيانة تكييف', icon:'❄️'},
       {name:'حرفيين عامة', icon:'🛠️'},
+      {name:'خياط حريمي', icon:'🪡'},
+      {name:'خياط رجالي', icon:'🧵'},
     ]},
     { id:'crafts_cleaning', name:'تنظيف', icon:'🧹', color:'#e0f2fe', subs:[
       {name:'تنظيف بيوت', icon:'🏠'},
@@ -513,14 +526,7 @@ const CATEGORIES = [
       {name:'تنظيف واجهات', icon:'🏢'},
       {name:'تعقيم ورش مبيدات', icon:'🧴'},
     ]},
-    { id:'crafts_replace', name:'استبدال حاجات قديمة', icon:'♻️', color:'#dcfce7', subs:[
-      {name:'استبدال أثاث قديم', icon:'🛋️'},
-      {name:'استبدال أجهزة كهربائية', icon:'📺'},
-      {name:'استبدال موبايلات', icon:'📱'},
-      {name:'شراء خردة ومعادن', icon:'⚙️'},
-      {name:'شراء ملابس مستعملة', icon:'👗'},
-      {name:'استبدال عام', icon:'♻️'},
-    ]},
+
   ]},
   { id:'tech',       name:'أجهزة إلكترونية',    icon:'📱', color:'#dbeafe', subs:['موبايل وأكسسوار','كمبيوتر ومستلزماته','كاميرات مراقبة وأنظمة'] },
   { id:'used_market', name:'سوق المستعمل والاستبدال', icon:'🔄', color:'#fef3c7', subs:['موبايلات وأجهزة','أثاث وديكور','ملابس مستعملة','كتب ومستلزمات دراسية','أجهزة كهربائية','عفش كامل','سيارات وتكاتك','أدوات ومعدات','العاب أطفال','أخرى'] },
@@ -1082,6 +1088,9 @@ async function openAdDetails(adId) {
           <button onclick="toggleSponsored('${adId}',${!ad.is_sponsored});hideDynPage();" style="flex:1;background:${ad.is_sponsored?'#ede9fe':'#f5f3ff'};color:${ad.is_sponsored?'#dc2626':'#7c3aed'};border:2px solid ${ad.is_sponsored?'#c4b5fd':'#ddd6fe'};padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${ad.is_sponsored?'❌ إلغاء الممول':'📢 إعلان ممول'}</button>
           <button onclick="if(confirm('تأكيد الحذف؟')){deleteAdAdmin('${adId}');hideDynPage();}" style="background:#fee2e2;color:var(--red);border:none;padding:10px 16px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🗑️ حذف</button>
         </div>`:''}
+        <div style="padding:0 16px 8px;">
+          <button onclick="openEditAd('${adId}')" style="width:100%;background:#eff6ff;color:#2563eb;border:2px solid #bfdbfe;padding:11px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">✏️ تعديل الإعلان</button>
+        </div>
       </div>
     </div>
     <div style="position:fixed;bottom:0;left:0;right:0;background:white;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,.08);">
@@ -1089,11 +1098,20 @@ async function openAdDetails(adId) {
          style="flex:2;display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:white;padding:13px;border-radius:12px;font-size:14px;font-weight:900;text-decoration:none;">
         📞 تواصل على واتساب
       </a>
+      ${ad.phone2?`<a href="https://wa.me/${ad.phone2.startsWith('0')?'20'+ad.phone2.substring(1):ad.phone2}?text=${waMsg}" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#128C7E;color:white;padding:13px;border-radius:12px;font-size:12px;font-weight:700;text-decoration:none;">📱 رقم 2</a>`:''}
       ${ad.location_url?`<a href="${fixMapUrl(ad.location_url)}" target="_blank" onclick="trackStat('${adId}','map')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#4285f4;color:white;padding:13px;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;">🗺️ خريطة</a>`:''}
     </div>`;
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
+  // زرار فركة كعب في المطاعم والكافيهات
+  if(true) { // مؤقت: يظهر في كل الإعلانات للتجربة
+    var farketMsg = encodeURIComponent('السلام عليكم فركة كعب 🛵' + ' - أنا شايف إعلان: ' + ad.title + ' - وعايز أطلب منكم');
+    var farketBtn = document.createElement('div');
+    farketBtn.style.cssText = 'padding:0 16px 80px;';
+    farketBtn.innerHTML = '<a href="https://wa.me/201014185158?text=' + farketMsg + '" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#ff6b35,#f7931e);color:white;padding:13px;border-radius:12px;font-size:14px;font-weight:900;text-decoration:none;margin-top:12px;">🛵 اطلب الآن من فركة كعب — أسهل وأسرع!</a>';
+    page.appendChild(farketBtn);
+  }
   window._detSlideIdx = 0;
   window._detSlideTotal = images.length;
   window._detImages = images;
@@ -1235,6 +1253,129 @@ async function deleteAdAdmin(id) {
 
 // ADD FORM AS FULL PAGE
 let addCatId = '', addSubId = '';
+
+// ===== تعديل الإعلان =====
+function openEditAd(adId) {
+  const ad = allAds.find(a => a.id === adId);
+  if(!ad) { showToast('مش لاقي الإعلان', 'error'); return; }
+  
+  addCatId = ad.category || '';
+  addSubId = ad.subcategory || '';
+  addSelectedFiles = [];
+  
+  sessionStorage.setItem('dynState', JSON.stringify({type:'edit', adId}));
+  const page = document.getElementById('dynamicPage');
+  
+  // نفس فورم الإضافة بس بنملأه ببيانات الإعلان
+  openAddModal(ad.category || '', ad.subcategory || '');
+  
+  // بعد ما الفورم يفتح نملأه بالبيانات
+  setTimeout(function() {
+    // العنوان
+    var fName = document.getElementById('fName');
+    if(fName) fName.value = ad.title || '';
+    
+    // الوصف
+    var fDesc = document.getElementById('fDesc');
+    if(fDesc) fDesc.value = ad.description || '';
+    
+    // التليفون
+    var fPhone = document.getElementById('fPhone');
+    if(fPhone) fPhone.value = ad.phone || '';
+    var fPhone2 = document.getElementById('fPhone2');
+    if(fPhone2) fPhone2.value = ad.phone2 || '';
+    
+    // الموقع
+    var fLocation = document.getElementById('fLocation');
+    if(fLocation) fLocation.value = ad.location || '';
+    
+    // رابط الخريطة
+    var fMapUrl = document.getElementById('fMapUrl');
+    if(fMapUrl) fMapUrl.value = ad.location_url || '';
+    
+    // السعر
+    var fPrice = document.getElementById('fPrice');
+    if(fPrice) fPrice.value = ad.price || '';
+    
+    // القسم والتخصص
+    var fCat = document.getElementById('fCat');
+    if(fCat && ad.category) { fCat.value = ad.category; updateFSub(); }
+    setTimeout(function() {
+      var fSub = document.getElementById('fSub');
+      if(fSub && ad.subcategory) fSub.value = ad.subcategory;
+    }, 100);
+    
+    // تغيير العنوان والزرار للتعديل
+    var header = document.querySelector('.dyn-header span:nth-child(2)');
+    if(header) header.textContent = '✏️ تعديل الإعلان';
+    
+    var submitBtn = document.getElementById('fSubmit');
+    if(submitBtn) {
+      submitBtn.textContent = '💾 حفظ التعديلات';
+      submitBtn.onclick = function() { submitEditAd(adId); };
+    }
+    
+    // إخفاء رسالة المراجعة
+    var reviewMsg = submitBtn ? submitBtn.previousElementSibling : null;
+    if(reviewMsg) reviewMsg.style.display = 'none';
+    
+  }, 150);
+}
+
+async function submitEditAd(adId) {
+  const btn = document.getElementById('fSubmit');
+  if(btn) { btn.textContent = 'جاري الحفظ...'; btn.disabled = true; }
+  
+  try {
+    const title = document.getElementById('fName')?.value.trim();
+    const desc = document.getElementById('fDesc')?.value.trim();
+    const phone = document.getElementById('fPhone')?.value.trim();
+    const phone2 = (document.getElementById('fPhone2')?.value || '').trim();
+    const location = document.getElementById('fLocation')?.value.trim();
+    const locationUrl = document.getElementById('fMapUrl')?.value.trim();
+    const price = document.getElementById('fPrice')?.value.trim();
+    const cat = document.getElementById('fCat')?.value;
+    const sub = document.getElementById('fSub')?.value;
+    
+    if(!title) { showToast('اكتب العنوان', 'error'); if(btn){btn.textContent='💾 حفظ التعديلات';btn.disabled=false;} return; }
+    
+    const updateData = {
+      title,
+      description: desc || null,
+      phone: phone || null,
+      phone2: phone2 || null,
+      location: location || null,
+      location_url: locationUrl || null,
+      price: price || null,
+      category: cat || null,
+      subcategory: sub || null,
+    };
+    
+    // لو في صور جديدة
+    if(addSelectedFiles.length > 0) {
+      const urls = [];
+      for(const file of addSelectedFiles) {
+        try { const url = await uploadImage(file); urls.push(url); } catch(e) {}
+      }
+      if(urls.length > 0) updateData.images = urls;
+    }
+    
+    await sbFetch('PATCH', `ads?id=eq.${adId}`, updateData);
+    
+    // تحديث allAds
+    const idx = allAds.findIndex(a => a.id === adId);
+    if(idx !== -1) allAds[idx] = {...allAds[idx], ...updateData};
+    
+    showToast('✅ تم التعديل بنجاح!');
+    hideDynPage();
+    loadAds();
+    
+  } catch(e) {
+    showToast('❌ خطأ في التعديل: ' + (e.message||'').slice(0,40), 'error');
+    if(btn) { btn.textContent = '💾 حفظ التعديلات'; btn.disabled = false; }
+  }
+}
+
 function openAddModal(catId='', sub='') {
   addCatId = catId; addSubId = sub;
   addSelectedFiles = [];
@@ -1307,6 +1448,10 @@ function openAddModal(catId='', sub='') {
         <div class="fg" style="margin-bottom:0;">
           <label id="fPhoneLabel">رقم التليفون / واتساب *</label>
           <input type="tel" id="fPhone" placeholder="01xxxxxxxxx" maxlength="11" style="font-size:16px;letter-spacing:2px;">
+        </div>
+        <div class="fg" style="margin-bottom:0;margin-top:10px;">
+          <label>رقم تاني (اختياري)</label>
+          <input type="tel" id="fPhone2" placeholder="01xxxxxxxxx" maxlength="11" style="font-size:16px;letter-spacing:2px;">
         </div>
       </div>
 
@@ -1617,6 +1762,7 @@ function previewAddImages(input) {
 async function submitNewAd() {
   const title = document.getElementById('fTitle').value.trim();
   const phone = document.getElementById('fPhone').value.trim();
+  const phone2 = (document.getElementById('fPhone2')?.value || '').trim();
   const desc = document.getElementById('fDesc').value.trim();
   const catId = document.getElementById('fCat').value;
   const subEl = document.getElementById('fSub');
@@ -6855,6 +7001,7 @@ loadAds().then(function() {
     if(savedAuth === ADMIN_PASS) { isAdmin = true; }
   } catch(e) {}
   try { loadHomeBanners(); } catch(e) {}
+  try { loadGoldPrices(); } catch(e) {}
   try { loadPrayerTimes(); } catch(e) {}
   try { loadGoldPrice(); } catch(e) {}
 }).catch(function(e) { console.warn(e); }).finally(function() {
@@ -6867,6 +7014,63 @@ setTimeout(function() {
   var s = document.getElementById('splashScreen');
   if(s) s.style.display = 'none';
 }, 5000);
+
+// ===== أسعار الذهب =====
+let _lastGoldPrices = null;
+
+async function loadGoldPrices() {
+  try {
+    // نجيب سعر الأوقية + سعر الدولار/جنيه
+    const [goldRes, fxRes] = await Promise.all([
+      fetch('https://api.gold-api.com/price/XAU'),
+      fetch('https://api.exchangerate-api.com/v4/latest/USD')
+    ]);
+    const goldData = await goldRes.json();
+    const fxData = await fxRes.json();
+    
+    const priceUSD = parseFloat(goldData.price);
+    // دولار الصاغة أعلى من سعر البنك بحوالي 0.5 جنيه
+    const usdToEgp = (fxData.rates && fxData.rates.EGP ? fxData.rates.EGP : 50.5) + 0.5;
+    const gramsPerOunce = 31.1035;
+    const pricePerGram24 = (priceUSD / gramsPerOunce) * usdToEgp;
+    // نضيف هامش البيع (حوالي 0.4% فوق سعر السوق) عشان يطابق سعر البيع في المحلات
+    const sellMargin = 1.004;
+    const prices = {
+      k24: Math.round(pricePerGram24 * sellMargin),
+      k21: Math.round(pricePerGram24 * 21/24 * sellMargin),
+      k18: Math.round(pricePerGram24 * 18/24 * sellMargin),
+    };
+    const prev = _lastGoldPrices;
+    _lastGoldPrices = prices;
+    renderGoldBar(prices, prev);
+  } catch(e) {
+    const bar = document.getElementById('goldPricesBar');
+    if(bar) bar.innerHTML = '<span style="opacity:.7;">غير متاح الآن</span>';
+  }
+}
+
+function renderGoldBar(prices, prev) {
+  const bar = document.getElementById('goldPricesBar');
+  if(!bar) return;
+  function arrow(k) {
+    if(!prev) return '';
+    if(prices[k] > prev[k]) return '<span style="color:#86efac;">▲</span>';
+    if(prices[k] < prev[k]) return '<span style="color:#fca5a5;">▼</span>';
+    return '<span style="opacity:.5;">─</span>';
+  }
+  bar.innerHTML =
+    '<span style="background:rgba(255,255,255,.15);padding:3px 8px;border-radius:8px;font-weight:700;">عيار 24 ' + arrow('k24') + ' ' + prices.k24.toLocaleString() + ' ج</span>' +
+    '<span style="background:rgba(255,255,255,.22);padding:3px 8px;border-radius:8px;font-weight:900;">عيار 21 ' + arrow('k21') + ' ' + prices.k21.toLocaleString() + ' ج</span>' +
+    '<span style="background:rgba(255,255,255,.15);padding:3px 8px;border-radius:8px;font-weight:700;">عيار 18 ' + arrow('k18') + ' ' + prices.k18.toLocaleString() + ' ج</span>';
+  setTimeout(function(){ loadGoldPrices(); }, 5 * 60 * 1000);
+}
+
+function showGoldPrices() {
+  if(!_lastGoldPrices) return;
+  var p = _lastGoldPrices;
+  alert('💛 أسعار الذهب اليوم (للجرام)\n\nعيار 24: ' + p.k24.toLocaleString() + ' جنيه\nعيار 21: ' + p.k21.toLocaleString() + ' جنيه\nعيار 18: ' + p.k18.toLocaleString() + ' جنيه\n\n* الأسعار تقريبية وتتحدث كل 5 دقائق');
+}
+
 </script>
 
 </body>
