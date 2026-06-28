@@ -1107,8 +1107,9 @@ async function openAdDetails(adId) {
   // زرار فركة كعب في المطاعم والكافيهات
   var isFood = ad.category && (ad.category.indexOf('food') !== -1 || (ad.subcategory && ad.subcategory.indexOf('food') !== -1));
   var isDoctor = ad.category && (ad.category === 'doctors' || ad.category === 'medservices' || (ad.subcategory && (ad.subcategory === 'doctors' || ad.subcategory === 'medservices')));
-  if(isFood || isDoctor) {
-    var farketLabel = isDoctor ? '🏥 احجز الآن من فركة كعب — أسهل وأسرع!' : '🛵 اطلب الآن من فركة كعب — أسهل وأسرع!';
+  var isHome = ad.category === 'home' || ad.category === 'furniture' || ad.category === 'tech' || ad.category === 'used_market' || ad.category === 'fashion' || ad.category === 'shoes';
+  if(isFood || isDoctor || isHome) {
+    var farketLabel = (ad.category === 'doctors') ? '🏥 احجز الآن من فركة كعب — أسهل وأسرع!' : (ad.category === 'used_market' || ad.category === 'fashion' || ad.category === 'shoes') ? '📦 محتاج توصيل؟ اطلب فركة كعب! 🛵' : '🛵 اطلب الآن من فركة كعب — أسهل وأسرع!';
     var farketMsg = encodeURIComponent('السلام عليكم فركة كعب 🛵' + ' - أنا شايف إعلان: ' + ad.title + ' - وعايز أطلب منكم');
     var farketBtn = document.createElement('div');
     farketBtn.style.cssText = 'padding:0 16px 80px;';
