@@ -5059,7 +5059,7 @@ async function submitTransportVote(status) {
   if(!voterName) {
     voterName = prompt('اكتب اسمك عشان يظهر لو بقيت عمدة الموقف 👑\n(اكتب اسمك الأول بس)');
     if(!voterName || !voterName.trim()) voterName = 'مجهول';
-    voterName = voterName.trim().substring(0, 20);
+    voterName = voterName.trim().substring(0, 30);
     localStorage.setItem('transport_voter_name', voterName);
   }
   
@@ -5075,7 +5075,7 @@ async function submitTransportVote(status) {
     const today = new Date().toISOString().split('T')[0];
     const myVotes = await sbFetch('GET', 'transport_votes?voter_name=eq.' + encodeURIComponent(voterName) + '&created_at=gte.' + today + 'T00:00:00&select=id') || [];
     
-    showToast(status === 'green' ? '✅ شكراً — صوتك بيساعد الناس!' : status === 'yellow' ? '⚠️ شكراً — صوتك بيساعد الناس!' : '🔴 شكراً — صوتك بيساعد الناس!');
+    showToast('✅ شكراً — صوتك بيساعد الناس!');
     showToast('عندك ' + myVotes.length + ' تصويت النهارده 🏆', 'success');
     
     updateTransportUI();
@@ -5087,11 +5087,14 @@ async function submitTransportVote(status) {
 
 async function loadTransportMayor() {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const votes = await sbFetch('GET', 'transport_votes?created_at=gte.' + today + 'T00:00:00&select=voter_name') || [];
+    // نجيب أعلى مصوت على الإطلاق (مش بس اليوم)
+    const votes = await sbFetch('GET', 'transport_votes?select=voter_name&order=created_at.desc&limit=500') || [];
+    
+    var mayorDiv = document.getElementById('transportMayor');
+    var mayorName = document.getElementById('mayorName');
+    var mayorCount = document.getElementById('mayorCount');
     
     if(!votes.length) {
-      var mayorDiv = document.getElementById('transportMayor');
       if(mayorDiv) mayorDiv.style.display = 'none';
       return;
     }
@@ -5104,20 +5107,22 @@ async function loadTransportMayor() {
       }
     });
     
-    const mayor = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
-    if(!mayor) return;
+    const entries = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+    if(!entries.length) {
+      if(mayorDiv) mayorDiv.style.display = 'none';
+      return;
+    }
     
-    var mayorDiv = document.getElementById('transportMayor');
-    var mayorName = document.getElementById('mayorName');
-    var mayorCount = document.getElementById('mayorCount');
-    if(mayorDiv) mayorDiv.style.display = 'block';
+    const mayor = entries[0];
+    if(mayorDiv) mayorDiv.style.display = 'flex';
     if(mayorName) mayorName.textContent = mayor[0];
     if(mayorCount) mayorCount.textContent = mayor[1] + ' تصويت';
     
     // لو الشخص نفسه هو العمدة
     var myName = localStorage.getItem('transport_voter_name');
     if(myName && myName === mayor[0]) {
-      showToast('👑 إنت عمدة الموقف دلوقتي!');
+      var mayorDiv2 = document.getElementById('transportMayor');
+      if(mayorDiv2) mayorDiv2.style.background = 'linear-gradient(135deg,#7c3aed,#a855f7)';
     }
   } catch(e) {}
 }
@@ -5130,15 +5135,16 @@ async function updateTransportUI() {
     
     let status = 'green';
     if(votes.length > 0) {
-      const counts = {red:0, yellow:0, green:0};
+      const counts = {red:0, yellow:0, light:0, green:0};
       votes.forEach(v => { if(counts[v.status] !== undefined) counts[v.status]++; });
-      if(counts.red >= counts.yellow && counts.red >= counts.green) status = 'red';
-      else if(counts.yellow >= counts.red && counts.yellow >= counts.green) status = 'yellow';
+      const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+      status = sorted[0][1] > 0 ? sorted[0][0] : 'green';
     }
     
     const colors = {
       green: {bg:'#22c55e', text:'الموقف فاضي والعربيات متوفرة', emoji:'🟢'},
-      yellow: {bg:'#f59e0b', text:'الموقف مزدحم بس الحركة مستمرة', emoji:'🟡'},
+      light: {bg:'#84cc16', text:'الموقف وسط — في ناس بس الحركة كويسة', emoji:'🟡'},
+      yellow: {bg:'#f59e0b', text:'الموقف مزدحم بس الحركة مستمرة', emoji:'🟠'},
       red: {bg:'#ef4444', text:'الموقف مكدس ومفيش عربيات!', emoji:'🔴'}
     };
     const c = colors[status];
@@ -5150,7 +5156,7 @@ async function updateTransportUI() {
     if(statusText) statusText.innerHTML = c.emoji + ' ' + c.text;
     if(voteCount) voteCount.textContent = votes.length > 0 ? votes.length + ' شخص صوّت في آخر ساعة' : 'مفيش تصويتات — الموقف فاضي افتراضياً';
     
-    ['green','yellow','red'].forEach(s => {
+    ['green','light','yellow','red'].forEach(s => {
       const btn = document.getElementById('tvote_' + s);
       if(btn) btn.style.opacity = s === status ? '1' : '0.65';
     });
@@ -5196,18 +5202,26 @@ function showTransportPage() {
         <div style="font-size:14px;font-weight:900;text-align:center;margin-bottom:14px;">
           ${canVote ? '📍 انت في الموقف؟ قول للناس الحالة:' : '⏳ تقدر تصوت تاني بعد ' + remaining + ' دقيقة'}
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">
           <button id="tvote_green" onclick="submitTransportVote('green')" ${canVote ? '' : 'disabled'}
-            style="background:#22c55e;color:white;border:none;padding:16px 8px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;${canVote?'':'opacity:.5;cursor:not-allowed;'}">
-            <span style="font-size:28px;">🟢</span>فاضي
+            style="background:#22c55e;color:white;border:none;padding:14px 6px;border-radius:14px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;${canVote?'':'opacity:.5;cursor:not-allowed;'}">
+            <span style="font-size:24px;">🟢</span>
+            <span>فاضي</span>
+          </button>
+          <button id="tvote_light" onclick="submitTransportVote('light')" ${canVote ? '' : 'disabled'}
+            style="background:#84cc16;color:white;border:none;padding:14px 6px;border-radius:14px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;${canVote?'':'opacity:.5;cursor:not-allowed;'}">
+            <span style="font-size:24px;">🟡</span>
+            <span>وسط</span>
           </button>
           <button id="tvote_yellow" onclick="submitTransportVote('yellow')" ${canVote ? '' : 'disabled'}
-            style="background:#f59e0b;color:white;border:none;padding:16px 8px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;${canVote?'':'opacity:.5;cursor:not-allowed;'}">
-            <span style="font-size:28px;">🟡</span>مزدحم
+            style="background:#f59e0b;color:white;border:none;padding:14px 6px;border-radius:14px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;${canVote?'':'opacity:.5;cursor:not-allowed;'}">
+            <span style="font-size:24px;">🟠</span>
+            <span>مزدحم</span>
           </button>
           <button id="tvote_red" onclick="submitTransportVote('red')" ${canVote ? '' : 'disabled'}
-            style="background:#ef4444;color:white;border:none;padding:16px 8px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;${canVote?'':'opacity:.5;cursor:not-allowed;'}">
-            <span style="font-size:28px;">🔴</span>مكدس!
+            style="background:#ef4444;color:white;border:none;padding:14px 6px;border-radius:14px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;${canVote?'':'opacity:.5;cursor:not-allowed;'}">
+            <span style="font-size:24px;">🔴</span>
+            <span>مكدس</span>
           </button>
         </div>
         <div style="font-size:11px;color:var(--gray);text-align:center;margin-top:10px;">
@@ -5225,11 +5239,15 @@ function showTransportPage() {
           </div>
           <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
             <span style="font-size:20px;">🟡</span>
-            <div><b>مزدحم</b> — فيه طابور بس الحركة مستمرة</div>
+            <div><b>وسط</b> — فيه ناس بس الحركة كويسة</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+            <span style="font-size:20px;">🟠</span>
+            <div><b>مزدحم</b> — طابور طويل، الحركة بطيئة</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
             <span style="font-size:20px;">🔴</span>
-            <div><b>مكدس</b> — مفيش عربيات، استنى في البيت شوية!</div>
+            <div><b>مكدس</b> — مفيش عربيات، استنى في البيت!</div>
           </div>
         </div>
       </div>
