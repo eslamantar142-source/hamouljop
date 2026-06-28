@@ -539,8 +539,6 @@ const CATEGORIES = [
   { id:'charity', name:'قسم الخير والتبرعات', icon:'🤍', color:'#f0fdf4', subs:['ملابس وأدوات منزلية','أثاث وعفش','كتب ومستلزمات دراسية','أجهزة وموبايلات','طعام وغذاء','مساعدة مادية','تبرع بدم','غير ذلك'] },
   { id:'sports', name:'رياضة', icon:'⚽', color:'#dcfce7', subs:['صالات جيم','كرة قدم','أكاديمية فنون قتالية','ألعاب رياضية — مستلزمات وبيع','ملاعب رياضية','سباحة','دراجات'] },
   { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:[] },
-  { id:'daily_tips',  name:'نصيحة اليوم الطبية',    icon:'💊', color:'#e0f2fe', subs:[] },
-  { id:'borsa',      name:'بورصة الحامول 📊',      icon:'📈', color:'#dcfce7', subs:[] },
   { id:'agri',       name:'محاصيل وأعلاف',       icon:'🌾', color:'#dcfce7', subs:['محاصيل زراعية','أعلاف'] },
   { id:'gold',       name:'محلات الدهب',          icon:'💍', color:'#fef9c3', subs:['دهب','فضة','مشغولات ذهبية','إصلاح مجوهرات','شراء دهب قديم'] },
   { id:'emergency',     name:'أرقام الطوارئ',         icon:'🚨', color:'#fee2e2', subs:[] },
@@ -5025,95 +5023,146 @@ function filterMarket(filter, btn) {
 }
 
 // TRANSPORT NEWS PAGE
+
+// ===== الموقف إيه دلوقتي؟ =====
+async function loadTransportStatus() {
+  try {
+    const now = new Date();
+    const since = new Date(now.getTime() - 60 * 60 * 1000).toISOString(); // آخر 60 دقيقة
+    const votes = await sbFetch('GET', `transport_votes?created_at=gte.${since}&select=status&order=created_at.desc`) || [];
+    
+    if(votes.length === 0) return 'green'; // مفيش تصويت = أخضر تلقائي
+    
+    // احسب الأغلبية
+    const counts = {red:0, yellow:0, green:0};
+    votes.forEach(v => { if(counts[v.status] !== undefined) counts[v.status]++; });
+    
+    if(counts.red >= counts.yellow && counts.red >= counts.green) return 'red';
+    if(counts.yellow >= counts.red && counts.yellow >= counts.green) return 'yellow';
+    return 'green';
+  } catch(e) { return 'green'; }
+}
+
+async function submitTransportVote(status) {
+  // منع التصويت المتكرر كل 15 دقيقة
+  const lastVote = localStorage.getItem('transport_last_vote');
+  if(lastVote) {
+    const diff = (Date.now() - parseInt(lastVote)) / 1000 / 60;
+    if(diff < 15) {
+      const remaining = Math.ceil(15 - diff);
+      showToast('قدر تصوت تاني بعد ' + remaining + ' دقيقة ⏳', 'error');
+      return;
+    }
+  }
+  
+  try {
+    await sbFetch('POST', 'transport_votes', {
+      status: status,
+      created_at: new Date().toISOString()
+    });
+    localStorage.setItem('transport_last_vote', Date.now().toString());
+    showToast(status === 'green' ? '✅ تم — الموقف فاضي' : status === 'yellow' ? '⚠️ تم — الموقف مزدحم' : '🔴 تم — الموقف مقفل', 'success');
+    updateTransportUI();
+  } catch(e) {
+    showToast('خطأ في التصويت', 'error');
+  }
+}
+
+async function updateTransportUI() {
+  const status = await loadTransportStatus();
+  const colors = {
+    green: {bg:'#22c55e', text:'الموقف فاضي والعربيات متوفرة', emoji:'🟢', label:'فاضي'},
+    yellow: {bg:'#f59e0b', text:'الموقف مزدحم بس الحركة مستمرة', emoji:'🟡', label:'مزدحم'},
+    red: {bg:'#ef4444', text:'الموقف مكدس ومفيش عربيات!', emoji:'🔴', label:'مكدس'}
+  };
+  const c = colors[status];
+  
+  const statusDiv = document.getElementById('transportStatus');
+  const statusText = document.getElementById('transportStatusText');
+  if(statusDiv) statusDiv.style.background = c.bg;
+  if(statusText) statusText.innerHTML = c.emoji + ' ' + c.text;
+  
+  // تحديث الأزرار
+  ['green','yellow','red'].forEach(s => {
+    const btn = document.getElementById('tvote_' + s);
+    if(btn) btn.style.opacity = s === status ? '1' : '0.6';
+  });
+}
+
 function showTransportPage() {
   sessionStorage.setItem('dynState', JSON.stringify({type:'transport_news'}));
   const page = document.getElementById('dynamicPage');
-
-  const transportAds = allAds.filter(a => {
-    if(a.status !== 'approved' && !isAdmin) return false;
-    return a.category === 'transport_news';
-  });
+  
+  const lastVote = localStorage.getItem('transport_last_vote');
+  const canVote = !lastVote || ((Date.now() - parseInt(lastVote)) / 1000 / 60) >= 15;
+  const remaining = lastVote ? Math.ceil(15 - (Date.now() - parseInt(lastVote)) / 1000 / 60) : 0;
 
   page.innerHTML = `
     <div class="dyn-header">
       <button class="dyn-back" onclick="hideDynPage()">←</button>
       <span>🚌 الموقف والعربيات</span>
-      ${isAdmin ? `<button onclick="openAddModal('transport_news','')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ خبر</button>` : '<span></span>'}
+      <span></span>
     </div>
-
-    <!-- مواعيد ثابتة -->
-    <div style="background:linear-gradient(135deg,#166534,#22c55e);padding:16px;color:white;">
-      <div style="font-size:14px;font-weight:900;margin-bottom:10px;">🚌 مواعيد العربيات من الحامول</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:12px;opacity:.8;">الحامول ← كفر الشيخ</div>
-          <div style="font-size:13px;font-weight:700;margin-top:4px;">من 6 ص حتى 10 م</div>
-          <div style="font-size:11px;opacity:.7;">كل 15 دقيقة</div>
+    <div class="dyn-content" style="padding:0 0 80px;">
+    
+      <!-- حالة الموقف الحالية -->
+      <div id="transportStatus" style="background:#22c55e;padding:20px 16px;text-align:center;transition:background .5s;">
+        <div style="font-size:13px;color:rgba(255,255,255,.85);margin-bottom:6px;">الحالة الحالية للموقف</div>
+        <div id="transportStatusText" style="font-size:16px;font-weight:900;color:white;">🟢 جاري التحميل...</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:6px;">بيتحدث تلقائياً • لو مفيش تصويت 60 دقيقة = أخضر</div>
+      </div>
+      
+      <!-- أزرار التصويت -->
+      <div style="padding:16px;">
+        <div style="font-size:14px;font-weight:900;text-align:center;margin-bottom:14px;">
+          ${canVote ? '📍 انت في الموقف؟ قول للناس الحالة:' : '⏳ تقدر تصوت تاني بعد ' + remaining + ' دقيقة'}
         </div>
-        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:12px;opacity:.8;">الحامول ← فوه</div>
-          <div style="font-size:13px;font-weight:700;margin-top:4px;">من 7 ص حتى 8 م</div>
-          <div style="font-size:11px;opacity:.7;">كل 30 دقيقة</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          <button id="tvote_green" onclick="submitTransportVote('green')" ${canVote ? '' : 'disabled'}
+            style="background:#22c55e;color:white;border:none;padding:16px 8px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;${canVote?'':'opacity:.5;cursor:not-allowed;'}">
+            <span style="font-size:28px;">🟢</span>فاضي
+          </button>
+          <button id="tvote_yellow" onclick="submitTransportVote('yellow')" ${canVote ? '' : 'disabled'}
+            style="background:#f59e0b;color:white;border:none;padding:16px 8px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;${canVote?'':'opacity:.5;cursor:not-allowed;'}">
+            <span style="font-size:28px;">🟡</span>مزدحم
+          </button>
+          <button id="tvote_red" onclick="submitTransportVote('red')" ${canVote ? '' : 'disabled'}
+            style="background:#ef4444;color:white;border:none;padding:16px 8px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;${canVote?'':'opacity:.5;cursor:not-allowed;'}">
+            <span style="font-size:28px;">🔴</span>مكدس!
+          </button>
         </div>
-        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:12px;opacity:.8;">الحامول ← القاهرة</div>
-          <div style="font-size:13px;font-weight:700;margin-top:4px;">6 ص — 8 ص — 2 م</div>
-          <div style="font-size:11px;opacity:.7;">3 رحلات يومياً</div>
-        </div>
-        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center;">
-          <div style="font-size:12px;opacity:.8;">الحامول ← الإسكندرية</div>
-          <div style="font-size:13px;font-weight:700;margin-top:4px;">7 ص — 1 م</div>
-          <div style="font-size:11px;opacity:.7;">رحلتين يومياً</div>
+        <div style="font-size:11px;color:var(--gray);text-align:center;margin-top:10px;">
+          تصويتك بيفضل ساعة واحدة • لو مفيش تصويتات في ساعة الموقف بيرجع أخضر تلقائياً
         </div>
       </div>
-      <div style="margin-top:10px;background:rgba(255,255,255,.1);border-radius:10px;padding:10px;">
-        <div style="font-size:12px;opacity:.8;margin-bottom:4px;">🚂 القطار — محطة الحامول</div>
-        <div style="font-size:12px;font-weight:700;">القاهرة: 6:30 ص | 12 م | 6 م</div>
-        <div style="font-size:12px;font-weight:700;">الإسكندرية: 7 ص | 2 م</div>
-      </div>
-    </div>
-
-    <div id="catBanner"></div>
-    <div class="dyn-content">
-      <!-- أخبار الموقف -->
-      ${transportAds.length > 0 ? `
-        <div style="font-size:13px;font-weight:900;color:var(--gray);margin-bottom:10px;">📢 آخر أخبار الموقف</div>
-        ${transportAds.map(ad => {
-          const date = new Date(ad.created_at).toLocaleDateString('ar-EG', {day:'numeric', month:'long', hour:'2-digit', minute:'2-digit'});
-          return `
-          <div class="ad-card" style="border-right:4px solid #22c55e;">
-            ${ad.image_url ? `<img src="${ad.image_url}" class="ad-img" style="max-height:160px;" onerror="this.style.display='none'">` : ''}
-            <div class="ad-body">
-              <div class="ad-title">${ad.title||''}</div>
-              <div class="ad-desc">${ad.description||''}</div>
-              <div class="ad-footer">
-                <span class="ad-date">🕐 ${date}</span>
-                <div style="display:flex;gap:6px;">
-                  ${adminDelBtn}
-                  <button onclick="shareAdWA('${ad.id}')" style="background:#e8f5ee;color:#166534;border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📤 شارك</button>
-                </div>
-              </div>
-            </div>
-          </div>`;
-        }).join('')}` : `
-        <div style="text-align:center;padding:30px;color:var(--gray);">
-          <p style="font-size:13px;">مفيش أخبار جديدة عن الموقف دلوقتي</p>
-        </div>`}
-
-      <!-- تاكسي وتوكتوك -->
-      <div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-top:8px;">
-        <div style="font-size:13px;font-weight:900;margin-bottom:10px;">🛺 محتاج توصيلة؟</div>
-        <div style="display:flex;gap:8px;">
-          <a href="https://wa.me/201080150801" target="_blank" style="flex:1;background:var(--orange);color:white;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-size:13px;font-weight:700;">🛵 فركة كعب</a>
-          <button onclick="openCategory('cars')" style="flex:1;background:var(--primary-light);color:var(--primary);border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🚗 سيارات وتكاتك</button>
+      
+      <!-- شرح الألوان -->
+      <div style="margin:0 16px;background:white;border-radius:14px;padding:14px;border:1px solid var(--border);">
+        <div style="font-size:13px;font-weight:900;margin-bottom:10px;">🚦 معنى الألوان</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+            <span style="font-size:20px;">🟢</span>
+            <div><b>فاضي</b> — العربيات متوفرة وهتلاقي مكان فوراً</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+            <span style="font-size:20px;">🟡</span>
+            <div><b>مزدحم</b> — فيه طابور بس الحركة مستمرة</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+            <span style="font-size:20px;">🔴</span>
+            <div><b>مكدس</b> — مفيش عربيات، استنى في البيت شوية!</div>
+          </div>
         </div>
       </div>
-    </div>
-    ${isAdmin ? `<button class="fab-add" onclick="openAddModal('transport_news','')">+</button>` : ''}`;
+      
+    </div>`;
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
-  loadCatBanner('transport');
+  updateTransportUI();
+  // تحديث كل 2 دقيقة
+  if(window._transportTimer) clearInterval(window._transportTimer);
+  window._transportTimer = setInterval(updateTransportUI, 2 * 60 * 1000);
 }
 
 // NEWS PAGE
