@@ -5117,42 +5117,51 @@ async function doTransportVote(status, voterName) {
 
 async function loadTransportMayor() {
   try {
-    // نجيب أعلى مصوت على الإطلاق (مش بس اليوم)
-    const votes = await sbFetch('GET', 'transport_votes?select=voter_name&order=created_at.desc&limit=500') || [];
-    
+    // نجيب كل التصويتات بـ pagination عشان مفيش limit
+    var allVotes = [];
+    var page = 0;
+    var pageSize = 1000;
+    while(true) {
+      var chunk = await sbFetch('GET', 'transport_votes?select=voter_name&order=created_at.asc&limit=' + pageSize + '&offset=' + (page * pageSize)) || [];
+      allVotes = allVotes.concat(chunk);
+      if(chunk.length < pageSize) break;
+      page++;
+    }
+
     var mayorDiv = document.getElementById('transportMayor');
     var mayorName = document.getElementById('mayorName');
     var mayorCount = document.getElementById('mayorCount');
-    
-    if(!votes.length) {
+
+    if(!allVotes.length) {
       if(mayorDiv) mayorDiv.style.display = 'none';
       return;
     }
-    
-    // احسب أكتر شخص صوّت
-    const counts = {};
-    votes.forEach(v => {
+
+    // احسب كل شخص صوت كام مرة من الأول
+    var counts = {};
+    allVotes.forEach(function(v) {
       if(v.voter_name && v.voter_name !== 'مجهول') {
         counts[v.voter_name] = (counts[v.voter_name] || 0) + 1;
       }
     });
-    
-    const entries = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+
+    var entries = Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; });
     if(!entries.length) {
       if(mayorDiv) mayorDiv.style.display = 'none';
       return;
     }
-    
-    const mayor = entries[0];
+
+    var mayor = entries[0];
     if(mayorDiv) mayorDiv.style.display = 'flex';
     if(mayorName) mayorName.textContent = mayor[0];
     if(mayorCount) mayorCount.textContent = mayor[1] + ' تصويت';
-    
-    // لو الشخص نفسه هو العمدة
+
+    // لو أنت نفسك العمدة — بنفسجي
     var myName = localStorage.getItem('transport_voter_name');
     if(myName && myName === mayor[0]) {
-      var mayorDiv2 = document.getElementById('transportMayor');
-      if(mayorDiv2) mayorDiv2.style.background = 'linear-gradient(135deg,#7c3aed,#a855f7)';
+      if(mayorDiv) mayorDiv.style.background = 'linear-gradient(135deg,#7c3aed,#a855f7)';
+    } else {
+      if(mayorDiv) mayorDiv.style.background = 'linear-gradient(135deg,#92400e,#d97706)';
     }
   } catch(e) {}
 }
