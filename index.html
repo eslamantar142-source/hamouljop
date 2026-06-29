@@ -117,7 +117,7 @@ body.dark-mode input, body.dark-mode textarea, body.dark-mode select {
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--dark); min-height:100vh; }
+body { font-family:'Cairo',sans-serif; background:var(--bg); color:var(--dark); min-height:100vh; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 
 /* HEADER */
 header { background:var(--primary); position:sticky; top:0; z-index:100; box-shadow:0 2px 10px rgba(0,0,0,.2); }
@@ -198,6 +198,7 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
 .dyn-search-bar { background:var(--primary-dark); padding:8px 12px; flex-shrink:0; }
 .dyn-search-bar input { width:100%; padding:9px 14px; border:none; border-radius:10px; font-family:'Cairo',sans-serif; font-size:14px; outline:none; }
 .dyn-content { flex:1; overflow-y:auto; padding:14px 12px 80px; }
+.dyn-page, .dyn-header, .grid-btn, .cat-card, .sub-card { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 
 /* AD CARDS */
 .ad-card { background:white; border-radius:14px; margin-bottom:12px; border:1px solid var(--border); overflow:hidden; }
@@ -418,8 +419,13 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
 <script>
 const SB_URL = 'https://jzipkujsmlrckzbpjwys.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6aXBrdWpzbWxyY2t6YnBqd3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDY3MTIsImV4cCI6MjA5NzAyMjcxMn0.rSWJinsJelhRYUtC9E7uMHMqgdFvSFVlI7UeqWT0qOQ';
-const ADMIN_PASS = 'Starwolf521993#';
+const ADMIN_PASS_HASH = 'd99c76b0d56a2a1f48ad86ed7db001e4f6b142a54bfe36def517e9fa7af8159c';
 const ADMIN_WA = '201080150801';
+
+async function hashPass(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
 
 // CATEGORIES DEFINITION
 const CATEGORIES = [
@@ -1060,12 +1066,39 @@ async function openAdDetails(adId) {
           ${ad.is_offer?`<span style="background:#fff7ed;color:var(--orange);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">⭐ عرض مميز</span>`:''}
         </div>
         <h2 style="font-size:18px;font-weight:900;margin-bottom:8px;line-height:1.4;">${ad.title||''}</h2>
-        <div style="display:flex;gap:12px;margin-bottom:14px;">
+        <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
           <span style="font-size:12px;color:var(--gray);">👁️ ${views} مشاهدة</span>
           <span style="font-size:12px;color:var(--gray);">📞 ${waClicks} تواصل</span>
           <span style="font-size:12px;color:var(--gray);">📅 ${new Date(ad.created_at).toLocaleDateString('ar-EG')}</span>
         </div>
-        ${ad.description?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:8px;">📋 التفاصيل</div><p style="font-size:14px;line-height:1.8;">${ad.description}</p></div>`:''}
+        ${(ad.phone||ad.address||ad.subcategory)?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:13px;font-weight:900;">ℹ️ معلومات عن النشاط</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${ad.subcategory?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">🏷️</span><div><div style="font-size:11px;color:#94a3b8;">التخصص</div><div style="font-size:13px;font-weight:700;">${ad.subcategory}</div></div></div>`:''}
+            ${ad.address?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;cursor:pointer;" onclick="ad.location_url?window.open(fixMapUrl(ad.location_url),'_blank'):null"><span style="font-size:18px;">📍</span><div><div style="font-size:11px;color:#94a3b8;">العنوان</div><div style="font-size:13px;font-weight:700;">${ad.address}</div></div></div>`:''}
+            ${ad.phone?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">📞</span><div><div style="font-size:11px;color:#94a3b8;">التليفون</div><div style="font-size:13px;font-weight:700;" dir="ltr">${ad.phone}</div></div></div>`:''}
+            ${ad.phone2?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">📱</span><div><div style="font-size:11px;color:#94a3b8;">رقم ثاني</div><div style="font-size:13px;font-weight:700;" dir="ltr">${ad.phone2}</div></div></div>`:''}
+          </div>
+        </div>`:''}
+        ${ad.description?(()=>{
+          // حول النص لـ bullets لو فيه أسطر أو نقاط
+          // تقسيم النص لـ bullets — بـ سطر جديد أو نقطة أو فاصلة في النص الطويل
+          var rawLines = ad.description.split(/\n|•|\r/).map(function(l){ return l.trim(); }).filter(function(l){ return l.length>2; });
+          // لو السطور أكتر من 1 — استخدمها مباشرة
+          // لو سطر واحد طويل (أكتر من 80 حرف) — حاول تقسمه على الفواصل والكلمات الرابطة
+          var lines = rawLines;
+          if(rawLines.length === 1 && rawLines[0].length > 80) {
+            lines = rawLines[0].split(/(?<=\s)(?:متابعة|علاج|فحص|توفر|يوجد|إجراء|تقديم|عمل|أحدث|خدمة)|(?:،|,)(?=\s)/).map(function(l){ return l.trim(); }).filter(function(l){ return l.length>3; });
+            if(lines.length < 2) lines = rawLines; // لو فشل التقسيم، ارجع للنص الأصلي
+          }
+          const isList = lines.length > 1;
+          const bodyHtml = isList
+            ? '<ul style="list-style:none;padding:0;margin:0;">'+lines.map(function(l){ return '<li style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f8fafc;font-size:13px;line-height:1.7;"><span style="color:var(--primary);font-size:12px;flex-shrink:0;margin-top:4px;">■</span><span>'+l+'</span></li>'; }).join('')+'</ul>'
+            : '<p style="font-size:14px;line-height:1.9;margin:0;">'+ad.description+'</p>';
+          return '<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px;">📋 التفاصيل</div>'+bodyHtml+'</div>';
+        })():''}
         ${ad.address?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;margin-bottom:12px;"><span style="font-size:24px;">📍</span><div><div style="font-size:12px;color:var(--gray);font-weight:700;">العنوان</div><div style="font-size:13px;font-weight:600;">${ad.address}</div></div></div>`:''}
         <div id="videoLinksSection"></div>
         <div id="reviewsContainer" style="margin-bottom:12px;"></div>
@@ -1320,7 +1353,17 @@ function openEditAd(adId) {
     // إخفاء رسالة المراجعة
     var reviewMsg = submitBtn ? submitBtn.previousElementSibling : null;
     if(reviewMsg) reviewMsg.style.display = 'none';
-    
+
+    // عرض الصورة الحالية لو موجودة
+    if(ad.image_url) {
+      var imgSection = document.getElementById('fImagesSection') || document.querySelector('[id*="ImgSection"]');
+      var prevDiv = document.getElementById('currentImgPreview');
+      if(prevDiv) {
+        prevDiv.style.cssText = 'margin-bottom:10px;padding:10px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;';
+        prevDiv.innerHTML = '<div style="font-size:11px;color:#166534;font-weight:700;margin-bottom:6px;">📷 الصورة الحالية — ستبقى كما هي إن لم تختر صورة جديدة</div><img src="'+ad.image_url+'" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;" onerror="this.parentElement.style.display:none">';
+      }
+    }
+
   }, 150);
 }
 
@@ -1415,7 +1458,8 @@ function openAddModal(catId='', sub='') {
         </div>
         <div class="fg">
           <label>التفاصيل</label>
-          <textarea id="fDesc" rows="4" placeholder="اكتب تفاصيل الإعلان، الأسعار، مواعيد العمل..." style="font-size:14px;"></textarea>
+          <textarea id="fDesc" rows="6" placeholder="اكتب كل خدمة أو معلومة في سطر لوحده، مثال:&#10;متابعة أمراض الأطفال&#10;علاج الحساسية&#10;مواعيد: 10 صباحاً - 3 مساءً&#10;يوجد سونار" style="font-size:14px;"></textarea>
+          <div style="font-size:11px;color:#94a3b8;margin-top:4px;padding-right:4px;">💡 اكتب كل خدمة أو معلومة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق</div>
         </div>
 
         <!-- حقول المتجر -->
@@ -1490,9 +1534,10 @@ function openAddModal(catId='', sub='') {
       </div>
 
       <!-- خطوة 4: الصور -->
-      <div style="background:white;border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
+      <div id="fImgSection" style="background:white;border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
         <div style="font-size:13px;font-weight:900;color:var(--primary);margin-bottom:12px;">4️⃣ صور الإعلان (اختياري — حتى 10 صور)</div>
-        <label style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--primary-light);color:var(--primary);padding:14px;border-radius:10px;cursor:pointer;border:2px dashed var(--primary);font-weight:700;font-size:13px;">
+        <div id="currentImgPreview"></div>
+        <label id="fImgLabel" style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--primary-light);color:var(--primary);padding:14px;border-radius:10px;cursor:pointer;border:2px dashed var(--primary);font-weight:700;font-size:13px;">
           📸 اختر صور
           <input type="file" id="fImages" accept="image/*" multiple onchange="previewAddImages(this)" style="display:none;">
         </label>
@@ -1905,19 +1950,24 @@ function openAdmin() {
   if(isAdmin) { showAdminPanel('pending'); return; }
   // تحقق من الـ localStorage أول
   const saved = localStorage.getItem('hamoul_admin_auth');
-  if(saved === ADMIN_PASS) {
+  if(saved === ADMIN_PASS_HASH) {
     isAdmin = true;
     showToast('✅ أهلاً يا مشرف إسلام!');
     loadAds().then(() => showAdminPanel('pending'));
     return;
   }
   const pass = prompt('كلمة مرور المشرف:');
-  if(pass === ADMIN_PASS) {
-    isAdmin = true;
-    localStorage.setItem('hamoul_admin_auth', pass);
-    showToast('✅ أهلاً يا مشرف إسلام!');
-    loadAds().then(() => showAdminPanel('pending'));
-  } else if(pass !== null) { showToast('كلمة المرور غلط ❌'); }
+  if(!pass) return;
+  hashPass(pass).then(function(passHash) {
+    if(passHash === ADMIN_PASS_HASH) {
+      isAdmin = true;
+      localStorage.setItem('hamoul_admin_auth', passHash);
+      showToast('✅ أهلاً يا مشرف إسلام!');
+      loadAds().then(() => showAdminPanel('pending'));
+    } else {
+      showToast('كلمة المرور غلط ❌');
+    }
+  });
 }
 
 async function showAdminPanel(tab='pending') {
@@ -5094,7 +5144,7 @@ function renderTraderMarket(rows, filter) {
     var sec = entry[0], products = entry[1];
     var secInfo = MARKET_SECTIONS.find(function(s){ return s.id === sec; }) || {icon:'🛒', color:'#f3f4f6'};
     return '<div style="margin-bottom:6px;">' +
-      '<div style="background:' + secInfo.color + ';padding:10px 16px;display:flex;align-items:center;gap:8px;position:sticky;top:95px;z-index:5;">' +
+      '<div style="background:' + secInfo.color + ';padding:10px 16px;display:flex;align-items:center;gap:8px;border-radius:10px 10px 0 0;">' +
         '<span style="font-size:20px;">' + secInfo.icon + '</span>' +
         '<span style="font-size:14px;font-weight:900;">' + sec + '</span>' +
       '</div>' +
@@ -5161,7 +5211,7 @@ function showAddTraderDialog() {
       '<input id="ta_prod" type="text" placeholder="اسم المنتج (مثال: فراخ بلدي، بلطي، طماطم...)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="ta_name" type="text" placeholder="اسم التاجر" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="ta_phone" type="tel" placeholder="رقم الموبايل" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;" dir="ltr">' +
-      '<input id="ta_pass" type="text" placeholder="كلمة سر التاجر (هو بس يعرفها)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="ta_pass" type="password" placeholder="كلمة سر التاجر (هو بس يعرفها)" autocomplete="new-password" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="ta_addr" type="text" placeholder="العنوان / الموقع" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="ta_price" type="number" placeholder="السعر الحالي للكيلو (جنيه)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:14px;">' +
       '<div style="display:flex;gap:8px;">' +
@@ -5180,7 +5230,12 @@ async function submitAddTrader() {
   var pass  = document.getElementById('ta_pass').value.trim();
   var addr  = document.getElementById('ta_addr').value.trim();
   var price = document.getElementById('ta_price').value.trim();
-  if(!sec||!prod||!name||!phone||!pass||!price){ showToast('اكمل البيانات كلها', 'error'); return; }
+  if(!sec){ showToast('اختار القسم الأول ☝️', 'error'); document.getElementById('ta_sec').focus(); return; }
+  if(!prod){ showToast('اكتب اسم المنتج', 'error'); return; }
+  if(!name){ showToast('اكتب اسم التاجر', 'error'); return; }
+  if(!phone){ showToast('اكتب رقم الموبايل', 'error'); return; }
+  if(!pass){ showToast('اكتب كلمة سر التاجر', 'error'); return; }
+  if(!price || isNaN(parseFloat(price))){ showToast('اكتب السعر', 'error'); return; }
   try {
     await sbFetch('POST', 'market_traders', {
       section: sec, product_name: prod, trader_name: name,
@@ -7460,7 +7515,7 @@ loadAds().then(function() {
   // تحقق من الـ admin session المحفوظة
   try {
     const savedAuth = localStorage.getItem('hamoul_admin_auth');
-    if(savedAuth === ADMIN_PASS) { isAdmin = true; }
+    if(savedAuth === ADMIN_PASS_HASH) { isAdmin = true; }
   } catch(e) {}
   try { loadHomeBanners(); } catch(e) {}
   try { loadGoldPrices(); } catch(e) {}
