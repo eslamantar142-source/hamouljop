@@ -2601,9 +2601,9 @@ function renderMarriageAdminCards(profiles) {
           <div style="font-size:11px;color:var(--gray);">${new Date(p.created_at).toLocaleDateString('ar-EG')}</div>
         </div>
 
-        ${p.job?`<div style="font-size:12px;margin-bottom:4px;">💼 ${p.job}</div>`:''}
-        ${p.about?`<div style="font-size:12px;color:var(--gray);margin-bottom:4px;line-height:1.5;">📝 ${p.about}</div>`:''}
-        ${p.requirements?`<div style="font-size:12px;color:var(--gray);margin-bottom:6px;line-height:1.5;">🎯 ${p.requirements}</div>`:''}
+        ${p.job?`<div style="font-size:12px;margin-bottom:4px;">💼 ${escapeHtml(p.job)}</div>`:''}
+        ${p.about?`<div style="font-size:12px;color:var(--gray);margin-bottom:4px;line-height:1.5;">📝 ${escapeHtml(p.about)}</div>`:''}
+        ${p.requirements?`<div style="font-size:12px;color:var(--gray);margin-bottom:6px;line-height:1.5;">🎯 ${escapeHtml(p.requirements)}</div>`:''}
 
         <div style="background:#f0fdf4;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;font-weight:700;color:#166534;">
           📞 ${p.phone||'—'}
@@ -3957,7 +3957,7 @@ async function loadReviews(adId) {
               <span style="font-size:13px;font-weight:700;">${r.reviewer_name||'زائر'}</span>
               <span style="font-size:13px;">${'⭐'.repeat(r.rating||0)}${'☆'.repeat(5-(r.rating||0))}</span>
             </div>
-            ${r.comment?`<p style="font-size:13px;color:#374151;line-height:1.6;margin:0 0 4px;">${r.comment}</p>`:''}
+            ${r.comment?`<p style="font-size:13px;color:#374151;line-height:1.6;margin:0 0 4px;">${escapeHtml(r.comment)}</p>`:''}
             <div style="font-size:11px;color:#aaa;">${new Date(r.created_at).toLocaleDateString('ar-EG')}</div>
           </div>`).join('') : '<div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">لا توجد تقييمات بعد — كن أول من يقيّم! 🌟</div>'}
         </div>
@@ -6547,13 +6547,13 @@ function renderPostCard(p, deviceId) {
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <div style="width:36px;height:36px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">👤</div>
         <div style="flex:1;">
-          <div style="font-size:13px;font-weight:700;">${p.author_name}</div>
+          <div style="font-size:13px;font-weight:700;">${escapeHtml(p.author_name)}</div>
           <div style="font-size:11px;color:var(--gray);">${timeAgo}</div>
         </div>
         <span style="background:${bg};color:${color};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${p.category}</span>
       </div>
-      <div style="font-size:14px;font-weight:900;margin-bottom:6px;">${p.title}</div>
-      <div style="font-size:13px;color:#374151;line-height:1.7;">${p.content.length>150?p.content.substring(0,150)+'...':p.content}</div>
+      <div style="font-size:14px;font-weight:900;margin-bottom:6px;">${escapeHtml(p.title)}</div>
+      <div style="font-size:13px;color:#374151;line-height:1.7;">${escapeHtml(p.content.length>150?p.content.substring(0,150)+'...':p.content)}</div>
       ${imgs.length ? `
       <div style="display:flex;gap:6px;margin-top:10px;overflow-x:auto;padding-bottom:4px;">
         ${imgs.slice(0,5).map(url=>`<img src="${url}" onclick="event.stopPropagation();openImgFull('${url}')" style="width:100px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border);cursor:zoom-in;" onerror="this.style.display='none'">`).join('')}
@@ -6686,12 +6686,12 @@ async function loadPostDetail(postId) {
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <div style="width:38px;height:38px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:18px;">👨‍🏫</div>
           <div>
-            <div style="font-size:13px;font-weight:700;">${p.author_name}</div>
+            <div style="font-size:13px;font-weight:700;">${escapeHtml(p.author_name)}</div>
             <div style="font-size:11px;color:var(--gray);">${timeAgo}</div>
           </div>
         </div>
-        <div style="font-size:15px;font-weight:900;margin-bottom:8px;">${p.title}</div>
-        ${p.about?`<div style="background:white;border-radius:8px;padding:10px;margin-top:8px;font-size:13px;line-height:1.8;">${p.content}</div>`:`<div style="font-size:13px;color:#374151;line-height:1.8;margin-top:6px;">${p.content}</div>`}
+        <div style="font-size:15px;font-weight:900;margin-bottom:8px;">${escapeHtml(p.title)}</div>
+        ${p.about?`<div style="background:white;border-radius:8px;padding:10px;margin-top:8px;font-size:13px;line-height:1.8;">${escapeHtml(p.content)}</div>`:`<div style="font-size:13px;color:#374151;line-height:1.8;margin-top:6px;">${escapeHtml(p.content)}</div>`}
         ${p.images&&p.images.length?`
         <div style="margin-top:12px;">
           <div style="font-size:12px;color:var(--gray);margin-bottom:6px;">📸 الصور (${p.images.length})</div>
@@ -6711,10 +6711,10 @@ async function loadPostDetail(postId) {
       <div style="background:white;border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:8px;">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
           <div style="width:28px;height:28px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:13px;">👤</div>
-          <span style="font-size:12px;font-weight:700;">${c.author_name}</span>
+          <span style="font-size:12px;font-weight:700;">${escapeHtml(c.author_name)}</span>
           <span style="font-size:11px;color:var(--gray);margin-right:auto;">${getTimeAgo(c.created_at)}</span>
         </div>
-        <div style="font-size:13px;color:#374151;line-height:1.6;">${c.content}</div>
+        <div style="font-size:13px;color:#374151;line-height:1.6;">${escapeHtml(c.content)}</div>
       </div>`).join('') : `<div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">لا توجد تعليقات بعد — كن أول من يعلق!</div>`}`;
   } catch(e) {}
 }
