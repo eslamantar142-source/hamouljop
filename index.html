@@ -7,20 +7,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>دليل الحامول — وظائف، عقارات، أطباء وخدمات في مركز الحامول</title>
 
+<!-- ⚠️ ملاحظة لإسلام: لما تشتري الدومين، دور على "DOMAIN_PLACEHOLDER" في كل الملف واستبدله بالدومين الجديد -->
 <!-- SEO -->
-<meta name="description" content="دليل الحامول — أكبر دليل إلكتروني مجاني في مركز الحامول، كفر الشيخ. ابحث عن وظائف، عقارات، أطباء، مطاعم، صنايعية وخدمات بكل سهولة.">
-<meta name="keywords" content="الحامول، كفر الشيخ، وظائف الحامول، عقارات الحامول، أطباء الحامول، خدمات الحامول، دليل الحامول، فركة كعب">
+<meta name="description" content="دليل الحامول — أكبر دليل إلكتروني مجاني في مركز الحامول، كفر الشيخ. وظائف، عقارات، أطباء، مطاعم، صنايعية، سوق الحامول لمقارنة أسعار الخضار واللحوم والفراخ، وخدمات أخرى بكل سهولة.">
+<meta name="keywords" content="الحامول، كفر الشيخ، وظائف الحامول، عقارات الحامول، أطباء الحامول، خدمات الحامول، دليل الحامول، سوق الحامول، اسعار الخضار الحامول، فركة كعب">
 <meta name="author" content="إسلام عنتر — فركة كعب">
 <meta name="robots" content="index, follow">
 <meta name="language" content="Arabic">
-<link rel="canonical" href="https://elhamouljop.netlify.app">
+<link rel="canonical" href="https://eslamantar142-source.github.io/hamouljop">
 
 <!-- Open Graph (واتساب وفيسبوك) -->
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://elhamouljop.netlify.app">
+<meta property="og:url" content="https://eslamantar142-source.github.io/hamouljop">
 <meta property="og:title" content="دليل الحامول — كل حاجة في مكان واحد">
-<meta property="og:description" content="وظائف، عقارات، أطباء، مطاعم وخدمات في مركز الحامول مجاناً. برعاية فركة كعب للتوصيل.">
-<meta property="og:image" content="https://elhamouljop.netlify.app/og-image.jpg">
+<meta property="og:description" content="وظائف، عقارات، أطباء، سوق الحامول لمقارنة الأسعار، ومطاعم وخدمات في مركز الحامول مجاناً. برعاية فركة كعب للتوصيل.">
+<meta property="og:image" content="https://eslamantar142-source.github.io/hamouljop/og-image.jpg">
 <meta property="og:locale" content="ar_EG">
 <meta property="og:site_name" content="دليل الحامول">
 
@@ -41,8 +42,8 @@
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "دليل الحامول",
-  "url": "https://elhamouljop.netlify.app",
-  "description": "دليل إلكتروني مجاني لمركز الحامول، كفر الشيخ، مصر",
+  "url": "https://eslamantar142-source.github.io/hamouljop",
+  "description": "دليل إلكتروني مجاني لمركز الحامول، كفر الشيخ، مصر — وظائف، عقارات، أطباء، وسوق الحامول لمقارنة أسعار الخضار واللحوم والفراخ بين التجار",
   "inLanguage": "ar",
   "publisher": {
     "@type": "Person",
@@ -906,7 +907,7 @@ function renderAdsList(ads, cat) {
     const waMsg = encodeURIComponent('أهلاً، أنا مهتم بإعلانك (' + ad.title + ') على دليل الحامول');
     const waUrl = phone ? 'https://wa.me/' + phone + '?text=' + waMsg : '#';
     const date = new Date(ad.created_at).toLocaleDateString('ar-EG');
-    const shareMsg = encodeURIComponent('🏪 ' + ad.title + '\n' + (ad.description ? ad.description.substring(0,100) + '...' : '') + '\n\n📲 دليل الحامول: https://elhamouljop.netlify.app');
+    const shareMsg = encodeURIComponent('🏪 ' + ad.title + '\n' + (ad.description ? ad.description.substring(0,100) + '...' : '') + '\n\n📲 دليل الحامول: https://eslamantar142-source.github.io/hamouljop');
     const favBg = isFav(ad.id) ? '#fee2e2' : '#f3f4f6';
     const favColor = isFav(ad.id) ? '#dc2626' : '#aaa';
     const adminBtn = isAdmin ? '<button class="btn-del" onclick="deleteAdAdmin(\'' + ad.id + '\')">🗑️</button>' : '';
@@ -978,7 +979,7 @@ function getShareText(adId) {
   const ad = allAds.find(a => a.id === adId);
   if(!ad) return '';
   const cat = CATEGORIES.find(c => c.id === ad.category) || {icon:'📋', name:'عام'};
-  return `${cat.icon} ${cat.name}${ad.subcategory?' — '+ad.subcategory:''}\n\n📌 ${ad.title}\n${ad.description?'📝 '+ad.description+'\n':''}📞 ${ad.phone}\n\n🔗 دليل الحامول — elhamouljop.netlify.app`;
+  return `${cat.icon} ${cat.name}${ad.subcategory?' — '+ad.subcategory:''}\n\n📌 ${ad.title}\n${ad.description?'📝 '+ad.description+'\n':''}📞 ${ad.phone}\n\n🔗 دليل الحامول — eslamantar142-source.github.io/hamouljop`;
 }
 
 function shareAdWA(adId) {
@@ -989,7 +990,7 @@ function shareAdWA(adId) {
 
 function shareAdFB(adId) {
   trackStat(adId, 'share_fb');
-  const url = encodeURIComponent('https://elhamouljop.netlify.app');
+  const url = encodeURIComponent('https://eslamantar142-source.github.io/hamouljop');
   window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
 }
 
@@ -3552,9 +3553,9 @@ function showAbout() {
 }
 
 function shareApp() {
-  const msg = `🗺️ دليل الحامول\n\nوظائف، عقارات، أطباء، وخدمات في مركز الحامول — كل حاجة في مكان واحد مجاناً!\n\n🔗 elhamouljop.netlify.app`;
+  const msg = `🗺️ دليل الحامول\n\nوظائف، عقارات، أطباء، وخدمات في مركز الحامول — كل حاجة في مكان واحد مجاناً!\n\n🔗 eslamantar142-source.github.io/hamouljop`;
   if(navigator.share) {
-    navigator.share({title:'دليل الحامول', text:msg, url:'https://elhamouljop.netlify.app'});
+    navigator.share({title:'دليل الحامول', text:msg, url:'https://eslamantar142-source.github.io/hamouljop'});
   } else {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   }
@@ -4532,7 +4533,7 @@ async function deleteMyProfile(profileId, announce) {
     document.querySelectorAll('div[style*="z-index:700"]').forEach(d=>d.remove());
     if(announce) {
       showToast('💍 مبروك الجواز! تم حذف ملفك');
-      const msg = `💍 خبر فرحة من بيت الحلال!\n\nأحد أعضاء بيت الحلال أعلن عن جوازه بالحمد لله 🎉\nنسأل الله لهم الستر والتوفيق والذرية الصالحة 💚\n\n📲 دليل الحامول — elhamouljop.netlify.app`;
+      const msg = `💍 خبر فرحة من بيت الحلال!\n\nأحد أعضاء بيت الحلال أعلن عن جوازه بالحمد لله 🎉\nنسأل الله لهم الستر والتوفيق والذرية الصالحة 💚\n\n📲 دليل الحامول — eslamantar142-source.github.io/hamouljop`;
       setTimeout(()=>{ const a=document.createElement('a'); a.href=`https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`; a.target='_blank'; document.body.appendChild(a); a.click(); setTimeout(()=>document.body.removeChild(a),500); }, 800);
     } else {
       showToast('✅ تم حذف ملفك');
@@ -6933,7 +6934,7 @@ async function deletePost(id) {
 }
 
 function sharePost(id, title) {
-  const msg = encodeURIComponent(`💬 ${title}\n\nشاركنا في النقاش على مجتمع المدرسين — دليل الحامول\nhttps://elhamouljop.netlify.app`);
+  const msg = encodeURIComponent(`💬 ${title}\n\nشاركنا في النقاش على مجتمع المدرسين — دليل الحامول\nhttps://eslamantar142-source.github.io/hamouljop`);
   const a = document.createElement('a');
   a.href = `https://wa.me/?text=${msg}`;
   a.target = '_blank';
