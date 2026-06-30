@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://eslamantar142-source.github.io/hamouljop/sitemap.xml
