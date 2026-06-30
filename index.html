@@ -420,6 +420,16 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
 const SB_URL = 'https://jzipkujsmlrckzbpjwys.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6aXBrdWpzbWxyY2t6YnBqd3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDY3MTIsImV4cCI6MjA5NzAyMjcxMn0.rSWJinsJelhRYUtC9E7uMHMqgdFvSFVlI7UeqWT0qOQ';
 const ADMIN_PASS_HASH = 'd99c76b0d56a2a1f48ad86ed7db001e4f6b142a54bfe36def517e9fa7af8159c';
+
+function escapeHtml(str) {
+  if(str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 const ADMIN_WA = '201080150801';
 
 async function hashPass(str) {
@@ -1065,7 +1075,7 @@ async function openAdDetails(adId) {
           ${ad.subcategory?`<span style="background:#f3f4f6;color:#555;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${ad.subcategory}</span>`:''}
           ${ad.is_offer?`<span style="background:#fff7ed;color:var(--orange);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">⭐ عرض مميز</span>`:''}
         </div>
-        <h2 style="font-size:18px;font-weight:900;margin-bottom:8px;line-height:1.4;">${ad.title||''}</h2>
+        <h2 style="font-size:18px;font-weight:900;margin-bottom:8px;line-height:1.4;">${escapeHtml(ad.title)||''}</h2>
         <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
           <span style="font-size:12px;color:var(--gray);">👁️ ${views} مشاهدة</span>
           <span style="font-size:12px;color:var(--gray);">📞 ${waClicks} تواصل</span>
@@ -1095,11 +1105,11 @@ async function openAdDetails(adId) {
           }
           const isList = lines.length > 1;
           const bodyHtml = isList
-            ? '<ul style="list-style:none;padding:0;margin:0;">'+lines.map(function(l){ return '<li style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f8fafc;font-size:13px;line-height:1.7;"><span style="color:var(--primary);font-size:12px;flex-shrink:0;margin-top:4px;">■</span><span>'+l+'</span></li>'; }).join('')+'</ul>'
-            : '<p style="font-size:14px;line-height:1.9;margin:0;">'+ad.description+'</p>';
+            ? '<ul style="list-style:none;padding:0;margin:0;">'+lines.map(function(l){ return '<li style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f8fafc;font-size:13px;line-height:1.7;"><span style="color:var(--primary);font-size:12px;flex-shrink:0;margin-top:4px;">■</span><span>'+escapeHtml(l)+'</span></li>'; }).join('')+'</ul>'
+            : '<p style="font-size:14px;line-height:1.9;margin:0;">'+escapeHtml(ad.description)+'</p>';
           return '<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px;">📋 التفاصيل</div>'+bodyHtml+'</div>';
         })():''}
-        ${ad.address?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;margin-bottom:12px;"><span style="font-size:24px;">📍</span><div><div style="font-size:12px;color:var(--gray);font-weight:700;">العنوان</div><div style="font-size:13px;font-weight:600;">${ad.address}</div></div></div>`:''}
+        ${ad.address?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;margin-bottom:12px;"><span style="font-size:24px;">📍</span><div><div style="font-size:12px;color:var(--gray);font-weight:700;">العنوان</div><div style="font-size:13px;font-weight:600;">${escapeHtml(ad.address)}</div></div></div>`:''}
         <div id="videoLinksSection"></div>
         <div id="reviewsContainer" style="margin-bottom:12px;"></div>
 
@@ -1958,14 +1968,34 @@ function openAdmin() {
   }
   const pass = prompt('كلمة مرور المشرف:');
   if(!pass) return;
+
+  // حماية من محاولات التخمين المتكررة
+  const lockUntil = parseInt(localStorage.getItem('admin_lock_until') || '0');
+  if(Date.now() < lockUntil) {
+    const mins = Math.ceil((lockUntil - Date.now()) / 60000);
+    showToast('🔒 محاولات كتير غلط — حاول بعد ' + mins + ' دقيقة', 'error');
+    return;
+  }
+
   hashPass(pass).then(function(passHash) {
     if(passHash === ADMIN_PASS_HASH) {
       isAdmin = true;
       localStorage.setItem('hamoul_admin_auth', passHash);
+      localStorage.removeItem('admin_fail_count');
+      localStorage.removeItem('admin_lock_until');
       showToast('✅ أهلاً يا مشرف إسلام!');
       loadAds().then(() => showAdminPanel('pending'));
     } else {
-      showToast('كلمة المرور غلط ❌');
+      const fails = parseInt(localStorage.getItem('admin_fail_count') || '0') + 1;
+      localStorage.setItem('admin_fail_count', String(fails));
+      if(fails >= 5) {
+        const lockMs = Date.now() + (15 * 60 * 1000); // قفل 15 دقيقة
+        localStorage.setItem('admin_lock_until', String(lockMs));
+        localStorage.setItem('admin_fail_count', '0');
+        showToast('🔒 5 محاولات غلط — اتقفل لمدة 15 دقيقة', 'error');
+      } else {
+        showToast('كلمة المرور غلط ❌ (' + (5-fails) + ' محاولات متبقية)');
+      }
     }
   });
 }
@@ -2090,6 +2120,82 @@ function removeMerchant(idx) {
   showToast('تم حذف التاجر');
 }
 
+// ===== تتبع زيارات الموقع =====
+async function trackSiteVisit() {
+  try {
+    // زيارة واحدة بس لكل جلسة (مش كل ضغطة)
+    if(sessionStorage.getItem('visit_tracked')) return;
+    sessionStorage.setItem('visit_tracked', '1');
+
+    var vid = localStorage.getItem('hamoul_visitor_id');
+    if(!vid) {
+      vid = 'v_' + Date.now() + '_' + Math.random().toString(36).substr(2,9);
+      localStorage.setItem('hamoul_visitor_id', vid);
+    }
+    await sbFetch('POST', 'site_visits', { visitor_id: vid });
+  } catch(e) {}
+}
+
+async function loadSiteVisitsData(fromDate, toDate) {
+  try {
+    var url = 'site_visits?select=visitor_id,created_at&order=created_at.desc&limit=10000';
+    if(fromDate) url += '&created_at=gte.' + fromDate.toISOString();
+    var rows = await sbFetch('GET', url) || [];
+    if(toDate) {
+      var toTime = toDate.getTime();
+      rows = rows.filter(function(r){ return new Date(r.created_at).getTime() <= toTime; });
+    }
+    return rows;
+  } catch(e) { return []; }
+}
+
+function showVisitsDateFilter() {
+  var overlay = document.createElement('div');
+  overlay.id = 'visitsFilterOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px;padding:20px;width:100%;max-width:340px;">' +
+      '<div style="font-size:15px;font-weight:900;margin-bottom:14px;text-align:center;">📅 عدد الزوار في فترة معينة</div>' +
+      '<label style="font-size:12px;color:#64748b;display:block;margin-bottom:4px;">من تاريخ</label>' +
+      '<input id="vf_from" type="date" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:10px;">' +
+      '<label style="font-size:12px;color:#64748b;display:block;margin-bottom:4px;">إلى تاريخ</label>' +
+      '<input id="vf_to" type="date" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:14px;">' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="calcVisitsRange()" style="flex:1;background:#0369a1;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">احسب</button>' +
+        '<button onclick="document.getElementById(\'visitsFilterOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  // افتراضي: آخر 7 أيام
+  var to = new Date(), from = new Date(); from.setDate(from.getDate()-6);
+  document.getElementById('vf_to').value = to.toISOString().split('T')[0];
+  document.getElementById('vf_from').value = from.toISOString().split('T')[0];
+}
+
+function calcVisitsRange() {
+  var fromStr = document.getElementById('vf_from').value;
+  var toStr = document.getElementById('vf_to').value;
+  if(!fromStr || !toStr) { showToast('اختار التاريخين', 'error'); return; }
+  var from = new Date(fromStr + 'T00:00:00');
+  var to = new Date(toStr + 'T23:59:59');
+  var visits = window._siteVisitsAll || [];
+  var filtered = visits.filter(function(v) {
+    var t = new Date(v.created_at).getTime();
+    return t >= from.getTime() && t <= to.getTime();
+  });
+  var uniqueCount = new Set(filtered.map(function(v){ return v.visitor_id; })).size;
+
+  document.getElementById('visitsFilterOverlay').remove();
+  var resBox = document.getElementById('visitsDateResult');
+  if(resBox) {
+    resBox.innerHTML = '<div style="background:rgba(255,255,255,.25);border-radius:10px;padding:10px;text-align:center;">' +
+      '<div style="font-size:11px;opacity:.85;margin-bottom:4px;">من ' + fromStr + ' إلى ' + toStr + '</div>' +
+      '<div style="font-size:20px;font-weight:900;">' + filtered.length + ' زيارة</div>' +
+      '<div style="font-size:11px;opacity:.85;">(' + uniqueCount + ' زائر فريد)</div>' +
+    '</div>';
+  }
+}
+
 async function loadAdminStatsContent(cont) {
   cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray);"><div style="font-size:28px;margin-bottom:8px;">⏳</div><p>جاري تحميل الإحصائيات...</p></div>';
   try {
@@ -2097,15 +2203,17 @@ async function loadAdminStatsContent(cont) {
     const approved = allAds.filter(a=>a.status==='approved');
     const rejected = allAds.filter(a=>a.status==='rejected');
 
-    let adStats=[], likes=[], reviews=[], marriageProfiles=[], marriageLikes=[], marriageRequests=[];
-    [adStats, likes, reviews, marriageProfiles, marriageLikes, marriageRequests] = await Promise.all([
+    let adStats=[], likes=[], reviews=[], marriageProfiles=[], marriageLikes=[], marriageRequests=[], siteVisits=[];
+    [adStats, likes, reviews, marriageProfiles, marriageLikes, marriageRequests, siteVisits] = await Promise.all([
       sbFetch('GET', 'ad_stats?select=ad_id,event_type,created_at').catch(()=>[]) || [],
       sbFetch('GET', 'ad_likes?select=ad_id').catch(()=>[]) || [],
       sbFetch('GET', 'reviews?select=id,rating').catch(()=>[]) || [],
       sbFetch('GET', 'marriage_profiles?select=id,status,gender,city').catch(()=>[]) || [],
       sbFetch('GET', 'marriage_likes?select=id').catch(()=>[]) || [],
       sbFetch('GET', 'marriage_requests?select=id,status').catch(()=>[]) || [],
+      sbFetch('GET', 'site_visits?select=visitor_id,created_at&order=created_at.desc&limit=10000').catch(()=>[]) || [],
     ]);
+    window._siteVisitsAll = siteVisits;
 
     const totalViews = (adStats||[]).filter(s=>s.event_type==='view').length;
     setTimeout(()=>renderViewsChart(adStats), 100);
@@ -2130,7 +2238,43 @@ async function loadAdminStatsContent(cont) {
     const mFemale = (marriageProfiles||[]).filter(p=>p.gender==='female').length;
     const mReqPending = (marriageRequests||[]).filter(r=>r.status==='pending').length;
 
+    // حساب زيارات اليوم والأمس والإجمالي
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yestStr = new Date(Date.now()-86400000).toISOString().split('T')[0];
+    const visitsToday = siteVisits.filter(v=>v.created_at.startsWith(todayStr)).length;
+    const visitsYest = siteVisits.filter(v=>v.created_at.startsWith(yestStr)).length;
+    const uniqueVisitorsToday = new Set(siteVisits.filter(v=>v.created_at.startsWith(todayStr)).map(v=>v.visitor_id)).size;
+    const uniqueVisitorsTotal = new Set(siteVisits.map(v=>v.visitor_id)).size;
+
     cont.innerHTML = `
+      <div style="background:linear-gradient(135deg,#0369a1,#0ea5e9);border-radius:14px;padding:14px;margin-bottom:12px;color:white;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:13px;font-weight:900;opacity:.9;">👥 زوار الموقع</div>
+          <button onclick="showVisitsDateFilter()" style="background:rgba(255,255,255,.25);color:white;border:none;padding:5px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">📅 فترة معينة</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px;">
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;">${visitsToday}</div>
+            <div style="font-size:10px;opacity:.85;">📈 زيارة النهارده</div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;">${uniqueVisitorsToday}</div>
+            <div style="font-size:10px;opacity:.85;">👤 زائر فريد النهارده</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+          <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center;">
+            <div style="font-size:16px;font-weight:900;">${visitsYest}</div>
+            <div style="font-size:10px;opacity:.8;">أمس</div>
+          </div>
+          <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center;">
+            <div style="font-size:16px;font-weight:900;">${uniqueVisitorsTotal}</div>
+            <div style="font-size:10px;opacity:.8;">إجمالي الزوار الفريدين</div>
+          </div>
+        </div>
+        <div id="visitsDateResult" style="margin-top:8px;"></div>
+      </div>
+
       <div style="background:linear-gradient(135deg,#1a7a4a,#22c55e);border-radius:14px;padding:14px;margin-bottom:12px;color:white;">
         <div style="font-size:13px;font-weight:900;margin-bottom:10px;opacity:.9;">📊 دليل الحامول — الإجمالي</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;">
@@ -2791,7 +2935,7 @@ async function loadAdminStatsPage(page, tab='stats') {
             ${ad.image_url ? `<img src="${ad.image_url}" class="ad-img" style="max-height:120px;" onerror="this.style.display=\"none\"">` : ''}
             <div class="ad-body">
               <div style="font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;">${cat.icon} ${cat.name} ${ad.subcategory?'← '+ad.subcategory:''}</div>
-              <div class="ad-title">${ad.title||'بدون عنوان'}</div>
+              <div class="ad-title">${escapeHtml(ad.title)||'بدون عنوان'}</div>
               <div class="ad-desc" style="font-size:12px;">${ad.description||'—'}</div>
               <div style="font-size:12px;color:var(--gray);margin-bottom:8px;">
                 📞 ${ad.phone} | ${new Date(ad.created_at).toLocaleDateString('ar-EG')}
@@ -3383,7 +3527,7 @@ function showFavorites() {
             ${ad.image_url?`<img src="${ad.image_url}" class="ad-img" onerror="this.style.display='none'" onclick="openAdDetails('${ad.id}')">` : ''}
             <div class="ad-body">
               <div style="font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;">${cat.icon} ${cat.name}${ad.subcategory?' ← '+ad.subcategory:''}</div>
-              <div class="ad-title" onclick="openAdDetails('${ad.id}')">${ad.title||''}</div>
+              <div class="ad-title" onclick="openAdDetails('${ad.id}')">${escapeHtml(ad.title)||''}</div>
               <div class="ad-desc">${ad.description||''}</div>
               <div class="ad-footer">
                 <span class="ad-date">${date}</span>
@@ -3446,7 +3590,7 @@ function showDeals() {
             ${ad.image_url ? `<img src="${ad.image_url}" class="ad-img" onerror="this.style.display='none'" onclick="openAdDetails('${ad.id}')">` : ''}
             <div class="ad-body">
               <div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:4px;">${cat.icon} ${cat.name}${ad.subcategory?' ← '+ad.subcategory:''}</div>
-              <div class="ad-title" onclick="openAdDetails('${ad.id}')">${ad.title||''}</div>
+              <div class="ad-title" onclick="openAdDetails('${ad.id}')">${escapeHtml(ad.title)||''}</div>
               <div class="ad-desc">${ad.description||''}</div>
               <div class="ad-footer">
                 <span class="ad-date">${date}</span>
@@ -5155,7 +5299,7 @@ function renderTraderMarket(rows, filter) {
         var minPrice = parseFloat(traders[0].price);
         return '<div style="margin:0 12px 10px;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;">' +
           '<div style="background:#1a7a4a;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">' +
-            '<span style="color:white;font-size:13px;font-weight:900;">' + prodName + '</span>' +
+            '<span style="color:white;font-size:13px;font-weight:900;">' + escapeHtml(prodName) + '</span>' +
             '<span style="background:rgba(255,255,255,.2);color:white;padding:2px 10px;border-radius:20px;font-size:11px;">أفضل سعر: ' + minPrice.toLocaleString() + ' ج</span>' +
           '</div>' +
           traders.map(function(t, idx) {
@@ -5163,15 +5307,15 @@ function renderTraderMarket(rows, filter) {
             var updTime = t.updated_at ? new Date(t.updated_at).toLocaleDateString('ar-EG',{day:'numeric',month:'short'}) : '';
             return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #f1f5f9;background:' + (isBest?'#f0fdf4':'white') + ';">' +
               '<div style="flex:1;">' +
-                '<div style="font-size:13px;font-weight:900;color:#1e293b;">' + (isBest?'🏆 ':'') + (t.trader_name||'تاجر') + '</div>' +
-                '<div style="font-size:11px;color:#64748b;margin-top:2px;">📍 ' + (t.address||'') + (t.address&&t.phone?' • ':'') + (t.phone?'📞 '+t.phone:'') + '</div>' +
+                '<div style="font-size:13px;font-weight:900;color:#1e293b;">' + (isBest?'🏆 ':'') + escapeHtml(t.trader_name||'تاجر') + '</div>' +
+                '<div style="font-size:11px;color:#64748b;margin-top:2px;">📍 ' + escapeHtml(t.address||'') + (t.address&&t.phone?' • ':'') + (t.phone?'📞 '+escapeHtml(t.phone):'') + '</div>' +
                 '<div style="font-size:10px;color:#94a3b8;margin-top:1px;">آخر تحديث: ' + updTime + '</div>' +
               '</div>' +
               '<div style="text-align:left;flex-shrink:0;">' +
                 '<div style="font-size:16px;font-weight:900;color:' + (isBest?'#16a34a':'#1e293b') + ';">' + parseFloat(t.price).toLocaleString() + ' ج</div>' +
                 '<div style="font-size:10px;color:#94a3b8;">للكيلو</div>' +
               '</div>' +
-              (t.phone ? '<a href="tel:' + t.phone + '" style="background:#dcfce7;color:#16a34a;border:none;padding:8px 10px;border-radius:8px;font-size:16px;text-decoration:none;flex-shrink:0;">📞</a>' : '') +
+              (t.phone ? '<a href="tel:' + escapeHtml(t.phone) + '" style="background:#dcfce7;color:#16a34a;border:none;padding:8px 10px;border-radius:8px;font-size:16px;text-decoration:none;flex-shrink:0;">📞</a>' : '') +
               (isAdmin ? '<button data-tid="'+t.id+'" onclick="deleteTrader(this.dataset.tid)" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">🗑️</button>' : '') +
             '</div>';
           }).join('') +
@@ -6202,7 +6346,7 @@ function showCharityPage() {
             ${ad.image_url?`<img src="${ad.image_url}" class="ad-img" onerror="this.style.display='none'" onclick="openAdDetails('${ad.id}')">` : ''}
             <div class="ad-body">
               <div style="font-size:11px;color:#059669;font-weight:700;margin-bottom:4px;">🤍 ${ad.subcategory||'تبرع'} — مجاناً لوجه الله</div>
-              <div class="ad-title" onclick="openAdDetails('${ad.id}')">${ad.title||''}</div>
+              <div class="ad-title" onclick="openAdDetails('${ad.id}')">${escapeHtml(ad.title)||''}</div>
               <div class="ad-desc">${ad.description||''}</div>
               <div style="margin-top:8px;display:flex;gap:6px;">
                 <button class="btn-details" onclick="openAdDetails('${ad.id}')">التفاصيل</button>
@@ -7521,6 +7665,7 @@ loadAds().then(function() {
   try { loadGoldPrices(); } catch(e) {}
   try { loadPrayerTimes(); } catch(e) {}
   try { loadGoldPrice(); } catch(e) {}
+  try { trackSiteVisit(); } catch(e) {}
 }).catch(function(e) { console.warn(e); }).finally(function() {
   setTimeout(function() {
     var s = document.getElementById('splashScreen');
