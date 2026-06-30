@@ -2009,7 +2009,7 @@ async function showAdminPanel(tab='pending') {
 
   const tabList = [
     ['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],
-    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار']
+    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار'],['backup','💾 نسخة احتياطية']
   ];
 
   // بناء الهيكل دايماً من أول
@@ -2047,7 +2047,71 @@ async function showAdminPanel(tab='pending') {
     loadAdminStatsContent(cont);
   } else if(tab === 'merchants') {
     loadAdminMerchants(cont);
+  } else if(tab === 'backup') {
+    loadAdminBackup(cont);
   }
+}
+
+function loadAdminBackup(cont) {
+  cont.innerHTML = `
+    <div style="background:white;border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--border);">
+      <div style="font-size:14px;font-weight:900;margin-bottom:10px;">💾 نسخة احتياطية من كل بيانات الموقع</div>
+      <p style="font-size:12px;color:#64748b;margin-bottom:14px;line-height:1.7;">
+        بتحمّل ملف فيه كل الإعلانات، التجار، بروفايلات الزواج، المنتديات، البانرات، وكل حاجة في الموقع.
+        احتفظ بالملف ده في مكان آمن (إيميلك، Google Drive). لو حصلت مشكلة، الملف ده بيوثّق كل البيانات وقت التحميل.
+      </p>
+      <button onclick="downloadFullBackup()" id="backupBtn" style="width:100%;background:#1a7a4a;color:white;border:none;padding:14px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">⬇️ تحميل نسخة احتياطية الآن</button>
+      <div id="backupStatus" style="margin-top:10px;font-size:12px;color:#64748b;text-align:center;"></div>
+    </div>
+    <div style="background:#fef9c3;border-radius:14px;padding:14px;border:1px solid #fde047;">
+      <div style="font-size:12px;font-weight:900;margin-bottom:6px;">💡 نصيحة</div>
+      <div style="font-size:12px;color:#92400e;line-height:1.7;">حمّل نسخة احتياطية مرة كل أسبوع على الأقل، وخصوصاً قبل أي تعديل كبير في الموقع.</div>
+    </div>`;
+}
+
+async function downloadFullBackup() {
+  var btn = document.getElementById('backupBtn');
+  var status = document.getElementById('backupStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري تجميع البيانات...';
+
+  var tables = [
+    'ads', 'market_traders', 'transport_votes', 'marriage_profiles',
+    'marriage_likes', 'marriage_requests', 'community_posts', 'community_comments',
+    'community_likes', 'banners', 'ad_stats', 'ad_likes', 'reviews', 'site_visits'
+  ];
+
+  var backup = { exported_at: new Date().toISOString(), site: 'دليل الحامول' };
+  var done = 0;
+
+  for(var i=0; i<tables.length; i++) {
+    var t = tables[i];
+    try {
+      status.textContent = 'جاري تحميل: ' + t + ' (' + (i+1) + '/' + tables.length + ')';
+      var rows = await sbFetch('GET', t + '?select=*&limit=5000');
+      backup[t] = rows || [];
+      done++;
+    } catch(e) {
+      backup[t] = { error: 'تعذر تحميل هذا الجدول' };
+    }
+  }
+
+  var json = JSON.stringify(backup, null, 2);
+  var blob = new Blob([json], {type: 'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var dateStr = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = 'hamoul-backup-' + dateStr + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  btn.disabled = false;
+  btn.textContent = '⬇️ تحميل نسخة احتياطية الآن';
+  status.textContent = '✅ تم تحميل ' + done + ' من ' + tables.length + ' جدول بنجاح';
+  showToast('✅ تم تحميل النسخة الاحتياطية');
 }
 
 function loadAdminMerchants(cont) {
@@ -2674,7 +2738,7 @@ async function loadAdminStatsPage(page, tab='stats') {
         <button onclick="adminLogout()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:6px;font-family:Cairo,sans-serif;font-size:11px;cursor:pointer;">خروج</button>
       </div>
       <div style="display:flex;width:100%;background:white;border-bottom:2px solid var(--border);overflow-x:auto;">
-        ${[['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات']].map(([t,l])=>`<button onclick="showAdminPanel('${t}')" style="flex-shrink:0;flex:1;padding:10px 4px;border:none;background:${tab===t?'#0284c7':'white'};color:${tab===t?'white':'var(--gray)'};font-family:Cairo,sans-serif;font-size:10px;font-weight:700;cursor:pointer;">${l}</button>`).join('')}
+        ${[['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار'],['backup','💾 نسخة']].map(([t,l])=>`<button onclick="showAdminPanel('${t}')" style="flex-shrink:0;flex:1;padding:10px 4px;border:none;background:${tab===t?'#0284c7':'white'};color:${tab===t?'white':'var(--gray)'};font-family:Cairo,sans-serif;font-size:10px;font-weight:700;cursor:pointer;">${l}</button>`).join('')}
       </div>
     </div>
     <div class="dyn-content" style="padding:12px;" id="statsContent">
