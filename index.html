@@ -827,6 +827,11 @@ function filterSubs(catId) {
 
 // ======= ADS PAGE =======
 async function showAdsPage(cat, sub) {
+  // لو قسم "البيع أونلاين" → روح لصفحة المعارض
+  if(cat.id === 'online' && sub) {
+    showShopsPage(sub);
+    return;
+  }
   // حفظ الصفحة الحالية كـ parent عشان زرار الرجوع
   const currentState = sessionStorage.getItem('dynState');
   if(currentState) {
@@ -865,6 +870,361 @@ async function showAdsPage(cat, sub) {
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
   loadCatBanner(cat.id, sub || null);
+}
+
+// ======= نظام المعارض (البيع أونلاين) =======
+
+async function showShopsPage(subcategory) {
+  sessionStorage.setItem('dynState', JSON.stringify({type:'shops', sub:subcategory}));
+  const page = document.getElementById('dynamicPage');
+  const onlineCat = CATEGORIES.find(c=>c.id==='online') || {icon:'🛍️', color:'#ede9fe'};
+
+  page.innerHTML =
+    '<div class="dyn-header">' +
+      '<button class="dyn-back" onclick="showSubsPage(CATEGORIES.find(c=>c.id===\'online\'))">←</button>' +
+      '<span>🛍️ ' + subcategory + '</span>' +
+      '<span></span>' +
+    '</div>' +
+    '<div id="catBanner"></div>' +
+    '<div class="dyn-content" id="shopsContent" style="padding:14px 12px 80px;">' +
+      '<div style="text-align:center;padding:40px;color:var(--gray);">⏳ جاري التحميل...</div>' +
+    '</div>' +
+    '<button onclick="showShopRegister(\'' + subcategory + '\')" style="position:fixed;bottom:20px;left:20px;background:#7c3aed;color:white;border:none;padding:14px 20px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.4);z-index:100;">🏪 افتح معرضك</button>';
+
+  page.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  loadCatBanner('online', subcategory);
+
+  // جيب المعارض المعتمدة في هذا القسم
+  const traders = await sbFetch('GET', 'shop_traders?subcategory=eq.'+encodeURIComponent(subcategory)+'&status=eq.approved&order=created_at.desc') || [];
+  const content = document.getElementById('shopsContent');
+  if(!content) return;
+
+  if(!traders.length) {
+    content.innerHTML =
+      '<div style="text-align:center;padding:60px 20px;color:var(--gray);">' +
+        '<div style="font-size:56px;margin-bottom:12px;">🏪</div>' +
+        '<p style="font-size:15px;font-weight:700;">مفيش معارض في ' + subcategory + ' لحد دلوقتي</p>' +
+        '<p style="font-size:13px;margin-top:6px;">كن أول من يفتح معرضه!</p>' +
+      '</div>';
+    return;
+  }
+
+  // عرض كروت المعارض
+  content.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+    traders.map(function(t) {
+      return '<div onclick="openShop(\'' + t.id + '\')" style="background:white;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden;cursor:pointer;">' +
+        (t.logo_url ?
+          '<img src="' + t.logo_url + '" loading="lazy" style="width:100%;height:100px;object-fit:cover;" onerror="this.style.display=\'none\'">' :
+          '<div style="width:100%;height:100px;background:' + onlineCat.color + ';display:flex;align-items:center;justify-content:center;font-size:36px;">🛍️</div>') +
+        '<div style="padding:10px;">' +
+          '<div style="font-size:13px;font-weight:900;color:#1e293b;">' + escapeHtml(t.shop_name) + '</div>' +
+          (t.description ? '<div style="font-size:11px;color:#64748b;margin-top:3px;line-height:1.5;">' + escapeHtml(t.description.substring(0,50)) + (t.description.length>50?'...':'') + '</div>' : '') +
+          '<div style="font-size:10px;color:#94a3b8;margin-top:4px;">📦 معرض ' + subcategory + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('') +
+    '</div>' +
+    // زرار تسجيل الدخول لو عنده معرض بالفعل
+    '<div style="text-align:center;padding:20px 0;">' +
+      '<button onclick="showShopLogin(\'' + subcategory + '\')" style="background:none;border:1px solid #e5e7eb;padding:10px 20px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;color:#64748b;cursor:pointer;">عندك معرض بالفعل؟ سجّل دخول</button>' +
+    '</div>';
+}
+
+async function openShop(traderId) {
+  const page = document.getElementById('dynamicPage');
+  page.innerHTML = '<div style="text-align:center;padding:60px;color:var(--gray);">⏳ جاري تحميل المعرض...</div>';
+
+  const [traderArr, sections, products] = await Promise.all([
+    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1') || [],
+    sbFetch('GET', 'shop_sections?trader_id=eq.'+traderId+'&order=sort_order.asc') || [],
+    sbFetch('GET', 'shop_products?trader_id=eq.'+traderId+'&order=created_at.desc') || [],
+  ]);
+  const trader = traderArr && traderArr[0];
+  if(!trader) return;
+
+  var backState = sessionStorage.getItem('dynState');
+
+  page.innerHTML =
+    '<div class="dyn-header">' +
+      '<button class="dyn-back" onclick="showShopsPage(\'' + trader.subcategory + '\')">←</button>' +
+      '<span>🏪 ' + escapeHtml(trader.shop_name) + '</span>' +
+      '<span></span>' +
+    '</div>' +
+    '<div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:16px;color:white;display:flex;align-items:center;gap:12px;">' +
+      (trader.logo_url ? '<img src="'+trader.logo_url+'" style="width:60px;height:60px;border-radius:12px;object-fit:cover;">' : '<div style="width:60px;height:60px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:28px;">🏪</div>') +
+      '<div style="flex:1;">' +
+        '<div style="font-size:16px;font-weight:900;">' + escapeHtml(trader.shop_name) + '</div>' +
+        (trader.description ? '<div style="font-size:12px;opacity:.85;margin-top:3px;">' + escapeHtml(trader.description) + '</div>' : '') +
+        '<div style="font-size:11px;opacity:.7;margin-top:2px;">📦 ' + trader.subcategory + '</div>' +
+      '</div>' +
+      '<a href="tel:' + trader.phone + '" style="background:rgba(255,255,255,.25);color:white;padding:8px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">📞</a>' +
+    '</div>' +
+    '<div class="dyn-content" id="shopContent" style="padding:12px 12px 80px;">' +
+      renderShopProductsBySection(sections, products) +
+    '</div>';
+}
+
+function renderShopProductsBySection(sections, products) {
+  if(!products.length) {
+    return '<div style="text-align:center;padding:40px;color:var(--gray);"><div style="font-size:40px;margin-bottom:10px;">📦</div><p>المعرض فاضي دلوقتي</p></div>';
+  }
+
+  // منتجات من غير قسم
+  var unsectioned = products.filter(function(p){ return !p.section_id; });
+  var html = '';
+
+  if(sections && sections.length) {
+    sections.forEach(function(sec) {
+      var secProducts = products.filter(function(p){ return p.section_id === sec.id; });
+      if(!secProducts.length) return;
+      html += '<div style="font-size:14px;font-weight:900;margin:14px 0 8px;padding-right:4px;color:#1e293b;">📁 ' + escapeHtml(sec.name) + '</div>';
+      html += renderProductsGrid(secProducts);
+    });
+  }
+
+  if(unsectioned.length) {
+    if(sections && sections.length) html += '<div style="font-size:14px;font-weight:900;margin:14px 0 8px;padding-right:4px;color:#1e293b;">📦 منتجات أخرى</div>';
+    html += renderProductsGrid(unsectioned);
+  }
+
+  return html || '<div style="text-align:center;padding:40px;color:var(--gray);">مفيش منتجات</div>';
+}
+
+function renderProductsGrid(products) {
+  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;">' +
+    products.map(function(p) {
+      return '<div style="background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);">' +
+        (p.image_url ? '<img src="'+p.image_url+'" loading="lazy" style="width:100%;height:120px;object-fit:cover;" onerror="this.style.display=\'none\'">' : '<div style="width:100%;height:80px;background:#f8fafc;display:flex;align-items:center;justify-content:center;font-size:28px;">🛍️</div>') +
+        '<div style="padding:8px;">' +
+          '<div style="font-size:13px;font-weight:700;line-height:1.4;">' + escapeHtml(p.title) + '</div>' +
+          (p.price ? '<div style="font-size:14px;font-weight:900;color:#7c3aed;margin-top:3px;">' + parseFloat(p.price).toLocaleString() + ' ج</div>' : '') +
+          (p.description ? '<div style="font-size:11px;color:#64748b;margin-top:2px;line-height:1.4;">' + escapeHtml(p.description.substring(0,40)) + (p.description.length>40?'...':'') + '</div>' : '') +
+          (p.stock ? '<div style="font-size:10px;color:#94a3b8;margin-top:3px;">📦 متاح: ' + p.stock + '</div>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+// ===== تسجيل تاجر جديد =====
+function showShopRegister(subcategory) {
+  var overlay = document.createElement('div');
+  overlay.id = 'shopRegOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">' +
+      '<div style="font-size:16px;font-weight:900;margin-bottom:4px;text-align:center;">🏪 افتح معرضك في ' + subcategory + '</div>' +
+      '<div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:16px;">معرضك بيتراجع من الأدمن قبل ما يظهر للناس</div>' +
+      '<input id="sr_name" type="text" placeholder="اسم المعرض / المحل" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="sr_phone" type="tel" placeholder="رقم موبايلك" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="sr_pass" type="password" placeholder="كلمة سر للدخول لمعرضك" autocomplete="new-password" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<textarea id="sr_desc" placeholder="وصف مختصر للمعرض (اختياري)" rows="2" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:14px;resize:none;"></textarea>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="submitShopRegister(\'' + subcategory + '\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ سجّل معرضي</button>' +
+        '<button onclick="document.getElementById(\'shopRegOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function submitShopRegister(subcategory) {
+  var name = document.getElementById('sr_name').value.trim();
+  var phone = document.getElementById('sr_phone').value.trim();
+  var pass = document.getElementById('sr_pass').value.trim();
+  var desc = document.getElementById('sr_desc').value.trim();
+  if(!name){ showToast('اكتب اسم المعرض', 'error'); return; }
+  if(!phone){ showToast('اكتب رقم موبايلك', 'error'); return; }
+  if(!pass || pass.length < 4){ showToast('كلمة السر لازم تكون 4 أحرف على الأقل', 'error'); return; }
+
+  // تحقق إن الموبايل مش مسجل قبل كده في نفس القسم
+  var existing = await sbFetch('GET', 'shop_traders?phone=eq.'+encodeURIComponent(phone)+'&subcategory=eq.'+encodeURIComponent(subcategory)+'&limit=1') || [];
+  if(existing.length){ showToast('الرقم ده عنده معرض بالفعل في هذا القسم — سجّل دخول', 'error'); return; }
+
+  var passHash = await hashPass(pass);
+  await sbFetch('POST', 'shop_traders', {
+    category: 'online',
+    subcategory: subcategory,
+    shop_name: name,
+    phone: phone,
+    password_hash: passHash,
+    description: desc,
+    status: 'pending'
+  });
+
+  document.getElementById('shopRegOverlay').remove();
+  showToast('✅ تم التسجيل! معرضك بيتراجع من الأدمن وهيظهر قريباً');
+}
+
+// ===== دخول تاجر موجود =====
+function showShopLogin(subcategory) {
+  var overlay = document.createElement('div');
+  overlay.id = 'shopLoginOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:340px;text-align:center;">' +
+      '<div style="font-size:32px;margin-bottom:8px;">🏪</div>' +
+      '<div style="font-size:16px;font-weight:900;margin-bottom:14px;">دخول لمعرضك في ' + subcategory + '</div>' +
+      '<input id="sl_phone" type="tel" placeholder="رقم موبايلك" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:8px;text-align:center;">' +
+      '<input id="sl_pass" type="password" placeholder="كلمة السر" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:14px;text-align:center;">' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="doShopLogin(\'' + subcategory + '\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">دخول</button>' +
+        '<button onclick="document.getElementById(\'shopLoginOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function doShopLogin(subcategory) {
+  var phone = document.getElementById('sl_phone').value.trim();
+  var pass = document.getElementById('sl_pass').value.trim();
+  if(!phone || !pass){ showToast('اكتب الموبايل وكلمة السر', 'error'); return; }
+  var passHash = await hashPass(pass);
+  var rows = await sbFetch('GET', 'shop_traders?phone=eq.'+encodeURIComponent(phone)+'&password_hash=eq.'+passHash+'&subcategory=eq.'+encodeURIComponent(subcategory)+'&limit=1') || [];
+  if(!rows.length){ showToast('الموبايل أو كلمة السر غلط ❌', 'error'); return; }
+  var trader = rows[0];
+  document.getElementById('shopLoginOverlay').remove();
+  if(trader.status === 'pending'){ showToast('⏳ معرضك لسه تحت المراجعة', 'error'); return; }
+  showShopDashboard(trader);
+}
+
+// ===== لوحة تحكم التاجر =====
+async function showShopDashboard(trader) {
+  var sections = await sbFetch('GET', 'shop_sections?trader_id=eq.'+trader.id+'&order=sort_order.asc') || [];
+  var products = await sbFetch('GET', 'shop_products?trader_id=eq.'+trader.id+'&order=created_at.desc') || [];
+
+  var overlay = document.createElement('div');
+  overlay.id = 'shopDashOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;overflow-y:auto;';
+  overlay.innerHTML =
+    '<div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:14px 16px;display:flex;align-items:center;gap:10px;color:white;">' +
+      '<button onclick="document.getElementById(\'shopDashOverlay\').remove()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">✕ خروج</button>' +
+      '<div style="flex:1;text-align:center;font-size:15px;font-weight:900;">لوحة تحكم ' + escapeHtml(trader.shop_name) + '</div>' +
+      '<button onclick="showShopsPage(\'' + trader.subcategory + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">👁️ شوف</button>' +
+    '</div>' +
+    '<div style="padding:14px 12px 80px;" id="dashContent">' +
+      // أقسام المعرض
+      '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+          '<div style="font-size:14px;font-weight:900;">📁 أقسام معرضك</div>' +
+          '<button onclick="showAddSection(\'' + trader.id + '\')" style="background:#7c3aed;color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ قسم</button>' +
+        '</div>' +
+        (sections.length ?
+          '<div id="sectionsList">' + sections.map(function(s){ return '<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:6px;">' +
+            '<div style="flex:1;font-size:13px;font-weight:700;">📁 ' + escapeHtml(s.name) + '</div>' +
+            '<span style="font-size:11px;color:#94a3b8;">' + products.filter(function(p){return p.section_id===s.id;}).length + ' منتج</span>' +
+            '<button data-sid="'+s.id+'" onclick="deleteShopSection(this.dataset.sid,\''+trader.id+'\')" style="background:#fee2e2;color:#dc2626;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;">حذف</button>' +
+          '</div>'; }).join('') + '</div>' :
+          '<p style="font-size:12px;color:#94a3b8;">مفيش أقسام لحد دلوقتي</p>'
+        ) +
+      '</div>' +
+      // إضافة منتج
+      '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">' +
+        '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">➕ أضف منتج جديد</div>' +
+        (sections.length ? '<select id="dp_section" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;"><option value="">— بدون قسم —</option>' + sections.map(function(s){ return '<option value="'+s.id+'">'+escapeHtml(s.name)+'</option>'; }).join('') + '</select>' : '') +
+        '<input id="dp_title" type="text" placeholder="اسم المنتج" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+        '<input id="dp_price" type="number" placeholder="السعر (جنيه)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+        '<input id="dp_stock" type="number" placeholder="الكمية المتاحة" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+        '<textarea id="dp_desc" placeholder="وصف المنتج (اختياري)" rows="2" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;"></textarea>' +
+        '<label style="display:flex;align-items:center;justify-content:center;gap:8px;background:#f0fdf4;color:#16a34a;padding:11px;border-radius:10px;cursor:pointer;border:1.5px dashed #16a34a;font-weight:700;font-size:13px;margin-bottom:10px;">' +
+          '📷 اختر صورة المنتج' +
+          '<input type="file" id="dp_img" accept="image/*" style="display:none;" onchange="previewDashImg(this)">' +
+        '</label>' +
+        '<div id="dp_img_preview"></div>' +
+        '<button onclick="submitShopProduct(\'' + trader.id + '\')" style="width:100%;background:#16a34a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ أضف المنتج</button>' +
+      '</div>' +
+      // المنتجات الحالية
+      '<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);">' +
+        '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">📦 منتجاتك (' + products.length + ')</div>' +
+        (products.length ?
+          '<div>' + products.map(function(p){ return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:6px;">' +
+            (p.image_url ? '<img src="'+p.image_url+'" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">' : '<div style="width:44px;height:44px;border-radius:8px;background:#e5e7eb;display:flex;align-items:center;justify-content:center;">🛍️</div>') +
+            '<div style="flex:1;">' +
+              '<div style="font-size:13px;font-weight:700;">' + escapeHtml(p.title) + '</div>' +
+              (p.price ? '<div style="font-size:12px;color:#7c3aed;font-weight:700;">' + parseFloat(p.price).toLocaleString() + ' ج</div>' : '') +
+            '</div>' +
+            '<button data-pid="'+p.id+'" onclick="deleteShopProduct(this.dataset.pid,\''+trader.id+'\')" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️</button>' +
+          '</div>'; }).join('') + '</div>' :
+          '<p style="font-size:12px;color:#94a3b8;">مفيش منتجات لحد دلوقتي</p>'
+        ) +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function showAddSection(traderId) {
+  var name = prompt('اسم القسم الجديد (مثال: هدوم شتوي):');
+  if(!name || !name.trim()) return;
+  sbFetch('POST', 'shop_sections', { trader_id: traderId, name: name.trim() }).then(function() {
+    showToast('✅ تم إضافة القسم');
+    // refresh dashboard
+    var overlay = document.getElementById('shopDashOverlay');
+    if(overlay) overlay.remove();
+    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+  });
+}
+
+async function deleteShopSection(sectionId, traderId) {
+  if(!confirm('مسح القسم ده وكل منتجاته؟')) return;
+  await sbFetch('DELETE', 'shop_products?section_id=eq.'+sectionId, null);
+  await sbFetch('DELETE', 'shop_sections?id=eq.'+sectionId, null);
+  showToast('تم حذف القسم');
+  var overlay = document.getElementById('shopDashOverlay');
+  if(overlay) overlay.remove();
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+}
+
+function previewDashImg(input) {
+  var preview = document.getElementById('dp_img_preview');
+  if(!preview || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    preview.innerHTML = '<img src="'+e.target.result+'" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px;">';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+async function submitShopProduct(traderId) {
+  var title = document.getElementById('dp_title').value.trim();
+  var price = document.getElementById('dp_price').value.trim();
+  var stock = document.getElementById('dp_stock').value.trim();
+  var desc = document.getElementById('dp_desc').value.trim();
+  var secEl = document.getElementById('dp_section');
+  var sectionId = secEl ? secEl.value : '';
+  var imgFile = document.getElementById('dp_img').files[0];
+  if(!title){ showToast('اكتب اسم المنتج', 'error'); return; }
+
+  var imgUrl = null;
+  if(imgFile) {
+    showToast('⏳ جاري رفع الصورة...');
+    imgUrl = await uploadImage(imgFile);
+  }
+
+  await sbFetch('POST', 'shop_products', {
+    trader_id: traderId,
+    section_id: sectionId || null,
+    title: title,
+    price: price ? parseFloat(price) : null,
+    stock: stock ? parseInt(stock) : null,
+    description: desc || null,
+    image_url: imgUrl
+  });
+
+  showToast('✅ تم إضافة المنتج!');
+  // refresh
+  var overlay = document.getElementById('shopDashOverlay');
+  if(overlay) overlay.remove();
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+}
+
+async function deleteShopProduct(productId, traderId) {
+  if(!confirm('مسح المنتج ده؟')) return;
+  await sbFetch('DELETE', 'shop_products?id=eq.'+productId, null);
+  showToast('تم حذف المنتج');
+  var overlay = document.getElementById('shopDashOverlay');
+  if(overlay) overlay.remove();
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
 }
 
 function renderShopGrid(ads, cat) {
@@ -911,7 +1271,7 @@ function renderAdsList(ads, cat) {
     const favBg = isFav(ad.id) ? '#fee2e2' : '#f3f4f6';
     const favColor = isFav(ad.id) ? '#dc2626' : '#aaa';
     const adminBtn = isAdmin ? '<button class="btn-del" onclick="deleteAdAdmin(\'' + ad.id + '\')">🗑️</button>' : '';
-    const imgHtml = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')">' : '';
+    const imgHtml = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')">' : '';
     const addrHtml = ad.address ? '<div style="font-size:12px;color:var(--gray);margin-bottom:6px;">📍 ' + ad.address + '</div>' : '';
     const subHtml = ad.subcategory ? '<span class="ad-sub-badge">' + ad.subcategory + '</span>' : '';
 
@@ -922,7 +1282,7 @@ function renderAdsList(ads, cat) {
       '<a href="' + waUrl + '" target="_blank" class="btn-wa" onclick="trackStat(\'' + ad.id + '\',\'whatsapp\')">📞 تواصل</a>';
 
     if(ad.is_sponsored) {
-      const imgSponsored = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')" style="border-bottom:2px solid #7c3aed;">' : '';
+      const imgSponsored = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')" style="border-bottom:2px solid #7c3aed;">' : '';
       return '<div class="ad-card" style="border:2px solid #7c3aed;background:linear-gradient(135deg,#faf5ff,#fff);position:relative;overflow:visible;">' +
         '<div style="position:absolute;top:-1px;right:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;padding:3px 14px;border-radius:0 0 10px 10px;font-size:11px;font-weight:900;">📢 إعلان ممول</div>' +
         imgSponsored +
@@ -936,7 +1296,7 @@ function renderAdsList(ads, cat) {
     }
 
     if(ad.is_offer) {
-      const imgOffer = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')" style="border-bottom:2px solid #f59e0b;">' : '';
+      const imgOffer = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')" style="border-bottom:2px solid #f59e0b;">' : '';
       return '<div class="ad-card" style="border:2px solid #f59e0b;background:linear-gradient(135deg,#fffbeb,#fff);position:relative;overflow:visible;">' +
         '<div style="position:absolute;top:-1px;right:12px;background:#f59e0b;color:white;padding:3px 12px;border-radius:0 0 8px 8px;font-size:11px;font-weight:900;">⭐ إعلان مميز</div>' +
         imgOffer +
@@ -2010,7 +2370,7 @@ async function showAdminPanel(tab='pending') {
 
   const tabList = [
     ['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],
-    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار'],['backup','💾 نسخة احتياطية']
+    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار'],['shops','🛍️ معارض'],['backup','💾 نسخة احتياطية']
   ];
 
   // بناء الهيكل دايماً من أول
@@ -2050,7 +2410,65 @@ async function showAdminPanel(tab='pending') {
     loadAdminMerchants(cont);
   } else if(tab === 'backup') {
     loadAdminBackup(cont);
+  } else if(tab === 'shops') {
+    loadAdminShops(cont);
   }
+}
+
+async function loadAdminShops(cont) {
+  cont.innerHTML = '<div style="text-align:center;padding:30px;">⏳ جاري التحميل...</div>';
+  var traders = await sbFetch('GET', 'shop_traders?order=created_at.desc&limit=100') || [];
+  var pending = traders.filter(function(t){ return t.status==='pending'; });
+  var approved = traders.filter(function(t){ return t.status==='approved'; });
+
+  cont.innerHTML =
+    '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;">' +
+      '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">⏳ معارض تنتظر الموافقة (' + pending.length + ')</div>' +
+      (pending.length ? pending.map(function(t){
+        return '<div style="background:#fef9c3;border-radius:10px;padding:12px;margin-bottom:8px;">' +
+          '<div style="font-size:13px;font-weight:900;">' + escapeHtml(t.shop_name) + '</div>' +
+          '<div style="font-size:11px;color:#64748b;margin-top:2px;">📦 ' + t.subcategory + ' • 📞 ' + t.phone + '</div>' +
+          (t.description ? '<div style="font-size:11px;color:#64748b;margin-top:2px;">' + escapeHtml(t.description) + '</div>' : '') +
+          '<div style="display:flex;gap:8px;margin-top:8px;">' +
+            '<button data-tid="'+t.id+'" onclick="approveShopTrader(this.dataset.tid)" style="flex:1;background:#16a34a;color:white;border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">✅ اعتمد</button>' +
+            '<button data-tid="'+t.id+'" onclick="rejectShopTrader(this.dataset.tid)" style="flex:1;background:#dc2626;color:white;border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">❌ ارفض</button>' +
+          '</div>' +
+        '</div>';
+      }).join('') : '<p style="font-size:12px;color:#94a3b8;">مفيش معارض في الانتظار</p>') +
+    '</div>' +
+    '<div style="background:white;border-radius:14px;padding:14px;">' +
+      '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">✅ معارض معتمدة (' + approved.length + ')</div>' +
+      (approved.length ? approved.map(function(t){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f0fdf4;border-radius:8px;margin-bottom:6px;">' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px;font-weight:700;">' + escapeHtml(t.shop_name) + '</div>' +
+            '<div style="font-size:11px;color:#64748b;">' + t.subcategory + ' • ' + t.phone + '</div>' +
+          '</div>' +
+          '<button data-tid="'+t.id+'" onclick="deleteShopTraderAdmin(this.dataset.tid)" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️</button>' +
+        '</div>';
+      }).join('') : '<p style="font-size:12px;color:#94a3b8;">مفيش معارض معتمدة</p>') +
+    '</div>';
+}
+
+async function approveShopTrader(id) {
+  await sbFetch('PATCH', 'shop_traders?id=eq.'+id, {status:'approved'});
+  showToast('✅ تم اعتماد المعرض');
+  showAdminPanel('shops');
+}
+
+async function rejectShopTrader(id) {
+  await sbFetch('PATCH', 'shop_traders?id=eq.'+id, {status:'rejected'});
+  showToast('تم رفض المعرض');
+  showAdminPanel('shops');
+}
+
+async function deleteShopTraderAdmin(id) {
+  if(!confirm('مسح المعرض وكل منتجاته نهائياً؟')) return;
+  await sbFetch('DELETE', 'shop_products?trader_id=eq.'+id, null);
+  await sbFetch('DELETE', 'shop_sections?trader_id=eq.'+id, null);
+  await sbFetch('DELETE', 'shop_traders?id=eq.'+id, null);
+  showToast('تم الحذف');
+  showAdminPanel('shops');
 }
 
 function loadAdminBackup(cont) {
@@ -2997,7 +3415,7 @@ async function loadAdminStatsPage(page, tab='stats') {
           const cat = CATEGORIES.find(c=>c.id===ad.category)||{icon:'📋',name:'عام'};
           return `
           <div class="ad-card" style="border-right:4px solid ${tab==='pending'?'#7c3aed':tab==='approved'?'var(--green)':'var(--red)'};">
-            ${ad.image_url ? `<img src="${ad.image_url}" class="ad-img" style="max-height:120px;" onerror="this.style.display=\"none\"">` : ''}
+            ${ad.image_url ? `<img src="${ad.image_url}" class="ad-img" loading="lazy" style="max-height:120px;" onerror="this.style.display=\"none\"">` : ''}
             <div class="ad-body">
               <div style="font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;">${cat.icon} ${cat.name} ${ad.subcategory?'← '+ad.subcategory:''}</div>
               <div class="ad-title">${escapeHtml(ad.title)||'بدون عنوان'}</div>
@@ -3589,7 +4007,7 @@ function showFavorites() {
           const date = new Date(ad.created_at).toLocaleDateString('ar-EG');
           return `
           <div class="ad-card">
-            ${ad.image_url?`<img src="${ad.image_url}" class="ad-img" onerror="this.style.display='none'" onclick="openAdDetails('${ad.id}')">` : ''}
+            ${ad.image_url?`<img src="${ad.image_url}" class="ad-img" loading="lazy" onerror="this.style.display='none'" onclick="openAdDetails('${ad.id}')">` : ''}
             <div class="ad-body">
               <div style="font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;">${cat.icon} ${cat.name}${ad.subcategory?' ← '+ad.subcategory:''}</div>
               <div class="ad-title" onclick="openAdDetails('${ad.id}')">${escapeHtml(ad.title)||''}</div>
@@ -3652,7 +4070,7 @@ function showDeals() {
           return `
           <div class="ad-card" style="border-top:3px solid var(--orange);">
             ${ad.is_offer ? '<div style="background:var(--orange);color:white;padding:4px 12px;font-size:11px;font-weight:700;text-align:center;">⭐ عرض مميز</div>' : ''}
-            ${ad.image_url ? `<img src="${ad.image_url}" class="ad-img" onerror="this.style.display='none'" onclick="openAdDetails('${ad.id}')">` : ''}
+            ${ad.image_url ? `<img src="${ad.image_url}" class="ad-img" loading="lazy" onerror="this.style.display='none'" onclick="openAdDetails('${ad.id}')">` : ''}
             <div class="ad-body">
               <div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:4px;">${cat.icon} ${cat.name}${ad.subcategory?' ← '+ad.subcategory:''}</div>
               <div class="ad-title" onclick="openAdDetails('${ad.id}')">${escapeHtml(ad.title)||''}</div>
@@ -3942,7 +4360,7 @@ function loadSimilarAds(currentId, category, subcategory) {
         let phone = ad.phone||''; if(phone.startsWith('01')) phone='20'+phone.substring(1);
         return `
         <div onclick="openAdDetails('${ad.id}')" style="display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid #f9fafb;cursor:pointer;">
-          ${ad.image_url ? `<img src="${ad.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display='none'">` : `<div style="width:60px;height:60px;border-radius:8px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${fakeCat.icon}</div>`}
+          ${ad.image_url ? `<img src="${ad.image_url}" loading="lazy" style="width:60px;height:60px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display='none'">` : `<div style="width:60px;height:60px;border-radius:8px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${fakeCat.icon}</div>`}
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ad.title||''}</div>
             ${ad.description ? `<div style="font-size:12px;color:var(--gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ad.description.substring(0,60)}</div>` : ''}
@@ -6266,7 +6684,7 @@ function showCharityOrgs() {
           let phone = ad.phone||''; if(phone.startsWith('01')) phone='20'+phone.substring(1);
           return `
           <div class="ad-card" style="border-right:3px solid #059669;" onclick="openAdDetails('${ad.id}')">
-            ${ad.image_url?`<img src="${ad.image_url}" class="ad-img" onerror="this.style.display='none'">` : ''}
+            ${ad.image_url?`<img src="${ad.image_url}" class="ad-img" loading="lazy" onerror="this.style.display='none'">` : ''}
             <div class="ad-body">
               <div style="font-size:11px;color:#059669;font-weight:700;margin-bottom:4px;">🕌 ${ad.subcategory||'جمعية خيرية'}</div>
               <div class="ad-title">${ad.title||''}</div>
@@ -6408,7 +6826,7 @@ function showCharityPage() {
           let phone = ad.phone||''; if(phone.startsWith('01')) phone='20'+phone.substring(1);
           return `
           <div class="ad-card" style="border-right:3px solid #059669;">
-            ${ad.image_url?`<img src="${ad.image_url}" class="ad-img" onerror="this.style.display='none'" onclick="openAdDetails('${ad.id}')">` : ''}
+            ${ad.image_url?`<img src="${ad.image_url}" class="ad-img" loading="lazy" onerror="this.style.display='none'" onclick="openAdDetails('${ad.id}')">` : ''}
             <div class="ad-body">
               <div style="font-size:11px;color:#059669;font-weight:700;margin-bottom:4px;">🤍 ${ad.subcategory||'تبرع'} — مجاناً لوجه الله</div>
               <div class="ad-title" onclick="openAdDetails('${ad.id}')">${escapeHtml(ad.title)||''}</div>
