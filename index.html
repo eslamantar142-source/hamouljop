@@ -799,7 +799,7 @@ function showSubsPage(cat) {
     <div class="dyn-content">
       <div class="cats-grid" id="subsGrid">
         ${cat.subs.map(sub => `
-          <div class="cat-card" onclick="showAdsPage(CATEGORIES.find(c=>c.id==='${cat.id}'),'${sub}')">
+          <div class="cat-card" data-catid="${cat.id}" data-sub="${sub.replace(/"/g,'&quot;')}" onclick="var el=this;showAdsPage(CATEGORIES.find(c=>c.id===el.dataset.catid),el.dataset.sub)">
             <div class="cat-name">${sub}</div>
             <div class="cat-icon-wrap" style="background:${cat.color}">${cat.icon}</div>
           </div>
@@ -963,6 +963,15 @@ async function openShop(traderId) {
       '</div>' +
       '<a href="tel:' + trader.phone + '" style="background:rgba(255,255,255,.25);color:white;padding:8px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">📞</a>' +
     '</div>' +
+    (trader.address || trader.map_url ?
+      '<div style="background:white;margin:0;padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">' +
+        '<span style="font-size:18px;">📍</span>' +
+        '<div style="flex:1;">' +
+          (trader.address ? '<div style="font-size:12px;font-weight:700;color:#1e293b;">' + escapeHtml(trader.address) + '</div>' : '') +
+          (trader.map_url ? '<a href="'+escapeHtml(trader.map_url)+'" target="_blank" style="font-size:11px;color:#0369a1;text-decoration:none;font-weight:700;">🗺️ عرض على الخريطة</a>' : '') +
+        '</div>' +
+      '</div>'
+    : '') +
     '<div class="dyn-content" id="shopContent" style="padding:12px 12px 80px;">' +
       renderShopProductsBySection(sections, products) +
     '</div>' +
@@ -997,7 +1006,7 @@ function renderShopProductsBySection(sections, products) {
 }
 
 function renderProductsGrid(products) {
-  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;">' +
+  return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;">' +
     products.map(function(p) {
       var imgs = (p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []);
       var imgHtml = '';
@@ -1105,7 +1114,9 @@ function showShopRegister(subcategory) {
       '<input id="sr_name" type="text" placeholder="اسم المعرض / المحل" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="sr_phone" type="tel" placeholder="رقم موبايلك" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="sr_pass" type="password" placeholder="كلمة سر للدخول لمعرضك" autocomplete="new-password" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
-      '<textarea id="sr_desc" placeholder="وصف مختصر للمعرض (اختياري)" rows="2" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:14px;resize:none;"></textarea>' +
+      '<textarea id="sr_desc" placeholder="وصف مختصر للمعرض (اختياري)" rows="2" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;"></textarea>' +
+      '<input id="sr_address" type="text" placeholder="العنوان (مثال: شارع الشهداء، الحامول)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="sr_mapurl" type="url" placeholder="رابط الخريطة من Google Maps (اختياري)" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:14px;">' +
       '<div style="display:flex;gap:8px;">' +
         '<button onclick="submitShopRegister(\'' + subcategory + '\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ سجّل معرضي</button>' +
         '<button onclick="document.getElementById(\'shopRegOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
@@ -1127,6 +1138,8 @@ async function submitShopRegister(subcategory) {
   var existing = await sbFetch('GET', 'shop_traders?phone=eq.'+encodeURIComponent(phone)+'&subcategory=eq.'+encodeURIComponent(subcategory)+'&limit=1') || [];
   if(existing.length){ showToast('الرقم ده عنده معرض بالفعل في هذا القسم — سجّل دخول', 'error'); return; }
 
+  var address = document.getElementById('sr_address').value.trim();
+  var mapurl = document.getElementById('sr_mapurl').value.trim();
   var passHash = await hashPass(pass);
   var newTrader = await sbFetch('POST', 'shop_traders', {
     category: 'online',
@@ -1135,8 +1148,10 @@ async function submitShopRegister(subcategory) {
     phone: phone,
     password_hash: passHash,
     description: desc,
+    address: address || null,
+    map_url: mapurl || null,
     status: 'pending'
-  }, true); // true = return response
+  }, true);
 
   // احفظ بيانات الدخول في الجهاز عشان ما يكتبهاش تاني
   if(newTrader && newTrader[0]) {
