@@ -439,6 +439,209 @@ async function hashPass(str) {
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
+// ============ نظام تسجيل المستخدمين (موبايل+باسورد أو جيميل) ============
+const GOOGLE_CLIENT_ID = 'GOOGLE_CLIENT_ID_PLACEHOLDER'; // حط الـ Client ID بتاعك من Google Cloud Console هنا
+
+async function sbRPC(fn, params) {
+  const res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},
+    body: JSON.stringify(params)
+  });
+  let data = null;
+  try { data = await res.json(); } catch(e) {}
+  if(!res.ok) {
+    const msg = (data && (data.message || data.hint || data.details)) || 'server_error';
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function getCurrentUser() {
+  try { return JSON.parse(localStorage.getItem('hamoul_user') || 'null'); } catch(e) { return null; }
+}
+function setCurrentUser(u) {
+  try { localStorage.setItem('hamoul_user', JSON.stringify(u)); } catch(e) {}
+}
+function logoutUser() {
+  localStorage.removeItem('hamoul_user');
+  showToast('تم تسجيل الخروج');
+  const el = document.getElementById('acctStatusBox');
+  if(el) renderAcctStatusBox();
+}
+function isOwnerOf(item) {
+  const u = getCurrentUser();
+  return !!(u && item && item.owner_id && item.owner_id === u.id);
+}
+
+// بيفتح نافذة تسجيل الدخول وبيرجع الـ user بعد ما يسجل — بيستخدم قبل أي عملية إضافة
+let _authResolve = null;
+function requireLogin() {
+  const u = getCurrentUser();
+  if(u) return Promise.resolve(u);
+  return new Promise(function(resolve) {
+    _authResolve = resolve;
+    openAuthModal();
+  });
+}
+
+function openAuthModal() {
+  closeAuthModal();
+  const overlay = document.createElement('div');
+  overlay.id = 'authModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:16px;max-width:380px;width:100%;padding:20px;max-height:90vh;overflow-y:auto;font-family:Cairo,sans-serif;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+        '<div style="font-size:16px;font-weight:900;">🔐 سجّل عشان تكمل</div>' +
+        '<button onclick="closeAuthModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);">✕</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-bottom:14px;background:#f3f4f6;border-radius:10px;padding:4px;">' +
+        '<button id="authTabLogin" onclick="switchAuthTab(\'login\')" style="flex:1;padding:8px;border:none;border-radius:8px;background:white;font-family:Cairo,sans-serif;font-weight:700;font-size:13px;cursor:pointer;">تسجيل الدخول</button>' +
+        '<button id="authTabRegister" onclick="switchAuthTab(\'register\')" style="flex:1;padding:8px;border:none;border-radius:8px;background:transparent;font-family:Cairo,sans-serif;font-weight:700;font-size:13px;cursor:pointer;color:var(--gray);">حساب جديد</button>' +
+      '</div>' +
+      '<div id="authTabContent"></div>' +
+      '<div style="text-align:center;margin:14px 0 10px;color:var(--gray);font-size:12px;position:relative;">' +
+        '<span style="background:white;padding:0 10px;position:relative;z-index:1;">أو</span>' +
+        '<div style="position:absolute;top:50%;right:0;left:0;height:1px;background:var(--border);"></div>' +
+      '</div>' +
+      '<div id="googleSignInBtn" style="display:flex;justify-content:center;min-height:40px;"></div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  switchAuthTab('login');
+  renderGoogleButton();
+}
+
+function closeAuthModal() {
+  const el = document.getElementById('authModalOverlay');
+  if(el) el.remove();
+}
+
+function switchAuthTab(tab) {
+  const lb = document.getElementById('authTabLogin'), rb = document.getElementById('authTabRegister');
+  lb.style.background = tab==='login' ? 'white' : 'transparent';
+  lb.style.color = tab==='login' ? 'var(--dark)' : 'var(--gray)';
+  rb.style.background = tab==='register' ? 'white' : 'transparent';
+  rb.style.color = tab==='register' ? 'var(--dark)' : 'var(--gray)';
+  const c = document.getElementById('authTabContent');
+  if(tab === 'login') {
+    c.innerHTML =
+      '<input id="authPhone" type="tel" placeholder="رقم الموبايل" dir="ltr" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
+      '<input id="authPass" type="password" placeholder="كلمة المرور" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
+      '<button id="authSubmitBtn" onclick="submitLogin()" style="width:100%;background:var(--primary);color:white;border:none;padding:12px;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">دخول</button>';
+  } else {
+    c.innerHTML =
+      '<input id="authName" type="text" placeholder="الاسم" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
+      '<input id="authPhone" type="tel" placeholder="رقم الموبايل" dir="ltr" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
+      '<input id="authPass" type="password" placeholder="كلمة مرور (6 أرقام/حروف على الأقل)" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
+      '<button id="authSubmitBtn" onclick="submitRegister()" style="width:100%;background:var(--green);color:white;border:none;padding:12px;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">إنشاء حساب</button>';
+  }
+}
+
+async function submitLogin() {
+  const phone = document.getElementById('authPhone').value.trim();
+  const pass = document.getElementById('authPass').value;
+  if(!phone || !pass) { showToast('اكتب رقم الموبايل وكلمة المرور', 'error'); return; }
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true; btn.textContent = 'جاري الدخول...';
+  try {
+    const hash = await hashPass(pass);
+    const rows = await sbRPC('login_phone_user', {p_phone: phone, p_password_hash: hash});
+    const u = rows && rows[0];
+    if(!u) throw new Error('INVALID_LOGIN');
+    finishAuth({id:u.id, name:u.name, phone, token:u.token});
+  } catch(e) {
+    showToast('❌ رقم الموبايل أو كلمة المرور غلط', 'error');
+    btn.disabled = false; btn.textContent = 'دخول';
+  }
+}
+
+async function submitRegister() {
+  const name = document.getElementById('authName').value.trim();
+  const phone = document.getElementById('authPhone').value.trim();
+  const pass = document.getElementById('authPass').value;
+  if(!name) { showToast('اكتب الاسم', 'error'); return; }
+  if(!phone || phone.length < 11) { showToast('اكتب رقم موبايل صحيح', 'error'); return; }
+  if(!pass || pass.length < 6) { showToast('كلمة المرور لازم 6 على الأقل', 'error'); return; }
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true; btn.textContent = 'جاري التسجيل...';
+  try {
+    const hash = await hashPass(pass);
+    const rows = await sbRPC('register_phone_user', {p_name:name, p_phone:phone, p_password_hash:hash});
+    const u = rows && rows[0];
+    finishAuth({id:u.id, name:u.name, phone, token:u.token});
+  } catch(e) {
+    if((e.message||'').indexOf('PHONE_EXISTS') !== -1) showToast('❌ الرقم ده مسجل قبل كده — جرب تسجيل الدخول', 'error');
+    else showToast('❌ حصل خطأ، حاول تاني', 'error');
+    btn.disabled = false; btn.textContent = 'إنشاء حساب';
+  }
+}
+
+function renderGoogleButton() {
+  const wrap = document.getElementById('googleSignInBtn');
+  if(!wrap) return;
+  if(GOOGLE_CLIENT_ID === 'GOOGLE_CLIENT_ID_PLACEHOLDER') {
+    wrap.innerHTML = '<div style="font-size:11px;color:var(--gray);text-align:center;">التسجيل بالجيميل هيتفعّل قريب</div>';
+    return;
+  }
+  function render() {
+    try {
+      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential });
+      google.accounts.id.renderButton(wrap, { theme:'outline', size:'large', text:'continue_with', locale:'ar', width:280 });
+    } catch(e) {}
+  }
+  if(window.google && window.google.accounts) render();
+  else {
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = render;
+    document.head.appendChild(s);
+  }
+}
+
+async function handleGoogleCredential(response) {
+  try {
+    const base64 = response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(function(c){
+      return '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2);
+    }).join('')));
+    const rows = await sbRPC('upsert_google_user', {p_email:payload.email, p_name:payload.name||payload.email, p_google_sub:payload.sub});
+    const u = rows && rows[0];
+    finishAuth({id:u.id, name:u.name, email:payload.email, token:u.token});
+  } catch(e) {
+    showToast('❌ حصل خطأ في تسجيل الجيميل', 'error');
+  }
+}
+
+function finishAuth(user) {
+  setCurrentUser(user);
+  closeAuthModal();
+  showToast('✅ أهلاً ' + user.name + '!');
+  renderAcctStatusBox();
+  if(_authResolve) { const r = _authResolve; _authResolve = null; r(user); }
+}
+
+function renderAcctStatusBox() {
+  const box = document.getElementById('acctStatusBox');
+  if(!box) return;
+  const u = getCurrentUser();
+  if(u) {
+    box.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">' +
+        '<div style="width:38px;height:38px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">👤</div>' +
+        '<div style="flex:1;"><div style="font-size:13px;font-weight:700;">' + escapeHtml(u.name) + '</div><div style="font-size:11px;color:var(--gray);">' + (u.phone || u.email || '') + '</div></div>' +
+        '<button onclick="logoutUser()" style="background:#fee2e2;color:#dc2626;border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">خروج</button>' +
+      '</div>';
+  } else {
+    box.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">' +
+        '<div style="width:38px;height:38px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">🔐</div>' +
+        '<div style="flex:1;"><div style="font-size:13px;font-weight:700;">مش مسجل دخول</div><div style="font-size:11px;color:var(--gray);">سجل عشان تقدر تضيف إعلانات ومواضيع</div></div>' +
+        '<button onclick="openAuthModal()" style="background:var(--primary);color:white;border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">دخول</button>' +
+      '</div>';
+  }
+}
+
 // CATEGORIES DEFINITION
 const CATEGORIES = [
   { id:'jobs', name:'وظائف', icon:'💼', color:'#e8f5ee', subs:[], children: [
@@ -1916,9 +2119,10 @@ async function openAdDetails(adId) {
           <button onclick="toggleSponsored('${adId}',${!ad.is_sponsored});hideDynPage();" style="flex:1;background:${ad.is_sponsored?'#ede9fe':'#f5f3ff'};color:${ad.is_sponsored?'#dc2626':'#7c3aed'};border:2px solid ${ad.is_sponsored?'#c4b5fd':'#ddd6fe'};padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${ad.is_sponsored?'❌ إلغاء الممول':'📢 إعلان ممول'}</button>
           <button onclick="if(confirm('تأكيد الحذف؟')){deleteAdAdmin('${adId}');hideDynPage();}" style="background:#fee2e2;color:var(--red);border:none;padding:10px 16px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🗑️ حذف</button>
         </div>`:''}
-        <div style="padding:0 16px 8px;">
-          <button onclick="openEditAd('${adId}')" style="width:100%;background:#eff6ff;color:#2563eb;border:2px solid #bfdbfe;padding:11px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">✏️ تعديل الإعلان</button>
-        </div>
+        ${isOwnerOf(ad)?`<div style="padding:0 16px 8px;display:flex;gap:8px;">
+          <button onclick="openEditAd('${adId}')" style="flex:1;background:#eff6ff;color:#2563eb;border:2px solid #bfdbfe;padding:11px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">✏️ تعديل الإعلان</button>
+          <button onclick="if(confirm('متأكد إنك عايز تحذف الإعلان؟')){deleteMyAd('${adId}');}" style="background:#fee2e2;color:var(--red);border:2px solid #fca5a5;padding:11px 16px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🗑️</button>
+        </div>`:''}
       </div>
     </div>
     <div style="position:fixed;bottom:0;left:0;right:0;background:white;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,.08);">
@@ -2194,6 +2398,9 @@ async function submitEditAd(adId) {
     
     if(!title) { showToast('اكتب العنوان', 'error'); if(btn){btn.textContent='💾 حفظ التعديلات';btn.disabled=false;} return; }
     
+    const curUser = getCurrentUser();
+    if(!curUser) { showToast('لازم تسجل الدخول الأول', 'error'); if(btn){btn.textContent='💾 حفظ التعديلات';btn.disabled=false;} return; }
+
     const updateData = {
       title,
       description: desc || null,
@@ -2207,31 +2414,60 @@ async function submitEditAd(adId) {
     };
     
     // لو في صور جديدة
+    let newImages = null;
     if(addSelectedFiles.length > 0) {
       const urls = [];
       for(const file of addSelectedFiles) {
         try { const url = await uploadImage(file); urls.push(url); } catch(e) {}
       }
-      if(urls.length > 0) updateData.images = urls;
+      if(urls.length > 0) newImages = urls;
     }
     
-    await sbFetch('PATCH', `ads?id=eq.${adId}`, updateData);
+    // التعديل بيعدي على دالة آمنة في السيرفر بتتأكد إنك صاحب الإعلان فعلاً قبل الحفظ
+    await sbRPC('secure_update_ad', {
+      p_token: curUser.token, p_ad_id: adId,
+      p_title: updateData.title, p_description: updateData.description,
+      p_phone: updateData.phone, p_phone2: updateData.phone2,
+      p_location: updateData.location, p_location_url: updateData.location_url,
+      p_price: updateData.price, p_category: updateData.category, p_subcategory: updateData.subcategory,
+      p_images: newImages
+    });
     
     // تحديث allAds
     const idx = allAds.findIndex(a => a.id === adId);
-    if(idx !== -1) allAds[idx] = {...allAds[idx], ...updateData};
+    if(idx !== -1) allAds[idx] = {...allAds[idx], ...updateData, ...(newImages?{images:newImages}:{})};
     
     showToast('✅ تم التعديل بنجاح!');
     hideDynPage();
     loadAds();
     
   } catch(e) {
-    showToast('❌ خطأ في التعديل: ' + (e.message||'').slice(0,40), 'error');
+    const msg = (e.message||'').indexOf('NOT_OWNER')!==-1 ? 'الإعلان ده مش بتاعك' : (e.message||'').indexOf('INVALID_SESSION')!==-1 ? 'سجل دخولك تاني' : (e.message||'').slice(0,40);
+    showToast('❌ خطأ في التعديل: ' + msg, 'error');
     if(btn) { btn.textContent = '💾 حفظ التعديلات'; btn.disabled = false; }
   }
 }
 
+// حذف إعلان بمعرفة صاحبه (مش الأدمن) — بيتأكد من الملكية جوه قاعدة البيانات
+async function deleteMyAd(adId) {
+  const curUser = getCurrentUser();
+  if(!curUser) { showToast('لازم تسجل الدخول', 'error'); return; }
+  try {
+    await sbRPC('secure_delete_ad', {p_token: curUser.token, p_ad_id: adId});
+    showToast('🗑️ تم حذف الإعلان');
+    hideDynPage();
+    loadAds();
+  } catch(e) {
+    const msg = (e.message||'').indexOf('NOT_OWNER')!==-1 ? 'الإعلان ده مش بتاعك' : 'حصل خطأ في الحذف';
+    showToast('❌ ' + msg, 'error');
+  }
+}
+
 function openAddModal(catId='', sub='') {
+  requireLogin().then(function(){ openAddModalForm(catId, sub); });
+}
+
+function openAddModalForm(catId='', sub='') {
   addCatId = catId; addSubId = sub;
   addSelectedFiles = [];
   sessionStorage.setItem('dynState', JSON.stringify({type:'add', catId, sub}));
@@ -2632,6 +2868,7 @@ async function submitNewAd() {
   btn.disabled=true; btn.textContent='جاري الإرسال...';
   try {
     const videoLks = getVideoLinks();
+    const _curUser = getCurrentUser();
     const adData = {
       title,
       description: desc || null,
@@ -2640,6 +2877,7 @@ async function submitNewAd() {
       subcategory: sub || null,
       status: 'pending',
       image_url: null,
+      owner_id: _curUser ? _curUser.id : null,
       is_offer: isAdmin && document.getElementById('fIsOffer')?.checked ? true : false,
       address: document.getElementById('fAddress')?.value.trim() || null,
       location_url: null,
@@ -4262,6 +4500,9 @@ function showMore() {
         </div>
       </div>
 
+      <!-- ACCOUNT STATUS -->
+      <div style="background:white;border-bottom:8px solid #f8fafc;" id="acctStatusBox"></div>
+
       <!-- MENU ITEMS -->
       <div style="padding:16px;">
 
@@ -4357,6 +4598,7 @@ function showMore() {
   const moreLogo = document.getElementById('moreLogoImg');
   if(moreLogo && logoSrc) moreLogo.src = logoSrc;
 
+  renderAcctStatusBox();
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
@@ -7515,8 +7757,9 @@ function renderPostCard(p, deviceId) {
         style="display:flex;align-items:center;gap:4px;background:#dbeafe;color:#1d4ed8;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
         👍🏻
       </button>
-      ${isAdmin||p.author_device===deviceId ? `
-      <button onclick="deletePost('${p.id}')" style="margin-right:auto;background:#fee2e2;color:#dc2626;border:none;padding:7px 10px;border-radius:20px;font-size:12px;cursor:pointer;">🗑️</button>` : ''}
+      ${isAdmin||isOwnerOf(p) ? `
+      <button onclick="event.stopPropagation();openEditPostModal('${p.id}')" style="margin-right:auto;background:#eff6ff;color:#2563eb;border:none;padding:7px 10px;border-radius:20px;font-size:12px;cursor:pointer;">✏️</button>
+      <button onclick="event.stopPropagation();deletePost('${p.id}')" style="background:#fee2e2;color:#dc2626;border:none;padding:7px 10px;border-radius:20px;font-size:12px;cursor:pointer;">🗑️</button>` : ''}
     </div>
   </div>`;
 }
@@ -7674,6 +7917,11 @@ async function submitComment(postId) {
 }
 
 function openNewPostModal(communityId='teachers_community') {
+  requireLogin().then(function(){ openNewPostModalForm(communityId); });
+}
+
+function openNewPostModalForm(communityId='teachers_community') {
+  const curUser = getCurrentUser();
   const old = document.getElementById('newPostModal');
   if(old) old.remove();
   const modal = document.createElement('div');
@@ -7686,8 +7934,8 @@ function openNewPostModal(communityId='teachers_community') {
         <button onclick="document.getElementById('newPostModal').remove()" style="background:#f3f4f6;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;">✕</button>
       </div>
       <div style="margin-bottom:10px;">
-        <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">اسمك *</label>
-        <input id="postAuthor" placeholder="مثال: أستاذ محمد" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;">
+        <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">هتنشر باسم</label>
+        <input id="postAuthor" value="${escapeHtml(curUser?curUser.name:'')}" readonly style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:#f8fafc;color:#64748b;">
       </div>
       <div style="margin-bottom:10px;">
         <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">نوع الموضوع</label>
@@ -7738,12 +7986,13 @@ function previewPostImages() {
 }
 
 async function submitNewPost() {
-  const author = document.getElementById('postAuthor').value.trim();
+  const curUser = getCurrentUser();
+  if(!curUser) { showToast('لازم تسجل الدخول الأول','error'); openAuthModal(); return; }
+  const author = document.getElementById('postAuthor').value.trim() || curUser.name;
   const title = document.getElementById('postTitle').value.trim();
   const content = document.getElementById('postContent').value.trim();
   const category = document.getElementById('postCat').value;
   const communityId = document.getElementById('postCommunityId')?.value || 'teachers_community';
-  if(!author) { showToast('اكتب اسمك','error'); return; }
   if(!title) { showToast('اكتب عنوان الموضوع','error'); return; }
   if(!content) { showToast('اكتب تفاصيل الموضوع','error'); return; }
 
@@ -7767,6 +8016,7 @@ async function submitNewPost() {
     await sbFetch('POST', 'community_posts', {
       author_name: author,
       author_device: getDeviceId(),
+      owner_id: curUser.id,
       title, content, category,
       likes_count: 0, comments_count: 0,
       notes: communityId,
@@ -7801,9 +8051,71 @@ async function uploadToStorage(file, path) {
 
 async function deletePost(id) {
   if(!confirm('حذف الموضوع؟')) return;
-  await sbFetch('DELETE', `community_posts?id=eq.${id}`);
-  showToast('🗑️ تم الحذف');
-  await loadCommunityPosts('all');
+  const curUser = getCurrentUser();
+  try {
+    if(isAdmin) {
+      await sbFetch('DELETE', `community_posts?id=eq.${id}`);
+    } else {
+      if(!curUser) { showToast('لازم تسجل الدخول', 'error'); return; }
+      await sbRPC('secure_delete_post', {p_token: curUser.token, p_post_id: id});
+    }
+    showToast('🗑️ تم الحذف');
+    await loadCommunityPosts('all');
+  } catch(e) {
+    const msg = (e.message||'').indexOf('NOT_OWNER')!==-1 ? 'الموضوع ده مش بتاعك' : 'حصل خطأ في الحذف';
+    showToast('❌ ' + msg, 'error');
+  }
+}
+
+// ===== تعديل موضوع مجتمع =====
+function openEditPostModal(postId) {
+  const curUser = getCurrentUser();
+  if(!curUser) { showToast('لازم تسجل الدخول', 'error'); return; }
+  sbFetch('GET', `community_posts?id=eq.${postId}&select=*`).then(function(rows){
+    const p = rows && rows[0];
+    if(!p) { showToast('الموضوع مش موجود', 'error'); return; }
+    if(!isAdmin && p.owner_id !== curUser.id) { showToast('الموضوع ده مش بتاعك', 'error'); return; }
+    const old = document.getElementById('editPostModal');
+    if(old) old.remove();
+    const modal = document.createElement('div');
+    modal.id = 'editPostModal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;background:rgba(0,0,0,.5);';
+    modal.innerHTML = `
+      <div style="background:white;border-radius:20px 20px 0 0;width:100%;padding:20px;padding-bottom:32px;max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div style="font-size:15px;font-weight:900;">✏️ تعديل الموضوع</div>
+          <button onclick="document.getElementById('editPostModal').remove()" style="background:#f3f4f6;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;">✕</button>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">عنوان الموضوع *</label>
+          <input id="editPostTitle" value="${escapeHtml(p.title)}" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">تفاصيل الموضوع *</label>
+          <textarea id="editPostContent" rows="4" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;resize:none;">${escapeHtml(p.content)}</textarea>
+        </div>
+        <button onclick="submitEditPost('${postId}')" style="width:100%;background:#7c3aed;color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💾 حفظ التعديلات</button>
+      </div>`;
+    modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+    document.body.appendChild(modal);
+  }).catch(function(){ showToast('حصل خطأ', 'error'); });
+}
+
+async function submitEditPost(postId) {
+  const curUser = getCurrentUser();
+  if(!curUser) { showToast('لازم تسجل الدخول', 'error'); return; }
+  const title = document.getElementById('editPostTitle').value.trim();
+  const content = document.getElementById('editPostContent').value.trim();
+  if(!title || !content) { showToast('اكتب العنوان والتفاصيل', 'error'); return; }
+  try {
+    await sbRPC('secure_update_post', {p_token: curUser.token, p_post_id: postId, p_title: title, p_content: content});
+    document.getElementById('editPostModal')?.remove();
+    showToast('✅ تم التعديل بنجاح!');
+    await loadCommunityPosts('all');
+  } catch(e) {
+    const msg = (e.message||'').indexOf('NOT_OWNER')!==-1 ? 'الموضوع ده مش بتاعك' : 'حصل خطأ في التعديل';
+    showToast('❌ ' + msg, 'error');
+  }
 }
 
 function sharePost(id, title) {
