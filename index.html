@@ -2046,6 +2046,14 @@ function restoreDynState(state) {
   } else if(state.type === 'ads') {
     const cat = CATEGORIES.find(c => c.id === state.catId);
     if(cat) showAdsPage(cat, state.sub || null);
+  } else if(state.type === 'subs2') {
+    const parent = CATEGORIES.find(c => c.id === state.catId);
+    const child = parent?.children?.find(c => c.id === state.childId);
+    if(parent && child) showSubsPageV2(parent, child);
+  } else if(state.type === 'ads2') {
+    if(state.catId && state.childId && state.subName) showAdsPageV2(state.catId, state.childId, state.subName);
+  } else if(state.type === 'shops') {
+    if(state.sub) showShopsPage(state.sub);
   } else {
     document.getElementById('dynamicPage').classList.remove('active');
     document.body.style.overflow = '';
