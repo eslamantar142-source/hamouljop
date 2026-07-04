@@ -723,7 +723,7 @@ const CATEGORIES = [
       {name:'كافيهات متكاملة', icon:'🏠'},
     ]},
   ]},
-  { id:'home',       name:'طلبات المنزل',        icon:'🛒', color:'#dcfce7', subs:['ماركت','عطارة','خضار وفاكهة','مقلة وتسالي','حلويات','شوايات سمك','فراخ وطيور','لحوم','مستحضرات تجميل'] },
+  { id:'home',       name:'طلبات المنزل',        icon:'🛒', color:'#dcfce7', subs:['ماركت','عطارة','خضار وفاكهة','مقلة وتسالي','حلويات','مخبوزات','شوايات سمك','فراخ وطيور','لحوم','فسيخ ورنجة','مستحضرات تجميل'] },
   { id:'furniture',  name:'أدوات منزلية',        icon:'🛋️', color:'#dbeafe', subs:['أثاث','مطابخ ألوميتال','تكييفات','أدوات منزلية','ستائر ومفروشات','أنتيكات ونجف','سجاد','فلاتر مياه','قطع غيار أدوات كهربائية'] },
   { id:'building',   name:'بناء وتشطيب',         icon:'🏗️', color:'#fef3c7', subs:['بناء','محارة','سيراميك','رخام','جبس','عزل','مقاولات عامة'] },
   { id:'crafts', name:'صيانة وحرفيين', icon:'🔧', color:'#ffedd5', subs:[], children: [
@@ -759,7 +759,7 @@ const CATEGORIES = [
   { id:'ads',        name:'دعاية وإعلان',        icon:'📣', color:'#dbeafe', subs:['تصميم جرافيك','طباعة','لافتات وإعلانات','سوشيال ميديا'] },
   { id:'charity', name:'قسم الخير والتبرعات', icon:'🤍', color:'#f0fdf4', subs:['ملابس وأدوات منزلية','أثاث وعفش','كتب ومستلزمات دراسية','أجهزة وموبايلات','طعام وغذاء','مساعدة مادية','تبرع بدم','غير ذلك'] },
   { id:'sports', name:'رياضة', icon:'⚽', color:'#dcfce7', subs:['صالات جيم','كرة قدم','أكاديمية فنون قتالية','ألعاب رياضية — مستلزمات وبيع','ملاعب رياضية','سباحة','دراجات'] },
-  { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:[] },
+  { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:['رياضيات','علوم','لغة عربية','لغة إنجليزية','فيزياء','كيمياء','أحياء','تاريخ وجغرافيا','تربية دينية','حاسب آلي','موسيقى ورسم','مواد ابتدائي','مواد إعدادي','مواد ثانوي','لغة فرنسية','سنتر تعليمي','روضة وحضانة','كورسات لغات','كورسات كمبيوتر','تأهيل وتدريب مهني','فصل دراسي خاص','مطلوب مدرس','أخرى'] },
   { id:'agri',       name:'محاصيل وأعلاف',       icon:'🌾', color:'#dcfce7', subs:['محاصيل زراعية','أعلاف'] },
   { id:'gold',       name:'محلات الدهب',          icon:'💍', color:'#fef9c3', subs:['دهب','فضة','مشغولات ذهبية','إصلاح مجوهرات','شراء دهب قديم'] },
   { id:'emergency',     name:'أرقام الطوارئ',         icon:'🚨', color:'#fee2e2', subs:[] },
@@ -954,7 +954,8 @@ function showAdsPageV2(parentId, childId, subName) {
   });
 
   sessionStorage.setItem('dynState', JSON.stringify({type:'ads2', catId:parentId, childId, subName}));
-  try{history.pushState({dyn:1},'');}catch(e){}
+  if(!window._restoringFromDetail){ try{history.pushState({dyn:1},'');}catch(e){} }
+  window._restoringFromDetail = false;
   const page = document.getElementById('dynamicPage');
   page.innerHTML = `
     <div class="dyn-header">
@@ -1041,15 +1042,19 @@ async function showAdsPage(cat, sub) {
     return;
   }
   // حفظ الصفحة الحالية كـ parent عشان زرار الرجوع
-  const currentState = sessionStorage.getItem('dynState');
-  if(currentState) {
-    try {
-      const cs = JSON.parse(currentState);
-      if(cs.type !== 'ads') sessionStorage.setItem('parentDynState', currentState);
-    } catch(e) {}
+  const _restoring = window._restoringFromDetail;
+  if(!_restoring){
+    const currentState = sessionStorage.getItem('dynState');
+    if(currentState) {
+      try {
+        const cs = JSON.parse(currentState);
+        if(cs.type !== 'ads') sessionStorage.setItem('parentDynState', currentState);
+      } catch(e) {}
+    }
   }
   sessionStorage.setItem('dynState', JSON.stringify({type:'ads', catId:cat.id, sub:sub||''}));
-  try{history.pushState({dyn:1},'');}catch(e){}
+  if(!_restoring){ try{history.pushState({dyn:1},'');}catch(e){} }
+  window._restoringFromDetail = false;
   const page = document.getElementById('dynamicPage');
   const title = sub ? sub : cat.name;
   // جلب أحدث الإعلانات من Supabase دايمًا
@@ -1948,9 +1953,18 @@ function goBackFromAdDetail() {
       if(ps.type === 'ads') {
         var cat = CATEGORIES.find(function(c){ return c.id === ps.catId; });
         if(cat) { window._restoringFromDetail = true; showAdsPage(cat, ps.sub || null); return; }
+      } else if(ps.type === 'ads2') {
+        if(ps.catId && ps.childId && ps.subName) { window._restoringFromDetail = true; showAdsPageV2(ps.catId, ps.childId, ps.subName); return; }
       } else if(ps.type === 'subs') {
         var cat2 = CATEGORIES.find(function(c){ return c.id === ps.catId; });
         if(cat2) { showSubsPage(cat2); return; }
+      } else if(ps.type === 'subs2') {
+        var parent = CATEGORIES.find(function(c){ return c.id === ps.catId; });
+        var child = parent && parent.children ? parent.children.find(function(c){ return c.id === ps.childId; }) : null;
+        if(parent && child) { showSubsPageV2(parent, child); return; }
+      } else if(ps.type === 'children') {
+        var cat3 = CATEGORIES.find(function(c){ return c.id === ps.catId; });
+        if(cat3) { showChildrenPage(cat3); return; }
       } else if(ps.type === 'shops') {
         showShopsPage(ps.sub);
         return;
@@ -4470,7 +4484,7 @@ function showMore() {
   page.innerHTML = `
     <div class="dyn-header">
       <button class="dyn-back" onclick="hideDynPage()">←</button>
-      <span>⚙️ المزيد</span>
+      <span>⚙️ المزيد <small style="font-size:10px;opacity:.7;">v15</small></span>
       <span></span>
     </div>
     <div class="dyn-content" style="padding:0;">
@@ -7622,7 +7636,7 @@ function showTeachersHub() {
           <div style="font-size:22px;margin-bottom:4px;">📋</div>
           <div style="font-size:11px;font-weight:700;color:#4c1d95;">أخرى</div>
         </div>
-        <div onclick="openAddModal()" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;">
+        <div onclick="openAddModal('teachers_hub','')" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;">
           <div style="font-size:22px;margin-bottom:4px;color:white;">+</div>
           <div style="font-size:11px;font-weight:700;color:white;">أضف</div>
         </div>
@@ -7670,7 +7684,7 @@ async function showTeacherAds(subName) {
     <div class="dyn-header" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
       <button class="dyn-back" onclick="showTeachersHub()">←</button>
       <span>👨‍🏫 ${subName}</span>
-      <button onclick="openAddModal()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ أضف</button>
+      <button onclick="openAddModal('teachers_hub','${subName}')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ أضف</button>
     </div>
     <div class="dyn-content" style="padding:16px 16px 80px;" id="adsContent">
       ${renderAdsList(filtered, fakeCat)}
