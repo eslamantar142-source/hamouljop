@@ -2387,6 +2387,9 @@ function openEditAd(adId) {
     var fPrice = document.getElementById('fPrice');
     if(fPrice) fPrice.value = ad.price || '';
     
+    // روابط الفيديو
+    fillVideoLinks(ad.video_links);
+    
     // القسم والتخصص
     var fCat = document.getElementById('fCat');
     if(fCat && ad.category) { fCat.value = ad.category; updateFSub(); }
@@ -2490,6 +2493,12 @@ async function submitEditAd(adId) {
         }
       } catch(e){}
     }
+
+    // تحديث روابط الفيديو
+    try {
+      const vids = getVideoLinks();
+      await sbFetch('PATCH', `ads?id=eq.${adId}`, {video_links: vids.length > 0 ? JSON.stringify(vids) : null});
+    } catch(e){}
     
     // تحديث allAds
     const idx = allAds.findIndex(a => a.id === adId);
@@ -2899,6 +2908,23 @@ function getVideoLinks() {
     if(v) links.push(v);
   });
   return links;
+}
+
+// ملء خانات الفيديو بالروابط القديمة وقت التعديل
+function fillVideoLinks(videoLinksJson) {
+  const container = document.getElementById('videoLinksContainer');
+  if(!container || !videoLinksJson) return;
+  let vids = [];
+  try { vids = JSON.parse(videoLinksJson); } catch(e) { return; }
+  if(!Array.isArray(vids) || !vids.length) return;
+  // املأ أول خانة موجودة، وضيف خانات للباقي
+  const firstInput = container.querySelector('input[type="url"]');
+  if(firstInput) firstInput.value = vids[0] || '';
+  for(let i = 1; i < vids.length && i < 5; i++) {
+    addVideoLink();
+    const rows = container.querySelectorAll('.video-link-row input[type="url"]');
+    if(rows[i]) rows[i].value = vids[i];
+  }
 }
 
 let addSelectedFiles = [];
