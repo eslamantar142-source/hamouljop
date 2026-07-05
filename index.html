@@ -538,6 +538,25 @@ function switchAuthTab(tab) {
   }
 }
 
+function _genToken() {
+  return 'tok_' + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+async function authInsert(body) {
+  const res = await fetch(SB_URL + '/rest/v1/auth_inbox', {
+    method: 'POST',
+    headers: {
+      'Content-Type':'application/json',
+      'apikey':SB_KEY,
+      'Authorization':'Bearer '+SB_KEY,
+      'Prefer':'return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok) { const t = await res.text(); throw new Error(t); }
+  return res.json();
+}
+
 async function submitLogin() {
   const phone = document.getElementById('authPhone').value.trim();
   const pass = document.getElementById('authPass').value;
@@ -546,12 +565,12 @@ async function submitLogin() {
   btn.disabled = true; btn.textContent = 'جاري الدخول...';
   try {
     const hash = await hashPass(pass);
-    const rows = await sbRPC('login_phone_user', {p_phone: phone, p_password_hash: hash});
-    const u = rows && rows[0];
-    if(!u) throw new Error('INVALID_LOGIN');
-    finishAuth({id:u.id, name:u.name, phone, token:u.token});
+    const rows = await authInsert({action:'login', in_phone:phone, in_hash:hash});
+    const r = (rows && rows[0]) || {};
+    if(r.out_status !== 'ok') { showToast('❌ رقم الموبايل أو كلمة المرور غلط', 'error'); btn.disabled=false; btn.textContent='دخول'; return; }
+    finishAuth({id:r.out_user_id, name:r.out_name, phone, token:r.out_token});
   } catch(e) {
-    showToast('❌ رقم الموبايل أو كلمة المرور غلط', 'error');
+    showToast('❌ حصل خطأ، حاول تاني', 'error');
     btn.disabled = false; btn.textContent = 'دخول';
   }
 }
@@ -567,12 +586,17 @@ async function submitRegister() {
   btn.disabled = true; btn.textContent = 'جاري التسجيل...';
   try {
     const hash = await hashPass(pass);
-    const rows = await sbRPC('register_phone_user', {p_name:name, p_phone:phone, p_password_hash:hash});
-    const u = rows && rows[0];
-    finishAuth({id:u.id, name:u.name, phone, token:u.token});
+    const rows = await authInsert({action:'register', in_name:name, in_phone:phone, in_hash:hash});
+    const r = (rows && rows[0]) || {};
+    if(r.out_status !== 'ok') {
+      if((r.out_message||'') === 'PHONE_EXISTS') showToast('❌ الرقم ده مسجل قبل كده — جرب تسجيل الدخول', 'error');
+      else showToast('❌ حصل خطأ، حاول تاني', 'error');
+      btn.disabled = false; btn.textContent = 'إنشاء حساب';
+      return;
+    }
+    finishAuth({id:r.out_user_id, name:r.out_name || name, phone, token:r.out_token});
   } catch(e) {
-    if((e.message||'').indexOf('PHONE_EXISTS') !== -1) showToast('❌ الرقم ده مسجل قبل كده — جرب تسجيل الدخول', 'error');
-    else showToast('❌ حصل خطأ، حاول تاني', 'error');
+    showToast('❌ حصل خطأ، حاول تاني', 'error');
     btn.disabled = false; btn.textContent = 'إنشاء حساب';
   }
 }
@@ -4160,8 +4184,10 @@ async function loadAdminStatsPage(page, tab='stats') {
 
 function adminLogout() {
   isAdmin = false;
+  localStorage.removeItem('hamoul_admin_auth');
   hideDynPage();
   showToast('تم الخروج من وضع المشرف');
+  loadAds();
 }
 
 function openAdminEditAd(adId) {
