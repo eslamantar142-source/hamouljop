@@ -556,6 +556,8 @@ async function authInsert(body) {
   if(!res.ok) { const t = await res.text(); throw new Error(t); }
   return res.json();
 }
+// اسم بديل للعمليات الآمنة العامة (تعديل/حذف)
+const secureOp = authInsert;
 
 async function submitLogin() {
   const phone = document.getElementById('authPhone').value.trim();
@@ -2461,15 +2463,22 @@ async function submitEditAd(adId) {
       if(urls.length > 0) newImages = urls;
     }
     
-    // التعديل بيعدي على دالة آمنة في السيرفر بتتأكد إنك صاحب الإعلان فعلاً قبل الحفظ
-    await sbRPC('secure_update_ad', {
-      p_token: curUser.token, p_ad_id: adId,
-      p_title: updateData.title, p_description: updateData.description,
-      p_phone: updateData.phone, p_phone2: updateData.phone2,
-      p_location: updateData.location, p_location_url: updateData.location_url,
-      p_price: updateData.price, p_category: updateData.category, p_subcategory: updateData.subcategory,
-      p_images: newImages
+    // التعديل بيعدي على معالج آمن في السيرفر بيتأكد إنك صاحب الإعلان فعلاً قبل الحفظ
+    const rr = await secureOp({
+      action:'update_ad', in_token: curUser.token, in_target_id: adId,
+      in_title: updateData.title, in_desc: updateData.description,
+      in_phone: updateData.phone, in_phone2: updateData.phone2,
+      in_location: updateData.location, in_location_url: updateData.location_url,
+      in_price: updateData.price, in_category: updateData.category, in_subcategory: updateData.subcategory
     });
+    const rres = (rr && rr[0]) || {};
+    if(rres.out_status !== 'ok') {
+      const m = rres.out_message === 'NOT_OWNER' ? 'الإعلان ده مش بتاعك' : rres.out_message === 'INVALID_SESSION' ? 'سجل دخولك تاني' : 'حصل خطأ';
+      showToast('❌ ' + m, 'error');
+      if(btn){btn.textContent='💾 حفظ التعديلات';btn.disabled=false;} return;
+    }
+    // الصور بتتحدث بشكل منفصل (لو فيه صور جديدة)
+    if(newImages) { try { await sbFetch('PATCH', `ads?id=eq.${adId}`, {images:newImages}); } catch(e){} }
     
     // تحديث allAds
     const idx = allAds.findIndex(a => a.id === adId);
@@ -2480,24 +2489,27 @@ async function submitEditAd(adId) {
     loadAds();
     
   } catch(e) {
-    const msg = (e.message||'').indexOf('NOT_OWNER')!==-1 ? 'الإعلان ده مش بتاعك' : (e.message||'').indexOf('INVALID_SESSION')!==-1 ? 'سجل دخولك تاني' : (e.message||'').slice(0,40);
-    showToast('❌ خطأ في التعديل: ' + msg, 'error');
+    showToast('❌ خطأ في التعديل، حاول تاني', 'error');
     if(btn) { btn.textContent = '💾 حفظ التعديلات'; btn.disabled = false; }
   }
 }
 
-// حذف إعلان بمعرفة صاحبه (مش الأدمن) — بيتأكد من الملكية جوه قاعدة البيانات
+// حذف إعلان بمعرفة صاحبه — بيتأكد من الملكية جوه قاعدة البيانات
 async function deleteMyAd(adId) {
   const curUser = getCurrentUser();
   if(!curUser) { showToast('لازم تسجل الدخول', 'error'); return; }
   try {
-    await sbRPC('secure_delete_ad', {p_token: curUser.token, p_ad_id: adId});
+    const rr = await secureOp({action:'delete_ad', in_token: curUser.token, in_target_id: adId});
+    const rres = (rr && rr[0]) || {};
+    if(rres.out_status !== 'ok') {
+      showToast('❌ ' + (rres.out_message==='NOT_OWNER'?'الإعلان ده مش بتاعك':'حصل خطأ في الحذف'), 'error');
+      return;
+    }
     showToast('🗑️ تم حذف الإعلان');
     hideDynPage();
     loadAds();
   } catch(e) {
-    const msg = (e.message||'').indexOf('NOT_OWNER')!==-1 ? 'الإعلان ده مش بتاعك' : 'حصل خطأ في الحذف';
-    showToast('❌ ' + msg, 'error');
+    showToast('❌ حصل خطأ في الحذف', 'error');
   }
 }
 
@@ -8097,7 +8109,9 @@ async function deletePost(id) {
       await sbFetch('DELETE', `community_posts?id=eq.${id}`);
     } else {
       if(!curUser) { showToast('لازم تسجل الدخول', 'error'); return; }
-      await sbRPC('secure_delete_post', {p_token: curUser.token, p_post_id: id});
+      const rr = await secureOp({action:'delete_post', in_token: curUser.token, in_target_id: id});
+      const rres = (rr && rr[0]) || {};
+      if(rres.out_status !== 'ok') { showToast('❌ ' + (rres.out_message==='NOT_OWNER'?'الموضوع ده مش بتاعك':'حصل خطأ'), 'error'); return; }
     }
     showToast('🗑️ تم الحذف');
     await loadCommunityPosts('all');
@@ -8148,7 +8162,9 @@ async function submitEditPost(postId) {
   const content = document.getElementById('editPostContent').value.trim();
   if(!title || !content) { showToast('اكتب العنوان والتفاصيل', 'error'); return; }
   try {
-    await sbRPC('secure_update_post', {p_token: curUser.token, p_post_id: postId, p_title: title, p_content: content});
+    const rr = await secureOp({action:'update_post', in_token: curUser.token, in_target_id: postId, in_title: title, in_desc: content});
+    const rres = (rr && rr[0]) || {};
+    if(rres.out_status !== 'ok') { showToast('❌ ' + (rres.out_message==='NOT_OWNER'?'الموضوع ده مش بتاعك':'حصل خطأ'), 'error'); return; }
     document.getElementById('editPostModal')?.remove();
     showToast('✅ تم التعديل بنجاح!');
     await loadCommunityPosts('all');
