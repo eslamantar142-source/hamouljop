@@ -2362,7 +2362,7 @@ function openEditAd(adId) {
   // بعد ما الفورم يفتح نملأه بالبيانات
   setTimeout(function() {
     // العنوان
-    var fName = document.getElementById('fName');
+    var fName = document.getElementById('fTitle');
     if(fName) fName.value = ad.title || '';
     
     // الوصف
@@ -2375,12 +2375,12 @@ function openEditAd(adId) {
     var fPhone2 = document.getElementById('fPhone2');
     if(fPhone2) fPhone2.value = ad.phone2 || '';
     
-    // الموقع
-    var fLocation = document.getElementById('fLocation');
+    // الموقع (العنوان النصي)
+    var fLocation = document.getElementById('fAddress');
     if(fLocation) fLocation.value = ad.location || '';
     
     // رابط الخريطة
-    var fMapUrl = document.getElementById('fMapUrl');
+    var fMapUrl = document.getElementById('fLocation');
     if(fMapUrl) fMapUrl.value = ad.location_url || '';
     
     // السعر
@@ -2427,12 +2427,12 @@ async function submitEditAd(adId) {
   if(btn) { btn.textContent = 'جاري الحفظ...'; btn.disabled = true; }
   
   try {
-    const title = document.getElementById('fName')?.value.trim();
+    const title = document.getElementById('fTitle')?.value.trim();
     const desc = document.getElementById('fDesc')?.value.trim();
     const phone = document.getElementById('fPhone')?.value.trim();
     const phone2 = (document.getElementById('fPhone2')?.value || '').trim();
-    const location = document.getElementById('fLocation')?.value.trim();
-    const locationUrl = document.getElementById('fMapUrl')?.value.trim();
+    const location = document.getElementById('fAddress')?.value.trim();
+    const locationUrl = document.getElementById('fLocation')?.value.trim();
     const price = document.getElementById('fPrice')?.value.trim();
     const cat = document.getElementById('fCat')?.value;
     const sub = document.getElementById('fSub')?.value;
