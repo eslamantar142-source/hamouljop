@@ -2498,7 +2498,7 @@ async function submitEditAd(adId) {
     try {
       const vids = getVideoLinks();
       await sbFetch('PATCH', `ads?id=eq.${adId}`, {video_links: vids.length > 0 ? JSON.stringify(vids) : null});
-    } catch(e){}
+    } catch(e){ console.error('video_links save failed:', e.message || e); showToast('⚠️ الإعلان اتحفظ بس الفيديو مش', 'error'); }
     
     // تحديث allAds
     const idx = allAds.findIndex(a => a.id === adId);
