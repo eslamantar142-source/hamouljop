@@ -2356,7 +2356,8 @@ function openEditAd(adId) {
   const page = document.getElementById('dynamicPage');
   
   // نفس فورم الإضافة بس بنملأه ببيانات الإعلان
-  openAddModal(ad.category || '', ad.subcategory || '');
+  // بننادي الفورم مباشرة (المستخدم مسجّل بالفعل لأن زرار التعديل ظهرله)
+  openAddModalForm(ad.category || '', ad.subcategory || '');
   
   // بعد ما الفورم يفتح نملأه بالبيانات
   setTimeout(function() {
