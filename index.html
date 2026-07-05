@@ -2479,11 +2479,21 @@ async function submitEditAd(adId) {
       if(btn){btn.textContent='💾 حفظ التعديلات';btn.disabled=false;} return;
     }
     // الصور بتتحدث بشكل منفصل (لو فيه صور جديدة)
-    if(newImages) { try { await sbFetch('PATCH', `ads?id=eq.${adId}`, {images:newImages}); } catch(e){} }
+    if(newImages && newImages.length) {
+      try {
+        // تحديث الصورة الرئيسية في جدول الإعلانات
+        await sbFetch('PATCH', `ads?id=eq.${adId}`, {image_url: newImages[0]});
+        // تحديث جدول الصور المتعددة: امسح القديمة وضيف الجديدة
+        try { await sbFetch('DELETE', `ad_images?ad_id=eq.${adId}`); } catch(e){}
+        for(const u of newImages) {
+          try { await sbFetch('POST', 'ad_images', {ad_id: adId, image_url: u}); } catch(e){}
+        }
+      } catch(e){}
+    }
     
     // تحديث allAds
     const idx = allAds.findIndex(a => a.id === adId);
-    if(idx !== -1) allAds[idx] = {...allAds[idx], ...updateData, ...(newImages?{images:newImages}:{})};
+    if(idx !== -1) allAds[idx] = {...allAds[idx], ...updateData, ...(newImages?{image_url:newImages[0], images:newImages}:{})};
     
     showToast('✅ تم التعديل بنجاح!');
     hideDynPage();
