@@ -699,6 +699,9 @@ const CATEGORIES = [
       {name:'أخرى', icon:'📋'},
     ]},
   ]},
+  { id:'online',     name:'البيع أونلاين',      icon:'🛍️', color:'#ede9fe', subs:['ملابس حريمي','ملابس رجالي','ملابس أطفال','أحذية وشنط','مستحضرات تجميل وعناية','عطور','إكسسوارات وهدايا','موبايلات وإلكترونيات','سماعات وإكسسوار تقني','ساعات','أدوات منزلية','مفروشات وديكور','ألعاب أطفال','كتب ومستلزمات مدرسية','أغذية وحلويات هوم ميد','مخبوزات وكيك','عسل ومنتجات طبيعية','مكملات غذائية','أدوات رياضية','أدوات حرف يدوية','نباتات وبذور','حيوانات أليفة ومستلزماتها','أخرى'] },
+  { id:'marriage',      name:'بيت الحلال',           icon:'💍', color:'#fce7f3', subs:[] },
+  { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:['رياضيات','علوم','لغة عربية','لغة إنجليزية','فيزياء','كيمياء','أحياء','تاريخ وجغرافيا','تربية دينية','حاسب آلي','موسيقى ورسم','مواد ابتدائي','مواد إعدادي','مواد ثانوي','لغة فرنسية','سنتر تعليمي','روضة وحضانة','كورسات لغات','كورسات كمبيوتر','تأهيل وتدريب مهني','فصل دراسي خاص','مطلوب مدرس','أخرى'] },
   { id:'realestate', name:'عقارات', icon:'🏠', color:'#dbeafe', subs:[], children: [
     { id:'re_rent', name:'إيجار', icon:'🔑', color:'#dbeafe', subs:[
       {name:'شقق للإيجار', icon:'🏠'},
@@ -723,11 +726,11 @@ const CATEGORIES = [
       {name:'أراضي مطلوبة', icon:'🌿'},
     ]},
   ]},
-  { id:'deaths',     name:'وفيات',              icon:'🕌', color:'#f1f5f9', subs:[] },
-  { id:'online',     name:'البيع أونلاين',      icon:'🛍️', color:'#ede9fe', subs:['ملابس حريمي','ملابس رجالي','ملابس أطفال','أحذية وشنط','مستحضرات تجميل وعناية','عطور','إكسسوارات وهدايا','موبايلات وإلكترونيات','سماعات وإكسسوار تقني','ساعات','أدوات منزلية','مفروشات وديكور','ألعاب أطفال','كتب ومستلزمات مدرسية','أغذية وحلويات هوم ميد','مخبوزات وكيك','عسل ومنتجات طبيعية','مكملات غذائية','أدوات رياضية','أدوات حرف يدوية','نباتات وبذور','حيوانات أليفة ومستلزماتها','أخرى'] },
-  { id:'lost',       name:'مفقودات',            icon:'🔎', color:'#fff7ed', subs:[] },
   { id:'doctors',    name:'أطباء',              icon:'🩺', color:'#fee2e2', subs:['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','عام'] },
   { id:'medservices',name:'خدمات طبية',         icon:'🏥', color:'#fee2e2', subs:['صيدليات','معامل تحاليل','مراكز أشعة','مراكز تخاطب','مستلزمات طبية','معامل نظارات','تمريض منزلي','الطب التكميلي'] },
+  { id:'lost',       name:'مفقودات',            icon:'🔎', color:'#fff7ed', subs:[] },
+  { id:'deaths',     name:'وفيات',              icon:'🕌', color:'#f1f5f9', subs:[] },
+  { id:'used_market', name:'سوق المستعمل والاستبدال', icon:'🔄', color:'#fef3c7', subs:['موبايلات وأجهزة','أثاث وديكور','ملابس مستعملة','كتب ومستلزمات دراسية','أجهزة كهربائية','عفش كامل','سيارات وتكاتك','أدوات ومعدات','العاب أطفال','أخرى'] },
   { id:'food', name:'مطاعم وكافيهات', icon:'🍕', color:'#fef9c3', subs:[], children: [
     { id:'food_rest', name:'مطاعم', icon:'🍽️', color:'#fef9c3', subs:[
       {name:'مطاعم بروست', icon:'🍗'},
@@ -751,6 +754,15 @@ const CATEGORIES = [
   ]},
   { id:'home',       name:'طلبات المنزل',        icon:'🛒', color:'#dcfce7', subs:['ماركت','عطارة','خضار وفاكهة','مقلة وتسالي','حلويات','مخبوزات','شوايات سمك','فراخ وطيور','لحوم','فسيخ ورنجة','مستحضرات تجميل'] },
   { id:'furniture',  name:'أدوات منزلية',        icon:'🛋️', color:'#dbeafe', subs:['أثاث','مطابخ ألوميتال','تكييفات','أدوات منزلية','ستائر ومفروشات','أنتيكات ونجف','سجاد','فلاتر مياه','قطع غيار أدوات كهربائية'] },
+  { id:'fashion',    name:'ملابس',               icon:'👗', color:'#fce7f3', subs:['سنتر متكامل','حريمي','رجالي وشبابي','أطفال','ملابس داخلية'] },
+  { id:'shoes',      name:'أحذية وأكسسوارات',   icon:'👟', color:'#fce7f3', subs:['أحذية','أكسسوارات وهدايا'] },
+  { id:'cars',       name:'سيارات وتكاتك',       icon:'🚗', color:'#f1f5f9', subs:['معارض بيع سيارات','معارض بيع تكاتك','إيجار سيارات','مغسلة سيارات','قطع غيار سيارات','قطع غيار تكاتك','صيانة','تروسيكل','🛺 اطلب توكتوك','نقل عفش','دليفري','سواقين'] },
+  { id:'charity', name:'قسم الخير والتبرعات', icon:'🤍', color:'#f0fdf4', subs:['ملابس وأدوات منزلية','أثاث وعفش','كتب ومستلزمات دراسية','أجهزة وموبايلات','طعام وغذاء','مساعدة مادية','تبرع بدم','غير ذلك'] },
+  { id:'sports', name:'رياضة', icon:'⚽', color:'#dcfce7', subs:['صالات جيم','كرة قدم','أكاديمية فنون قتالية','ألعاب رياضية — مستلزمات وبيع','ملاعب رياضية','سباحة','دراجات'] },
+  { id:'salon',      name:'صالونات وتجميل',      icon:'💇', color:'#fce7f3', subs:['حلاق رجالي','ميكب آرتيست','بيوتي سنتر','صالون حريمي'] },
+  { id:'market_prices', name:'أسعار السوق',        icon:'🛒', color:'#fef9c3', subs:['خضار وفاكهة','سمك','فراخ وطيور','لحوم','بيض ومنتجات ألبان','بقوليات وحبوب'] },
+  { id:'news',       name:'أخبار الحامول',         icon:'📰', color:'#e0f2fe', subs:[] },
+  { id:'gold',       name:'محلات الدهب',          icon:'💍', color:'#fef9c3', subs:['دهب','فضة','مشغولات ذهبية','إصلاح مجوهرات','شراء دهب قديم'] },
   { id:'building',   name:'بناء وتشطيب',         icon:'🏗️', color:'#fef3c7', subs:['بناء','محارة','سيراميك','رخام','جبس','عزل','مقاولات عامة'] },
   { id:'crafts', name:'صيانة وحرفيين', icon:'🔧', color:'#ffedd5', subs:[], children: [
     { id:'crafts_maintenance', name:'صيانة وحرفيين', icon:'🔧', color:'#ffedd5', subs:[
@@ -776,24 +788,12 @@ const CATEGORIES = [
 
   ]},
   { id:'tech',       name:'أجهزة إلكترونية',    icon:'📱', color:'#dbeafe', subs:['موبايل وأكسسوار','كمبيوتر ومستلزماته','كاميرات مراقبة وأنظمة'] },
-  { id:'used_market', name:'سوق المستعمل والاستبدال', icon:'🔄', color:'#fef3c7', subs:['موبايلات وأجهزة','أثاث وديكور','ملابس مستعملة','كتب ومستلزمات دراسية','أجهزة كهربائية','عفش كامل','سيارات وتكاتك','أدوات ومعدات','العاب أطفال','أخرى'] },
-  { id:'fashion',    name:'ملابس',               icon:'👗', color:'#fce7f3', subs:['سنتر متكامل','حريمي','رجالي وشبابي','أطفال','ملابس داخلية'] },
-  { id:'shoes',      name:'أحذية وأكسسوارات',   icon:'👟', color:'#fce7f3', subs:['أحذية','أكسسوارات وهدايا'] },
-  { id:'cars',       name:'سيارات وتكاتك',       icon:'🚗', color:'#f1f5f9', subs:['معارض بيع سيارات','معارض بيع تكاتك','إيجار سيارات','مغسلة سيارات','قطع غيار سيارات','قطع غيار تكاتك','صيانة','تروسيكل','🛺 اطلب توكتوك','نقل عفش','دليفري','سواقين'] },
-  { id:'salon',      name:'صالونات وتجميل',      icon:'💇', color:'#fce7f3', subs:['حلاق رجالي','ميكب آرتيست','بيوتي سنتر','صالون حريمي'] },
   { id:'events',     name:'أفراح ومناسبات',      icon:'🎉', color:'#fef9c3', subs:['قاعات أفراح','أتيليه','بدل مناسبات','أستوديوهات','صالون رجالي','شيف المناسبات'] },
   { id:'ads',        name:'دعاية وإعلان',        icon:'📣', color:'#dbeafe', subs:['تصميم جرافيك','طباعة','لافتات وإعلانات','سوشيال ميديا'] },
-  { id:'charity', name:'قسم الخير والتبرعات', icon:'🤍', color:'#f0fdf4', subs:['ملابس وأدوات منزلية','أثاث وعفش','كتب ومستلزمات دراسية','أجهزة وموبايلات','طعام وغذاء','مساعدة مادية','تبرع بدم','غير ذلك'] },
-  { id:'sports', name:'رياضة', icon:'⚽', color:'#dcfce7', subs:['صالات جيم','كرة قدم','أكاديمية فنون قتالية','ألعاب رياضية — مستلزمات وبيع','ملاعب رياضية','سباحة','دراجات'] },
-  { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:['رياضيات','علوم','لغة عربية','لغة إنجليزية','فيزياء','كيمياء','أحياء','تاريخ وجغرافيا','تربية دينية','حاسب آلي','موسيقى ورسم','مواد ابتدائي','مواد إعدادي','مواد ثانوي','لغة فرنسية','سنتر تعليمي','روضة وحضانة','كورسات لغات','كورسات كمبيوتر','تأهيل وتدريب مهني','فصل دراسي خاص','مطلوب مدرس','أخرى'] },
   { id:'agri',       name:'محاصيل وأعلاف',       icon:'🌾', color:'#dcfce7', subs:['محاصيل زراعية','أعلاف'] },
-  { id:'gold',       name:'محلات الدهب',          icon:'💍', color:'#fef9c3', subs:['دهب','فضة','مشغولات ذهبية','إصلاح مجوهرات','شراء دهب قديم'] },
   { id:'emergency',     name:'أرقام الطوارئ',         icon:'🚨', color:'#fee2e2', subs:[] },
-  { id:'news',       name:'أخبار الحامول',         icon:'📰', color:'#e0f2fe', subs:[] },
   { id:'transport_news', name:'موقف الحامول كفرالشيخ',  icon:'🚌', color:'#f0fdf4', subs:[] },
-  { id:'market_prices', name:'أسعار السوق',        icon:'🛒', color:'#fef9c3', subs:['خضار وفاكهة','سمك','فراخ وطيور','لحوم','بيض ومنتجات ألبان','بقوليات وحبوب'] },
   { id:'prayer',        name:'مواقيت الصلاة',       icon:'🕌', color:'#e0f2fe', subs:[] },
-  { id:'marriage',      name:'بيت الحلال',           icon:'💍', color:'#fce7f3', subs:[] },
 ];
 
 let allAds = [];
@@ -5414,6 +5414,76 @@ async function showPrayerTimes() {
   }
 }
 
+// ========== أرقام الطوارئ ==========
+const EMERGENCY_SECTIONS = [
+  {
+    title: 'أرقام الطوارئ المركزية',
+    numbers: [
+      { name:'الإسعاف',              number:'123',        icon:'🚑', color:'#dc2626' },
+      { name:'الشرطة / النجدة',       number:'122',        icon:'🚓', color:'#1e3a5f' },
+      { name:'المطافئ / الحماية المدنية', number:'180',    icon:'🚒', color:'#ea580c' },
+      { name:'طوارئ الغاز الطبيعي',   number:'129',        icon:'🔥', color:'#0891b2' },
+      { name:'طوارئ الكهرباء',        number:'121',        icon:'⚡', color:'#f59e0b' },
+      { name:'طوارئ المياه والصرف الصحي', number:'125',    icon:'💧', color:'#0284c7' },
+    ]
+  },
+  {
+    title: 'أرقام الخدمات المحلية — مركز ومدينة الحامول',
+    numbers: [
+      { name:'مركز شرطة الحامول',           number:'0473800122', icon:'🚓', color:'#1e3a5f' },
+      { name:'مستشفى الحامول المركزي',      number:'0473800346', icon:'🏥', color:'#dc2626' },
+      { name:'مجلس مدينة الحامول (عمليات وأزمات)', number:'0473800311', icon:'🏛️', color:'#166534' },
+      { name:'وحدة مطافئ الحامول',          number:'0473800180', icon:'🚒', color:'#ea580c' },
+      { name:'هندسة كهرباء الحامول',         number:'0473801267', icon:'⚡', color:'#f59e0b' },
+      { name:'شركة مياه الشرب بالحامول',     number:'0473800632', icon:'💧', color:'#0284c7' },
+    ]
+  },
+  {
+    title: 'أرقام محافظة كفر الشيخ',
+    numbers: [
+      { name:'غرفة عمليات محافظة كفر الشيخ', number:'0473220741', icon:'🏛️', color:'#166534' },
+      { name:'الخط الساخن للمحافظة',         number:'114',        icon:'📞', color:'#7c3aed' },
+      { name:'إسعاف كفر الشيخ الرئيسي',      number:'0473223441', icon:'🚑', color:'#dc2626' },
+    ]
+  }
+];
+
+function emergencyRow(e) {
+  return '<a href="tel:'+e.number+'" style="text-decoration:none;display:flex;align-items:center;gap:12px;background:white;border:1px solid var(--border);border-radius:14px;padding:14px 16px;">' +
+    '<div style="width:44px;height:44px;border-radius:12px;background:'+e.color+'22;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">'+e.icon+'</div>' +
+    '<div style="flex:1;"><div style="font-size:14px;font-weight:900;color:var(--dark);">'+e.name+'</div></div>' +
+    '<div style="font-size:'+(e.number.length>6?'15px':'20px')+';font-weight:900;color:'+e.color+';direction:ltr;">'+e.number+'</div>' +
+  '</a>';
+}
+
+function showEmergencyPage() {
+  sessionStorage.setItem('dynState', JSON.stringify({type:'emergency'}));
+  try{history.pushState({dyn:1},'');}catch(e){}
+  const page = document.getElementById('dynamicPage');
+  page.innerHTML = `
+    <div class="dyn-header">
+      <button class="dyn-back" onclick="hideDynPage()">←</button>
+      <span>🚨 أرقام الطوارئ</span>
+      <span></span>
+    </div>
+    <div class="dyn-content" style="padding:16px;">
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:12px;margin-bottom:14px;text-align:center;font-size:12px;color:#991b1b;">
+        📞 اضغط على أي رقم عشان تتصل بيه على طول
+      </div>
+      ${EMERGENCY_SECTIONS.map(function(sec){
+        return '<div style="margin-bottom:18px;">' +
+          '<div style="font-size:13px;font-weight:900;color:var(--primary);margin-bottom:8px;padding-right:2px;">'+sec.title+'</div>' +
+          '<div style="display:grid;gap:10px;">' + sec.numbers.map(emergencyRow).join('') + '</div>' +
+        '</div>';
+      }).join('')}
+      <div style="text-align:center;margin-top:6px;font-size:11px;color:#aaa;">
+        سيف الأرقام دي عندك — ممكن تحتاجها فجأة أو تساعد بيها حد في الشارع 🙏
+      </div>
+    </div>`;
+  page.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
 // ========== بيت الحلال ==========
 function showMarriagePage(filter='all') {
   sessionStorage.setItem('dynState', JSON.stringify({type:'marriage', filter}));
@@ -7331,6 +7401,11 @@ async function showDoctorAds(subName) {
 
 function showDoctorsCommunity() {
   showCommunityPageGeneric('doctors_community', '🏥 مجتمع الأطباء والمرضى', '#0891b2', '#0e7490', 'showDoctorsHub');
+}
+
+// ========== أخبار الحامول (فيد زي فيسبوك — بوست، لايك، كومنت، مشاركة) ==========
+function showNewsPage() {
+  showCommunityPageGeneric('news', '📰 أخبار الحامول', '#0369a1', '#0ea5e9', 'hideDynPage');
 }
 
 function showCommunityPageGeneric(communityId, title, color1, color2, backFnName) {
