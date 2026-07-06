@@ -7891,6 +7891,9 @@ function renderVideoBlock(url) {
   return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:8px;margin-top:10px;background:#fef3c7;color:#92400e;padding:10px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">🎥 مشاهدة الفيديو</a>`;
 }
 
+const WA_ICON_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M17.6 6.3A8.9 8.9 0 0 0 12.04 3.5c-4.9 0-8.9 4-8.9 8.9 0 1.57.41 3.1 1.19 4.45L3 21.5l4.8-1.26a8.9 8.9 0 0 0 4.24 1.08h0c4.9 0 8.9-4 8.9-8.9 0-2.38-.93-4.6-2.6-6.28zM12.04 19.7h0a7.4 7.4 0 0 1-3.77-1.03l-.27-.16-2.8.74.75-2.73-.18-.28a7.4 7.4 0 0 1-1.14-3.94c0-4.1 3.34-7.44 7.45-7.44a7.4 7.4 0 0 1 5.27 2.18 7.4 7.4 0 0 1 2.18 5.27c0 4.1-3.34 7.4-7.5 7.4zm4.08-5.56c-.22-.11-1.32-.65-1.53-.72-.2-.08-.35-.11-.5.11-.15.22-.58.72-.71.87-.13.15-.26.16-.48.05-.22-.11-.94-.35-1.79-1.11-.66-.59-1.11-1.32-1.24-1.54-.13-.22-.01-.34.1-.45.1-.1.22-.26.33-.4.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.4-.05-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.43c-.15 0-.4.05-.6.28-.2.22-.8.78-.8 1.9s.82 2.2.94 2.35c.11.15 1.62 2.48 3.94 3.48.55.24.98.38 1.31.48.55.18 1.05.15 1.45.09.44-.07 1.32-.54 1.51-1.06.19-.52.19-.97.13-1.06-.05-.1-.2-.15-.42-.26z"/></svg>';
+const FB_ICON_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M13.5 21v-7.5h2.5l.4-3H13.5V8.4c0-.87.24-1.46 1.49-1.46H16.5V4.35C16.24 4.32 15.36 4.24 14.33 4.24c-2.14 0-3.6 1.31-3.6 3.71v2.55H8.2v3h2.53V21h2.77z"/></svg>';
+
 function renderPostCard(p, deviceId) {
   const catColors = {'سؤال':'#dbeafe:#1d4ed8','نقاش':'#dcfce7:#15803d','مشاركة':'#fef3c7:#92400e','طلب مساعدة':'#fee2e2:#dc2626'};
   const [bg,color] = (catColors[p.category]||'#ede9fe:#7c3aed').split(':');
@@ -7926,12 +7929,12 @@ function renderPostCard(p, deviceId) {
         💬 ${p.comments_count||0}
       </button>
       <button onclick="sharePostWA('${p.id}','${p.title.replace(/['\"]/g,'')}','${imgs[0]||''}')" 
-        style="display:flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
-        📱
+        style="display:flex;align-items:center;gap:4px;background:#25D366;color:white;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
+        ${WA_ICON_SVG}
       </button>
       <button onclick="sharePostFB('${p.title.replace(/['\"]/g,'')}','${imgs[0]||''}')" 
-        style="display:flex;align-items:center;gap:4px;background:#dbeafe;color:#1d4ed8;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
-        👍🏻
+        style="display:flex;align-items:center;gap:4px;background:#1877F2;color:white;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
+        ${FB_ICON_SVG}
       </button>
       ${isAdmin||isOwnerOf(p) ? `
       <button onclick="event.stopPropagation();openEditPostModal('${p.id}')" style="margin-right:auto;background:#eff6ff;color:#2563eb;border:none;padding:7px 10px;border-radius:20px;font-size:12px;cursor:pointer;">✏️</button>
@@ -8037,7 +8040,7 @@ function openPostReactionMenu(postId, btn) {
       const m = document.getElementById('postReactMenu');
       if(m && !m.contains(e.target)) { m.remove(); }
       document.removeEventListener('click', closeOnce);
-    });
+    }, {once:true});
   }, 0);
 }
 
@@ -8047,40 +8050,43 @@ async function applyPostReaction(postId, reactionKey) {
   if(!curUser) { requireLogin().then(function(){ applyPostReaction(postId, reactionKey); }); return; }
   const deviceId = getDeviceId();
   const btns = [window._reactTargetBtn, document.getElementById('like_'+postId), document.getElementById('like_detail_'+postId)].filter(Boolean);
+  // نديله شكل "بينفذ" فورًا عشان المستخدم يحس إنه استجاب على طول (مش هيستنى الشبكة)
+  const optimisticEmoji = (POST_REACTIONS.find(r=>r.k===reactionKey)||{}).e || '👍';
+  btns.forEach(function(btn){ btn.style.opacity = '0.6'; });
   try {
-    const existing = await sbFetch('GET', `community_likes?post_id=eq.${postId}&device_id=eq.${deviceId}&select=id,reaction`);
+    const [existing, posts] = await Promise.all([
+      sbFetch('GET', `community_likes?post_id=eq.${postId}&device_id=eq.${deviceId}&select=id,reaction`),
+      sbFetch('GET', `community_posts?id=eq.${postId}&select=likes_count`)
+    ]);
     const cur = existing && existing[0];
-    let delta = 0;
+    let count = (posts && posts[0] && posts[0].likes_count) || 0;
+    const nowReacted = (!cur || cur.reaction !== reactionKey);
     if(cur) {
       if(cur.reaction === reactionKey) {
         await sbFetch('DELETE', `community_likes?post_id=eq.${postId}&device_id=eq.${deviceId}`);
-        delta = -1;
+        count = Math.max(0, count - 1);
       } else {
         await sbFetch('PATCH', `community_likes?post_id=eq.${postId}&device_id=eq.${deviceId}`, {reaction: reactionKey});
       }
     } else {
       await sbFetch('POST', 'community_likes', {post_id:postId, device_id:deviceId, reaction:reactionKey});
-      delta = 1;
+      count = count + 1;
     }
-    if(delta !== 0) {
-      const posts = await sbFetch('GET', `community_posts?id=eq.${postId}&select=likes_count`) || [];
-      const newCount = Math.max(0, (posts[0]?.likes_count||0) + delta);
-      await sbFetch('PATCH', `community_posts?id=eq.${postId}`, {likes_count: newCount});
-    }
-    const posts2 = await sbFetch('GET', `community_posts?id=eq.${postId}&select=likes_count`) || [];
-    const count = posts2[0]?.likes_count || 0;
-    const nowReacted = (!cur || cur.reaction !== reactionKey);
+    await sbFetch('PATCH', `community_posts?id=eq.${postId}`, {likes_count: count});
     btns.forEach(function(btn){
+      btn.style.opacity = '1';
       if(nowReacted) {
-        const emoji = (POST_REACTIONS.find(r=>r.k===reactionKey)||{}).e || '👍';
         btn.style.background='#ede9fe'; btn.style.color='#7c3aed';
-        btn.innerHTML = emoji + ' ' + count + (btn.id.startsWith('like_detail_') ? ' إعجاب' : '');
+        btn.innerHTML = optimisticEmoji + ' ' + count + (btn.id.startsWith('like_detail_') ? ' إعجاب' : '');
       } else {
         btn.style.background='#f3f4f6'; btn.style.color='';
         btn.innerHTML = '👍 ' + count + (btn.id.startsWith('like_detail_') ? ' إعجاب' : '');
       }
     });
-  } catch(e) { console.error('reaction failed:', e.message||e); showToast('جرب تاني','error'); }
+  } catch(e) {
+    btns.forEach(function(btn){ btn.style.opacity = '1'; });
+    console.error('reaction failed:', e.message||e); showToast('جرب تاني','error');
+  }
 }
 
 async function openPostDetail(postId) {
@@ -8154,8 +8160,8 @@ async function loadPostDetail(postId) {
         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
           <button onclick="openPostReactionMenu('${p.id}',this)" id="like_detail_${p.id}" style="font-size:12px;color:#7c3aed;background:#ede9fe;border:none;border-radius:20px;padding:4px 12px;font-family:Cairo,sans-serif;font-weight:700;cursor:pointer;">👍 ${p.likes_count||0} إعجاب</button>
           <span style="font-size:12px;color:var(--gray);">💬 ${comments.length} تعليق</span>
-          <button onclick="sharePostWA('${p.id}','${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="margin-right:auto;background:#dcfce7;color:#166534;border:none;padding:5px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📱 واتساب</button>
-          <button onclick="sharePostFB('${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="background:#dbeafe;color:#1d4ed8;border:none;padding:5px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">فيسبوك 👍🏻</button>
+          <button onclick="sharePostWA('${p.id}','${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="margin-right:auto;display:flex;align-items:center;gap:6px;background:#25D366;color:white;border:none;padding:6px 14px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">${WA_ICON_SVG} واتساب</button>
+          <button onclick="sharePostFB('${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="display:flex;align-items:center;gap:6px;background:#1877F2;color:white;border:none;padding:6px 14px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">${FB_ICON_SVG} فيسبوك</button>
         </div>
       </div>
       <div style="font-size:13px;font-weight:700;color:var(--gray);margin-bottom:10px;">التعليقات (${comments.length})</div>
@@ -8425,6 +8431,7 @@ function openEditPostModal(postId) {
     const p = rows && rows[0];
     if(!p) { showToast('الموضوع مش موجود', 'error'); return; }
     if(!isAdmin && p.owner_id !== curUser.id) { showToast('الموضوع ده مش بتاعك', 'error'); return; }
+    window._editPostKeptImages = (p.images || []).slice();
     const old = document.getElementById('editPostModal');
     if(old) old.remove();
     const modal = document.createElement('div');
@@ -8436,6 +8443,7 @@ function openEditPostModal(postId) {
           <div style="font-size:15px;font-weight:900;">✏️ تعديل الموضوع</div>
           <button onclick="document.getElementById('editPostModal').remove()" style="background:#f3f4f6;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;">✕</button>
         </div>
+        <input type="hidden" id="editPostCommunityId" value="${p.notes||'teachers_community'}">
         <div style="margin-bottom:10px;">
           <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">عنوان الموضوع *</label>
           <input id="editPostTitle" value="${escapeHtml(p.title)}" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;">
@@ -8444,6 +8452,23 @@ function openEditPostModal(postId) {
           <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">تفاصيل الموضوع *</label>
           <textarea id="editPostContent" rows="4" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;resize:none;">${escapeHtml(p.content)}</textarea>
         </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">🎥 رابط فيديو (اختياري)</label>
+          <input type="url" id="editPostVideoLink" value="${escapeHtml(p.video_link||'')}" placeholder="https://youtube.com/..." style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📸 الصور الحالية</label>
+          <div id="editPostCurrentImages" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+            ${(p.images||[]).map((url,i)=>`
+              <div style="position:relative;">
+                <img src="${url}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
+                <button onclick="removeEditPostImage(${i},this)" style="position:absolute;top:-6px;left:-6px;background:#dc2626;color:white;border:none;width:20px;height:20px;border-radius:50%;font-size:11px;cursor:pointer;line-height:1;">✕</button>
+              </div>`).join('') || '<span style="font-size:12px;color:var(--gray);">مفيش صور حاليًا</span>'}
+          </div>
+          <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">➕ إضافة صور جديدة</label>
+          <input type="file" id="editPostImages" accept="image/*" multiple style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;" onchange="previewEditPostImages()">
+          <div id="editPostImagesPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+        </div>
         <button onclick="submitEditPost('${postId}')" style="width:100%;background:#7c3aed;color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💾 حفظ التعديلات</button>
       </div>`;
     modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
@@ -8451,22 +8476,70 @@ function openEditPostModal(postId) {
   }).catch(function(){ showToast('حصل خطأ', 'error'); });
 }
 
+function removeEditPostImage(index, btn) {
+  window._editPostKeptImages.splice(index, 1);
+  btn.parentElement.remove();
+}
+
+function previewEditPostImages() {
+  const input = document.getElementById('editPostImages');
+  const preview = document.getElementById('editPostImagesPreview');
+  if(!input || !preview) return;
+  preview.innerHTML = '';
+  const files = Array.from(input.files).slice(0, 10);
+  files.forEach(function(file){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText = 'width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border);';
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function submitEditPost(postId) {
   const curUser = getCurrentUser();
   if(!curUser) { showToast('لازم تسجل الدخول', 'error'); return; }
   const title = document.getElementById('editPostTitle').value.trim();
   const content = document.getElementById('editPostContent').value.trim();
+  const videoLink = document.getElementById('editPostVideoLink')?.value.trim() || null;
+  const communityId = document.getElementById('editPostCommunityId')?.value || 'teachers_community';
   if(!title || !content) { showToast('اكتب العنوان والتفاصيل', 'error'); return; }
+  const btn = document.querySelector(`#editPostModal button[onclick="submitEditPost('${postId}')"]`);
+  if(btn) { btn.textContent = '⏳ جاري الحفظ...'; btn.disabled = true; }
   try {
     const rr = await secureOp({action:'update_post', in_token: curUser.token, in_target_id: postId, in_title: title, in_desc: content});
     const rres = (rr && rr[0]) || {};
-    if(rres.out_status !== 'ok') { showToast('❌ ' + (rres.out_message==='NOT_OWNER'?'الموضوع ده مش بتاعك':'حصل خطأ'), 'error'); return; }
+    if(rres.out_status !== 'ok') { showToast('❌ ' + (rres.out_message==='NOT_OWNER'?'الموضوع ده مش بتاعك':'حصل خطأ'), 'error'); if(btn){btn.textContent='💾 حفظ التعديلات';btn.disabled=false;} return; }
+
+    // رفع أي صور جديدة، ودمجها مع الصور المتبقية (بعد الحذف)
+    const imageInput = document.getElementById('editPostImages');
+    const newUrls = [];
+    if(imageInput && imageInput.files.length > 0) {
+      const files = Array.from(imageInput.files).slice(0, 10);
+      for(const file of files) {
+        const ext = file.name.split('.').pop();
+        const path = `community/${Date.now()}_${Math.random().toString(36).substring(2)}.${ext}`;
+        const { data } = await uploadToStorage(file, path);
+        if(data) newUrls.push(data);
+      }
+    }
+    const finalImages = (window._editPostKeptImages || []).concat(newUrls);
+    await sbFetch('PATCH', `community_posts?id=eq.${postId}`, {images: finalImages, video_link: videoLink});
+
     document.getElementById('editPostModal')?.remove();
     showToast('✅ تم التعديل بنجاح!');
-    await loadCommunityPosts('all');
+    if(communityId === 'teachers_community') {
+      await loadCommunityPosts('all', document.getElementById('ctab_all'));
+    } else {
+      await loadCommunityPostsGeneric(communityId, 'all', document.getElementById('ctab2_all'));
+    }
   } catch(e) {
     const msg = (e.message||'').indexOf('NOT_OWNER')!==-1 ? 'الموضوع ده مش بتاعك' : 'حصل خطأ في التعديل';
     showToast('❌ ' + msg, 'error');
+    if(btn) { btn.textContent = '💾 حفظ التعديلات'; btn.disabled = false; }
   }
 }
 
