@@ -7880,6 +7880,17 @@ async function showCommunityPage(filter='all') {
   await loadCommunityPosts('all', document.getElementById('ctab_all'));
 }
 
+function renderVideoBlock(url) {
+  if(!url) return '';
+  const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([a-zA-Z0-9_-]{6,})/);
+  if(yt) {
+    return `<div style="margin-top:10px;border-radius:10px;overflow:hidden;position:relative;padding-top:56.25%;" onclick="event.stopPropagation()">
+      <iframe src="https://www.youtube.com/embed/${yt[1]}" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allowfullscreen loading="lazy"></iframe>
+    </div>`;
+  }
+  return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:8px;margin-top:10px;background:#fef3c7;color:#92400e;padding:10px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">🎥 مشاهدة الفيديو</a>`;
+}
+
 function renderPostCard(p, deviceId) {
   const catColors = {'سؤال':'#dbeafe:#1d4ed8','نقاش':'#dcfce7:#15803d','مشاركة':'#fef3c7:#92400e','طلب مساعدة':'#fee2e2:#dc2626'};
   const [bg,color] = (catColors[p.category]||'#ede9fe:#7c3aed').split(':');
@@ -7903,6 +7914,7 @@ function renderPostCard(p, deviceId) {
         ${imgs.slice(0,5).map(url=>`<img src="${url}" onclick="event.stopPropagation();openImgFull('${url}')" style="width:100px;height:100px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border);cursor:zoom-in;" onerror="this.style.display='none'">`).join('')}
         ${imgs.length>5?`<div style="width:100px;height:100px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gray);flex-shrink:0;">+${imgs.length-5}</div>`:''}
       </div>` : ''}
+      ${renderVideoBlock(p.video_link)}
     </div>
     <div style="border-top:1px solid #f3f4f6;padding:10px 14px;display:flex;gap:6px;align-items:center;" onclick="event.stopPropagation()">
       <button onclick="event.stopPropagation();openPostReactionMenu('${p.id}',this)" id="like_${p.id}"
@@ -7938,9 +7950,9 @@ async function loadCommunityPosts(filter, btn) {
   cont.innerHTML = skeletonCards(3);
   try {
     const all = await sbFetch('GET', `community_posts?select=*&order=created_at.desc`) || [];
-    const posts = tab === 'all'
+    const posts = filter === 'all'
       ? all.filter(p => !p.notes || p.notes === 'teachers_community')
-      : all.filter(p => (!p.notes || p.notes === 'teachers_community') && p.category === tab);
+      : all.filter(p => (!p.notes || p.notes === 'teachers_community') && p.category === filter);
     if(!posts.length) {
       cont.innerHTML = `
         <div style="text-align:center;padding:60px 20px;color:var(--gray);">
@@ -8138,6 +8150,7 @@ async function loadPostDetail(postId) {
             ${p.images.map(url=>`<img src="${url}" onclick="openImgFull('${url}')" style="width:100%;height:130px;object-fit:cover;border-radius:10px;cursor:zoom-in;border:1px solid var(--border);" onerror="this.style.display='none'">`).join('')}
           </div>
         </div>`:''}
+        ${renderVideoBlock(p.video_link)}
         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
           <button onclick="openPostReactionMenu('${p.id}',this)" id="like_detail_${p.id}" style="font-size:12px;color:#7c3aed;background:#ede9fe;border:none;border-radius:20px;padding:4px 12px;font-family:Cairo,sans-serif;font-weight:700;cursor:pointer;">👍 ${p.likes_count||0} إعجاب</button>
           <span style="font-size:12px;color:var(--gray);">💬 ${comments.length} تعليق</span>
@@ -8289,6 +8302,10 @@ function openNewPostModalForm(communityId='teachers_community') {
         <input type="file" id="postImages" accept="image/*" multiple style="width:100%;padding:8px;border:1px dashed var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;" onchange="previewPostImages()">
         <div id="postImagesPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
       </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">🎥 رابط فيديو (اختياري — يوتيوب/تيك توك/فيسبوك)</label>
+        <input type="url" id="postVideoLink" placeholder="https://youtube.com/..." style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;">
+      </div>
       <button onclick="submitNewPost()" style="width:100%;background:#7c3aed;color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">🚀 نشر الموضوع</button>
     </div>`;
   modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
@@ -8321,6 +8338,7 @@ async function submitNewPost() {
   const title = document.getElementById('postTitle').value.trim();
   const content = document.getElementById('postContent').value.trim();
   const category = document.getElementById('postCat').value;
+  const videoLink = document.getElementById('postVideoLink')?.value.trim() || null;
   const communityId = document.getElementById('postCommunityId')?.value || 'teachers_community';
   if(!title) { showToast('اكتب عنوان الموضوع','error'); return; }
   if(!content) { showToast('اكتب تفاصيل الموضوع','error'); return; }
@@ -8349,7 +8367,8 @@ async function submitNewPost() {
       title, content, category,
       likes_count: 0, comments_count: 0,
       notes: communityId,
-      images: imageUrls
+      images: imageUrls,
+      video_link: videoLink
     });
 
     document.getElementById('newPostModal').remove();
