@@ -726,7 +726,7 @@ const CATEGORIES = [
       {name:'أراضي مطلوبة', icon:'🌿'},
     ]},
   ]},
-  { id:'news',       name:'أخبار الحامول',         icon:'📰', color:'#e0f2fe', subs:[] },
+  { id:'news',       name:'أخبار ومناقشات الحامول',         icon:'📰', color:'#e0f2fe', subs:[] },
   { id:'doctors',    name:'أطباء',              icon:'🩺', color:'#fee2e2', subs:['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','عام'] },
   { id:'medservices',name:'خدمات طبية',         icon:'🏥', color:'#fee2e2', subs:['صيدليات','معامل تحاليل','مراكز أشعة','مراكز تخاطب','مستلزمات طبية','معامل نظارات','تمريض منزلي','الطب التكميلي'] },
   { id:'lost',       name:'مفقودات',            icon:'🔎', color:'#fff7ed', subs:[] },
@@ -7405,7 +7405,7 @@ function showDoctorsCommunity() {
 
 // ========== أخبار الحامول (فيد زي فيسبوك — بوست، لايك، كومنت، مشاركة) ==========
 function showNewsPage() {
-  showCommunityPageGeneric('news', '📰 أخبار الحامول', '#0369a1', '#0ea5e9', 'hideDynPage');
+  showCommunityPageGeneric('news', '📰 أخبار ومناقشات الحامول', '#0369a1', '#0ea5e9', 'hideDynPage');
 }
 
 function showCommunityPageGeneric(communityId, title, color1, color2, backFnName) {
@@ -7905,7 +7905,7 @@ function renderPostCard(p, deviceId) {
       </div>` : ''}
     </div>
     <div style="border-top:1px solid #f3f4f6;padding:10px 14px;display:flex;gap:6px;align-items:center;" onclick="event.stopPropagation()">
-      <button onclick="togglePostLike('${p.id}',this)" id="like_${p.id}"
+      <button onclick="event.stopPropagation();openPostReactionMenu('${p.id}',this)" id="like_${p.id}"
         style="display:flex;align-items:center;gap:4px;background:#f3f4f6;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
         👍 ${p.likes_count||0}
       </button>
@@ -7964,10 +7964,14 @@ async function loadCommunityPosts(filter, btn) {
 async function checkMyLikes(postIds) {
   try {
     const deviceId = getDeviceId();
-    const likes = await sbFetch('GET', `community_likes?device_id=eq.${deviceId}&post_id=in.(${postIds.join(',')})&select=post_id`) || [];
+    const likes = await sbFetch('GET', `community_likes?device_id=eq.${deviceId}&post_id=in.(${postIds.join(',')})&select=post_id,reaction`) || [];
     likes.forEach(l => {
       const btn = document.getElementById('like_'+l.post_id);
-      if(btn) { btn.style.background='#ede9fe'; btn.style.color='#7c3aed'; }
+      if(btn) {
+        const emoji = (POST_REACTIONS.find(r=>r.k===l.reaction)||{}).e || '👍';
+        btn.style.background='#ede9fe'; btn.style.color='#7c3aed';
+        btn.innerHTML = btn.innerHTML.replace(/^\S+/, emoji);
+      }
     });
   } catch(e) {}
 }
@@ -7985,20 +7989,72 @@ function openImgFull(url) {
   document.body.appendChild(overlay);
 }
 
-async function togglePostLike(postId, btn) {
+// تعبيرات التفاعل على المواضيع (زي فيسبوك: لايك / لاف / ضحك)
+const POST_REACTIONS = [
+  {k:'like', e:'👍'},
+  {k:'love', e:'❤️'},
+  {k:'haha', e:'😂'},
+];
+
+function openPostReactionMenu(postId, btn) {
+  const old = document.getElementById('postReactMenu');
+  if(old) { old.remove(); if(old.dataset.forPost === postId) return; }
+  const menu = document.createElement('div');
+  menu.id = 'postReactMenu';
+  menu.dataset.forPost = postId;
+  menu.style.cssText = 'position:fixed;z-index:9999;background:white;border:1px solid var(--border);border-radius:24px;padding:6px 10px;display:flex;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.18);';
+  const rect = btn.getBoundingClientRect();
+  menu.style.top = Math.max(8, rect.top - 46) + 'px';
+  menu.style.left = Math.max(8, rect.left) + 'px';
+  menu.innerHTML = POST_REACTIONS.map(r=>`<button onclick="event.stopPropagation();applyPostReaction('${postId}','${r.k}')" style="background:none;border:none;font-size:24px;cursor:pointer;line-height:1;transition:transform .1s;" onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'">${r.e}</button>`).join('');
+  document.body.appendChild(menu);
+  setTimeout(function(){
+    document.addEventListener('click', function closeOnce(e){
+      const m = document.getElementById('postReactMenu');
+      if(m && !m.contains(e.target)) { m.remove(); }
+      document.removeEventListener('click', closeOnce);
+    });
+  }, 0);
+}
+
+async function applyPostReaction(postId, reactionKey) {
+  document.getElementById('postReactMenu')?.remove();
+  const curUser = getCurrentUser();
+  if(!curUser) { requireLogin(); return; }
   const deviceId = getDeviceId();
-  const isLiked = btn.style.background === 'rgb(237, 233, 254)' || btn.style.color === '#7c3aed';
+  const btn = document.getElementById('like_'+postId);
   try {
-    if(isLiked) {
-      await sbFetch('DELETE', `community_likes?post_id=eq.${postId}&device_id=eq.${deviceId}`);
-      await sbFetch('PATCH', `community_posts?id=eq.${postId}`, {likes_count: Math.max(0, parseInt(btn.textContent.match(/\d+/)[0])-1)});
-      btn.style.background='#f3f4f6'; btn.style.color='';
-      btn.innerHTML = '👍 ' + Math.max(0, parseInt(btn.textContent.match(/\d+/)[0])-1);
+    const existing = await sbFetch('GET', `community_likes?post_id=eq.${postId}&device_id=eq.${deviceId}&select=id,reaction`);
+    const cur = existing && existing[0];
+    let delta = 0;
+    if(cur) {
+      if(cur.reaction === reactionKey) {
+        await sbFetch('DELETE', `community_likes?post_id=eq.${postId}&device_id=eq.${deviceId}`);
+        delta = -1;
+      } else {
+        await sbFetch('PATCH', `community_likes?post_id=eq.${postId}&device_id=eq.${deviceId}`, {reaction: reactionKey});
+      }
     } else {
-      await sbFetch('POST', 'community_likes', {post_id:postId, device_id:deviceId});
-      await sbFetch('PATCH', `community_posts?id=eq.${postId}`, {likes_count: parseInt(btn.textContent.match(/\d+/)[0])+1});
-      btn.style.background='#ede9fe'; btn.style.color='#7c3aed';
-      btn.innerHTML = '👍 ' + (parseInt(btn.textContent.match(/\d+/)[0])+1);
+      await sbFetch('POST', 'community_likes', {post_id:postId, device_id:deviceId, reaction:reactionKey});
+      delta = 1;
+    }
+    if(delta !== 0) {
+      const posts = await sbFetch('GET', `community_posts?id=eq.${postId}&select=likes_count`) || [];
+      const newCount = Math.max(0, (posts[0]?.likes_count||0) + delta);
+      await sbFetch('PATCH', `community_posts?id=eq.${postId}`, {likes_count: newCount});
+    }
+    const posts2 = await sbFetch('GET', `community_posts?id=eq.${postId}&select=likes_count`) || [];
+    const count = posts2[0]?.likes_count || 0;
+    const nowReacted = (!cur || cur.reaction !== reactionKey);
+    if(btn) {
+      if(nowReacted) {
+        const emoji = (POST_REACTIONS.find(r=>r.k===reactionKey)||{}).e || '👍';
+        btn.style.background='#ede9fe'; btn.style.color='#7c3aed';
+        btn.innerHTML = emoji + ' ' + count;
+      } else {
+        btn.style.background='#f3f4f6'; btn.style.color='';
+        btn.innerHTML = '👍 ' + count;
+      }
     }
   } catch(e) { showToast('جرب تاني','error'); }
 }
