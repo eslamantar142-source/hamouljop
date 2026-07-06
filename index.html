@@ -726,6 +726,7 @@ const CATEGORIES = [
       {name:'أراضي مطلوبة', icon:'🌿'},
     ]},
   ]},
+  { id:'news',       name:'أخبار الحامول',         icon:'📰', color:'#e0f2fe', subs:[] },
   { id:'doctors',    name:'أطباء',              icon:'🩺', color:'#fee2e2', subs:['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','عام'] },
   { id:'medservices',name:'خدمات طبية',         icon:'🏥', color:'#fee2e2', subs:['صيدليات','معامل تحاليل','مراكز أشعة','مراكز تخاطب','مستلزمات طبية','معامل نظارات','تمريض منزلي','الطب التكميلي'] },
   { id:'lost',       name:'مفقودات',            icon:'🔎', color:'#fff7ed', subs:[] },
@@ -761,7 +762,6 @@ const CATEGORIES = [
   { id:'sports', name:'رياضة', icon:'⚽', color:'#dcfce7', subs:['صالات جيم','كرة قدم','أكاديمية فنون قتالية','ألعاب رياضية — مستلزمات وبيع','ملاعب رياضية','سباحة','دراجات'] },
   { id:'salon',      name:'صالونات وتجميل',      icon:'💇', color:'#fce7f3', subs:['حلاق رجالي','ميكب آرتيست','بيوتي سنتر','صالون حريمي'] },
   { id:'market_prices', name:'أسعار السوق',        icon:'🛒', color:'#fef9c3', subs:['خضار وفاكهة','سمك','فراخ وطيور','لحوم','بيض ومنتجات ألبان','بقوليات وحبوب'] },
-  { id:'news',       name:'أخبار الحامول',         icon:'📰', color:'#e0f2fe', subs:[] },
   { id:'gold',       name:'محلات الدهب',          icon:'💍', color:'#fef9c3', subs:['دهب','فضة','مشغولات ذهبية','إصلاح مجوهرات','شراء دهب قديم'] },
   { id:'building',   name:'بناء وتشطيب',         icon:'🏗️', color:'#fef3c7', subs:['بناء','محارة','سيراميك','رخام','جبس','عزل','مقاولات عامة'] },
   { id:'crafts', name:'صيانة وحرفيين', icon:'🔧', color:'#ffedd5', subs:[], children: [
@@ -7913,11 +7913,11 @@ function renderPostCard(p, deviceId) {
         style="display:flex;align-items:center;gap:4px;background:#f3f4f6;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
         💬 ${p.comments_count||0}
       </button>
-      <button onclick="sharePostWA('${p.id}','${p.title.replace(/['\"]/g,'')}')" 
+      <button onclick="sharePostWA('${p.id}','${p.title.replace(/['\"]/g,'')}','${imgs[0]||''}')" 
         style="display:flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
         📱
       </button>
-      <button onclick="sharePostFB('${p.title.replace(/['\"]/g,'')}')" 
+      <button onclick="sharePostFB('${p.title.replace(/['\"]/g,'')}','${imgs[0]||''}')" 
         style="display:flex;align-items:center;gap:4px;background:#dbeafe;color:#1d4ed8;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
         👍🏻
       </button>
@@ -7972,6 +7972,19 @@ async function checkMyLikes(postIds) {
   } catch(e) {}
 }
 
+function openImgFull(url) {
+  const old = document.getElementById('imgFullOverlay');
+  if(old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'imgFullOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = `
+    <button onclick="document.getElementById('imgFullOverlay').remove()" style="position:absolute;top:16px;left:16px;background:rgba(255,255,255,.15);color:white;border:none;width:38px;height:38px;border-radius:50%;font-size:20px;cursor:pointer;">✕</button>
+    <img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;">`;
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
 async function togglePostLike(postId, btn) {
   const deviceId = getDeviceId();
   const isLiked = btn.style.background === 'rgb(237, 233, 254)' || btn.style.color === '#7c3aed';
@@ -8004,16 +8017,28 @@ async function openPostDetail(postId) {
     <div style="flex:1;overflow-y:auto;padding:16px;" id="postDetailContent">
       <div style="text-align:center;padding:20px;"><div class="spinner"></div></div>
     </div>
-    <div style="padding:12px 16px;border-top:1px solid var(--border);background:white;">
-      <div style="display:flex;gap:8px;">
-        <input id="commentName" placeholder="اسمك" style="width:90px;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">
-        <input id="commentText" placeholder="اكتب تعليقك..." style="flex:1;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;">
-        <button onclick="submitComment('${postId}')" style="background:#7c3aed;color:white;border:none;padding:9px 14px;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">إرسال</button>
-      </div>
-    </div>`;
+    <div style="padding:12px 16px;border-top:1px solid var(--border);background:white;" id="commentBoxWrap"></div>`;
   document.body.appendChild(modal);
+  renderCommentBox(postId);
   await loadPostDetail(postId);
 }
+
+function renderCommentBox(postId) {
+  const wrap = document.getElementById('commentBoxWrap');
+  if(!wrap) return;
+  const curUser = getCurrentUser();
+  if(curUser) {
+    wrap.innerHTML = `
+      <div style="display:flex;gap:8px;">
+        <input id="commentText" placeholder="اكتب تعليقك باسم ${escapeHtml(curUser.name)}..." style="flex:1;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;">
+        <button onclick="submitComment('${postId}')" style="background:#7c3aed;color:white;border:none;padding:9px 14px;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">إرسال</button>
+      </div>`;
+  } else {
+    wrap.innerHTML = `
+      <button onclick="requireLogin().then(function(){ renderCommentBox('${postId}'); })" style="width:100%;background:#f3f4f6;color:var(--primary);border:none;padding:11px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🔒 سجّل الدخول عشان تكتب تعليق</button>`;
+  }
+}
+
 
 async function loadPostDetail(postId) {
   const cont = document.getElementById('postDetailContent');
@@ -8025,6 +8050,7 @@ async function loadPostDetail(postId) {
     ]);
     const p = posts[0];
     if(!p) return;
+    window._currentPostComments = comments;
     const timeAgo = getTimeAgo(p.created_at);
     cont.innerHTML = `
       <div style="background:#f8f5ff;border-radius:14px;padding:16px;margin-bottom:16px;border:1px solid #ede9fe;">
@@ -8047,35 +8073,106 @@ async function loadPostDetail(postId) {
         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
           <span style="font-size:12px;color:#7c3aed;">👍 ${p.likes_count||0} إعجاب</span>
           <span style="font-size:12px;color:var(--gray);">💬 ${comments.length} تعليق</span>
-          <button onclick="sharePostWA('${p.id}','${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}')" style="margin-right:auto;background:#dcfce7;color:#166534;border:none;padding:5px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📱 واتساب</button>
-          <button onclick="sharePostFB('${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}')" style="background:#dbeafe;color:#1d4ed8;border:none;padding:5px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">فيسبوك 👍🏻</button>
+          <button onclick="sharePostWA('${p.id}','${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="margin-right:auto;background:#dcfce7;color:#166534;border:none;padding:5px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📱 واتساب</button>
+          <button onclick="sharePostFB('${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="background:#dbeafe;color:#1d4ed8;border:none;padding:5px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">فيسبوك 👍🏻</button>
         </div>
       </div>
       <div style="font-size:13px;font-weight:700;color:var(--gray);margin-bottom:10px;">التعليقات (${comments.length})</div>
-      ${comments.length ? comments.map(c=>`
-      <div style="background:white;border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-          <div style="width:28px;height:28px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:13px;">👤</div>
-          <span style="font-size:12px;font-weight:700;">${escapeHtml(c.author_name)}</span>
-          <span style="font-size:11px;color:var(--gray);margin-right:auto;">${getTimeAgo(c.created_at)}</span>
-        </div>
-        <div style="font-size:13px;color:#374151;line-height:1.6;">${escapeHtml(c.content)}</div>
-      </div>`).join('') : `<div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">لا توجد تعليقات بعد — كن أول من يعلق!</div>`}`;
+      <div id="commentsTree">${renderCommentsTree(comments, postId)}</div>`;
   } catch(e) {}
 }
 
-async function submitComment(postId) {
-  const name = document.getElementById('commentName')?.value.trim();
-  const text = document.getElementById('commentText')?.value.trim();
-  if(!name) { showToast('اكتب اسمك','error'); return; }
+// بناء شجرة التعليقات: التعليقات الرئيسية + الردود جواها (مستوى واحد)
+function renderCommentsTree(comments, postId) {
+  if(!comments.length) return `<div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">لا توجد تعليقات بعد — كن أول من يعلق!</div>`;
+  const top = comments.filter(c => !c.parent_id);
+  const repliesOf = function(id){ return comments.filter(c => c.parent_id === id); };
+  return top.map(c => renderCommentNode(c, postId, repliesOf(c.id))).join('');
+}
+
+const REACTION_EMOJIS = ['👍','❤️','😂','😮','😢'];
+
+function renderCommentNode(c, postId, replies) {
+  const reactions = c.reactions || {};
+  const reactionPills = REACTION_EMOJIS.filter(e => reactions[e] > 0)
+    .map(e => `<span style="font-size:11px;background:#f3f4f6;border-radius:10px;padding:2px 7px;">${e} ${reactions[e]}</span>`).join('');
+  return `
+  <div style="background:white;border-radius:12px;border:1px solid var(--border);padding:12px;margin-bottom:8px;" data-comment-id="${c.id}">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <div style="width:28px;height:28px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:13px;">👤</div>
+      <span style="font-size:12px;font-weight:700;">${escapeHtml(c.author_name)}</span>
+      <span style="font-size:11px;color:var(--gray);margin-right:auto;">${getTimeAgo(c.created_at)}</span>
+    </div>
+    <div style="font-size:13px;color:#374151;line-height:1.6;">${escapeHtml(c.content)}</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;">
+      ${reactionPills}
+      <button onclick="toggleReactionPicker('${c.id}')" style="background:none;border:none;color:var(--gray);font-size:12px;cursor:pointer;padding:2px 4px;">😀 تفاعل</button>
+      <button onclick="toggleReplyBox('${c.id}','${postId}')" style="background:none;border:none;color:#7c3aed;font-size:12px;font-weight:700;cursor:pointer;padding:2px 4px;">↩️ رد</button>
+    </div>
+    <div id="reactionPicker_${c.id}" style="display:none;gap:6px;margin-top:6px;">
+      ${REACTION_EMOJIS.map(e => `<button onclick="reactToComment('${c.id}','${e}','${postId}')" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;font-size:16px;padding:4px 8px;cursor:pointer;">${e}</button>`).join('')}
+    </div>
+    <div id="replyBox_${c.id}" style="display:none;margin-top:8px;"></div>
+    ${replies && replies.length ? `
+    <div style="margin-top:10px;padding-right:16px;border-right:2px solid #ede9fe;">
+      ${replies.map(r => renderCommentNode(r, postId, [])).join('')}
+    </div>` : ''}
+  </div>`;
+}
+
+function toggleReactionPicker(commentId) {
+  const el = document.getElementById('reactionPicker_'+commentId);
+  if(el) el.style.display = el.style.display==='none' ? 'flex' : 'none';
+}
+
+function toggleReplyBox(commentId, postId) {
+  const el = document.getElementById('replyBox_'+commentId);
+  if(!el) return;
+  if(el.style.display === 'none' || !el.innerHTML) {
+    const curUser = getCurrentUser();
+    if(curUser) {
+      el.innerHTML = `
+        <div style="display:flex;gap:6px;">
+          <input id="replyText_${commentId}" placeholder="اكتب ردك..." style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">
+          <button onclick="submitComment('${postId}','${commentId}')" style="background:#7c3aed;color:white;border:none;padding:8px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">إرسال</button>
+        </div>`;
+    } else {
+      el.innerHTML = `<button onclick="requireLogin().then(function(){ document.getElementById('replyBox_${commentId}').innerHTML=''; toggleReplyBox('${commentId}','${postId}'); })" style="width:100%;background:#f3f4f6;color:var(--primary);border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🔒 سجّل الدخول عشان ترد</button>`;
+    }
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+async function reactToComment(commentId, emoji, postId) {
+  const curUser = getCurrentUser();
+  if(!curUser) { requireLogin().then(function(){ reactToComment(commentId, emoji, postId); }); return; }
+  try {
+    const comments = window._currentPostComments || [];
+    const c = comments.find(x => x.id === commentId);
+    const reactions = Object.assign({}, c ? c.reactions : {});
+    reactions[emoji] = (reactions[emoji] || 0) + 1;
+    await sbFetch('PATCH', `community_comments?id=eq.${commentId}`, {reactions});
+    await loadPostDetail(postId);
+  } catch(e) { showToast('خطأ، جرب تاني','error'); }
+}
+
+async function submitComment(postId, parentId) {
+  const curUser = getCurrentUser();
+  if(!curUser) { requireLogin().then(function(){ renderCommentBox(postId); }); return; }
+  const inputId = parentId ? `replyText_${parentId}` : 'commentText';
+  const text = document.getElementById(inputId)?.value.trim();
   if(!text) { showToast('اكتب تعليقك','error'); return; }
   try {
-    await sbFetch('POST', 'community_comments', {post_id:postId, author_name:name, author_device:getDeviceId(), content:text});
+    const body = {post_id:postId, author_name:curUser.name, author_device:getDeviceId(), content:text};
+    if(parentId) body.parent_id = parentId;
+    await sbFetch('POST', 'community_comments', body);
     // تحديث عدد التعليقات
     const posts = await sbFetch('GET', `community_posts?id=eq.${postId}&select=comments_count`) || [];
     if(posts[0]) await sbFetch('PATCH', `community_posts?id=eq.${postId}`, {comments_count:(posts[0].comments_count||0)+1});
-    document.getElementById('commentText').value = '';
-    showToast('✅ تم إرسال تعليقك');
+    if(document.getElementById(inputId)) document.getElementById(inputId).value = '';
+    showToast(parentId ? '✅ تم إرسال ردك' : '✅ تم إرسال تعليقك');
     await loadPostDetail(postId);
   } catch(e) { showToast('خطأ في الإرسال','error'); }
 }
@@ -8296,9 +8393,9 @@ function sharePost(id, title) {
   setTimeout(()=>document.body.removeChild(a), 500);
 }
 
-function sharePostWA(id, title) {
+function sharePostWA(id, title, imgUrl) {
   const url = window.location.href.split('?')[0];
-  const msg = encodeURIComponent(`💬 ${title}\n\nشاركنا في النقاش على دليل الحامول\n${url}`);
+  const msg = encodeURIComponent(`💬 ${title}\n\nشاركنا في النقاش على دليل الحامول\n${url}` + (imgUrl ? `\n\n${imgUrl}` : ''));
   const a = document.createElement('a');
   a.href = `https://wa.me/?text=${msg}`;
   a.target = '_blank';
@@ -8307,7 +8404,10 @@ function sharePostWA(id, title) {
   setTimeout(()=>document.body.removeChild(a), 500);
 }
 
-function sharePostFB(title) {
+function sharePostFB(title, imgUrl) {
+  // ملحوظة: فيسبوك بيسحب الصورة من وسوم og:image بتاعة الصفحة نفسها،
+  // ومش بيقبل صورة عشوائية عن طريق الرابط. لو عايزين صورة تظهر في مشاركة فيسبوك
+  // لازم صفحة خاصة لكل موضوع فيها og:image — دي خطوة تقنية أكبر ممكن نتكلم فيها لو حبيت.
   const url = encodeURIComponent(window.location.href.split('?')[0]);
   const a = document.createElement('a');
   a.href = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${encodeURIComponent(title)}`;
