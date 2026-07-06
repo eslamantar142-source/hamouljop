@@ -7994,20 +7994,32 @@ const POST_REACTIONS = [
   {k:'like', e:'👍'},
   {k:'love', e:'❤️'},
   {k:'haha', e:'😂'},
+  {k:'sad', e:'😢'},
+  {k:'angry', e:'😠'},
 ];
 
 function openPostReactionMenu(postId, btn) {
   const old = document.getElementById('postReactMenu');
   if(old) { old.remove(); if(old.dataset.forPost === postId) return; }
+  window._reactTargetBtn = btn;
   const menu = document.createElement('div');
   menu.id = 'postReactMenu';
   menu.dataset.forPost = postId;
-  menu.style.cssText = 'position:fixed;z-index:9999;background:white;border:1px solid var(--border);border-radius:24px;padding:6px 10px;display:flex;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.18);';
-  const rect = btn.getBoundingClientRect();
-  menu.style.top = Math.max(8, rect.top - 46) + 'px';
-  menu.style.left = Math.max(8, rect.left) + 'px';
-  menu.innerHTML = POST_REACTIONS.map(r=>`<button onclick="event.stopPropagation();applyPostReaction('${postId}','${r.k}')" style="background:none;border:none;font-size:24px;cursor:pointer;line-height:1;transition:transform .1s;" onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'">${r.e}</button>`).join('');
+  menu.style.cssText = 'position:fixed;z-index:9999;background:white;border:1px solid var(--border);border-radius:24px;padding:6px 10px;display:flex;gap:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);visibility:hidden;';
+  menu.innerHTML = POST_REACTIONS.map(r=>`<button onclick="event.stopPropagation();applyPostReaction('${postId}','${r.k}')" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;transition:transform .1s;padding:2px;" onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'">${r.e}</button>`).join('');
   document.body.appendChild(menu);
+  // نحسب مكانه بعد ما يتحط في الصفحة عشان نعرف عرضه الحقيقي ونمنعه يطلع بره الشاشة
+  const rect = btn.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  const vw = window.innerWidth;
+  let left = rect.right - menuRect.width; // نحاذي حافته اليمين مع حافة الزرار اليمين (مناسب لـ RTL)
+  if(left + menuRect.width > vw - 8) left = vw - menuRect.width - 8;
+  if(left < 8) left = 8;
+  let top = rect.top - menuRect.height - 8;
+  if(top < 8) top = rect.bottom + 8; // لو مفيش مكان فوق، حطه تحت الزرار
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+  menu.style.visibility = 'visible';
   setTimeout(function(){
     document.addEventListener('click', function closeOnce(e){
       const m = document.getElementById('postReactMenu');
@@ -8020,9 +8032,9 @@ function openPostReactionMenu(postId, btn) {
 async function applyPostReaction(postId, reactionKey) {
   document.getElementById('postReactMenu')?.remove();
   const curUser = getCurrentUser();
-  if(!curUser) { requireLogin(); return; }
+  if(!curUser) { requireLogin().then(function(){ applyPostReaction(postId, reactionKey); }); return; }
   const deviceId = getDeviceId();
-  const btn = document.getElementById('like_'+postId);
+  const btns = [window._reactTargetBtn, document.getElementById('like_'+postId), document.getElementById('like_detail_'+postId)].filter(Boolean);
   try {
     const existing = await sbFetch('GET', `community_likes?post_id=eq.${postId}&device_id=eq.${deviceId}&select=id,reaction`);
     const cur = existing && existing[0];
@@ -8046,16 +8058,16 @@ async function applyPostReaction(postId, reactionKey) {
     const posts2 = await sbFetch('GET', `community_posts?id=eq.${postId}&select=likes_count`) || [];
     const count = posts2[0]?.likes_count || 0;
     const nowReacted = (!cur || cur.reaction !== reactionKey);
-    if(btn) {
+    btns.forEach(function(btn){
       if(nowReacted) {
         const emoji = (POST_REACTIONS.find(r=>r.k===reactionKey)||{}).e || '👍';
         btn.style.background='#ede9fe'; btn.style.color='#7c3aed';
-        btn.innerHTML = emoji + ' ' + count;
+        btn.innerHTML = emoji + ' ' + count + (btn.id.startsWith('like_detail_') ? ' إعجاب' : '');
       } else {
         btn.style.background='#f3f4f6'; btn.style.color='';
-        btn.innerHTML = '👍 ' + count;
+        btn.innerHTML = '👍 ' + count + (btn.id.startsWith('like_detail_') ? ' إعجاب' : '');
       }
-    }
+    });
   } catch(e) { console.error('reaction failed:', e.message||e); showToast('جرب تاني','error'); }
 }
 
@@ -8127,7 +8139,7 @@ async function loadPostDetail(postId) {
           </div>
         </div>`:''}
         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:12px;color:#7c3aed;">👍 ${p.likes_count||0} إعجاب</span>
+          <button onclick="openPostReactionMenu('${p.id}',this)" id="like_detail_${p.id}" style="font-size:12px;color:#7c3aed;background:#ede9fe;border:none;border-radius:20px;padding:4px 12px;font-family:Cairo,sans-serif;font-weight:700;cursor:pointer;">👍 ${p.likes_count||0} إعجاب</button>
           <span style="font-size:12px;color:var(--gray);">💬 ${comments.length} تعليق</span>
           <button onclick="sharePostWA('${p.id}','${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="margin-right:auto;background:#dcfce7;color:#166534;border:none;padding:5px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📱 واتساب</button>
           <button onclick="sharePostFB('${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="background:#dbeafe;color:#1d4ed8;border:none;padding:5px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">فيسبوك 👍🏻</button>
