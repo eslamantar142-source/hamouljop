@@ -7973,7 +7973,7 @@ async function checkMyLikes(postIds) {
         btn.innerHTML = btn.innerHTML.replace(/^\S+/, emoji);
       }
     });
-  } catch(e) {}
+  } catch(e) { console.error('checkMyLikes failed:', e.message||e); }
 }
 
 function openImgFull(url) {
@@ -8056,7 +8056,7 @@ async function applyPostReaction(postId, reactionKey) {
         btn.innerHTML = '👍 ' + count;
       }
     }
-  } catch(e) { showToast('جرب تاني','error'); }
+  } catch(e) { console.error('reaction failed:', e.message||e); showToast('جرب تاني','error'); }
 }
 
 async function openPostDetail(postId) {
