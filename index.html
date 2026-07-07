@@ -7932,9 +7932,13 @@ function renderPostCard(p, deviceId) {
         style="display:flex;align-items:center;gap:4px;background:#25D366;color:white;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
         ${WA_ICON_SVG}
       </button>
-      <button onclick="sharePostFB('${p.title.replace(/['\"]/g,'')}','${imgs[0]||''}')" 
+      <button onclick="sharePostFB('${p.id}','${p.title.replace(/['\"]/g,'')}','${imgs[0]||''}')" 
         style="display:flex;align-items:center;gap:4px;background:#1877F2;color:white;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
         ${FB_ICON_SVG}
+      </button>
+      <button onclick="event.stopPropagation();copyPostLink('${p.id}')" 
+        style="display:flex;align-items:center;gap:4px;background:#f3f4f6;color:#374151;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;" title="انسخ الرابط والصقه في فيسبوك يدويًا عشان تطلع الصورة صح">
+        📋
       </button>
       ${isAdmin||isOwnerOf(p) ? `
       <button onclick="event.stopPropagation();openEditPostModal('${p.id}')" style="margin-right:auto;background:#eff6ff;color:#2563eb;border:none;padding:7px 10px;border-radius:20px;font-size:12px;cursor:pointer;">✏️</button>
@@ -8161,7 +8165,8 @@ async function loadPostDetail(postId) {
           <button onclick="openPostReactionMenu('${p.id}',this)" id="like_detail_${p.id}" style="font-size:12px;color:#7c3aed;background:#ede9fe;border:none;border-radius:20px;padding:4px 12px;font-family:Cairo,sans-serif;font-weight:700;cursor:pointer;">👍 ${p.likes_count||0} إعجاب</button>
           <span style="font-size:12px;color:var(--gray);">💬 ${comments.length} تعليق</span>
           <button onclick="sharePostWA('${p.id}','${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="margin-right:auto;display:flex;align-items:center;gap:6px;background:#25D366;color:white;border:none;padding:6px 14px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">${WA_ICON_SVG} واتساب</button>
-          <button onclick="sharePostFB('${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="display:flex;align-items:center;gap:6px;background:#1877F2;color:white;border:none;padding:6px 14px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">${FB_ICON_SVG} فيسبوك</button>
+          <button onclick="sharePostFB('${p.id}','${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="display:flex;align-items:center;gap:6px;background:#1877F2;color:white;border:none;padding:6px 14px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">${FB_ICON_SVG} فيسبوك</button>
+          <button onclick="copyPostLink('${p.id}')" style="display:flex;align-items:center;gap:6px;background:#f3f4f6;color:#374151;border:none;padding:6px 14px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📋 نسخ الرابط</button>
         </div>
       </div>
       <div style="font-size:13px;font-weight:700;color:var(--gray);margin-bottom:10px;">التعليقات (${comments.length})</div>
@@ -8553,9 +8558,11 @@ function sharePost(id, title) {
   setTimeout(()=>document.body.removeChild(a), 500);
 }
 
+const SHARE_FN_BASE = 'https://jzipkujsmlrckzbpjwys.supabase.co/functions/v1/share-post';
+
 function sharePostWA(id, title, imgUrl) {
-  const url = window.location.href.split('?')[0];
-  const msg = encodeURIComponent(`💬 ${title}\n\nشاركنا في النقاش على دليل الحامول\n${url}` + (imgUrl ? `\n\n${imgUrl}` : ''));
+  const url = `${SHARE_FN_BASE}?id=${encodeURIComponent(id)}`;
+  const msg = encodeURIComponent(`💬 ${title}\n\nشاركنا في النقاش على دليل الحامول\n${url}`);
   const a = document.createElement('a');
   a.href = `https://wa.me/?text=${msg}`;
   a.target = '_blank';
@@ -8564,11 +8571,8 @@ function sharePostWA(id, title, imgUrl) {
   setTimeout(()=>document.body.removeChild(a), 500);
 }
 
-function sharePostFB(title, imgUrl) {
-  // ملحوظة: فيسبوك بيسحب الصورة من وسوم og:image بتاعة الصفحة نفسها،
-  // ومش بيقبل صورة عشوائية عن طريق الرابط. لو عايزين صورة تظهر في مشاركة فيسبوك
-  // لازم صفحة خاصة لكل موضوع فيها og:image — دي خطوة تقنية أكبر ممكن نتكلم فيها لو حبيت.
-  const url = encodeURIComponent(window.location.href.split('?')[0]);
+function sharePostFB(id, title, imgUrl) {
+  const url = encodeURIComponent(`${SHARE_FN_BASE}?id=${encodeURIComponent(id)}`);
   const a = document.createElement('a');
   a.href = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${encodeURIComponent(title)}`;
   a.target = '_blank';
@@ -8578,6 +8582,27 @@ function sharePostFB(title, imgUrl) {
 }
 
 function sharePost(id, title) { sharePostWA(id, title); }
+
+function copyPostLink(id) {
+  const url = `${SHARE_FN_BASE}?id=${encodeURIComponent(id)}`;
+  const doToast = () => showToast('✅ اتنسخ الرابط! الصقه بنفسك في فيسبوك عشان تطلع الصورة صح');
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(doToast).catch(()=>fallbackCopy(url, doToast));
+  } else {
+    fallbackCopy(url, doToast);
+  }
+}
+
+function fallbackCopy(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); cb(); } catch(e) { showToast('حصل خطأ في النسخ','error'); }
+  document.body.removeChild(ta);
+}
 
 function getTimeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr)) / 1000;
@@ -9423,6 +9448,20 @@ function showGoldPrices() {
   var p = _lastGoldPrices;
   alert('💛 أسعار الذهب اليوم (للجرام)\n\nعيار 24: ' + p.k24.toLocaleString() + ' جنيه\nعيار 21: ' + p.k21.toLocaleString() + ' جنيه\nعيار 18: ' + p.k18.toLocaleString() + ' جنيه\n\n* الأسعار تقريبية وتتحدث كل 5 دقائق');
 }
+
+// لو حد فتح رابط مشاركة موضوع (?post=ID)، افتحله الموضوع ده مباشرة
+(function(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const sharedPostId = params.get('post');
+    if(sharedPostId) {
+      window.addEventListener('load', function(){
+        setTimeout(function(){ openPostDetail(sharedPostId); }, 300);
+      });
+    }
+  } catch(e) {}
+})();
+
 
 </script>
 
