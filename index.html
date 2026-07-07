@@ -1922,30 +1922,44 @@ function getShareText(adId) {
 
 function shareAdWA(adId) {
   trackStat(adId, 'share_wa');
-  const text = getShareText(adId);
+  const ad = allAds.find(a => a.id === adId);
+  const cat = ad ? (CATEGORIES.find(c => c.id === ad.category) || {icon:'📋', name:'عام'}) : {icon:'📋', name:'عام'};
+  const link = `${SHARE_FN_BASE}?type=ad&id=${encodeURIComponent(adId)}`;
+  const text = ad
+    ? `${cat.icon} ${cat.name}${ad.subcategory?' — '+ad.subcategory:''}\n\n📌 ${ad.title}\n${ad.description?'📝 '+ad.description+'\n':''}📞 ${ad.phone}\n\n🔗 ${link}`
+    : `🔗 ${link}`;
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 }
 
 function shareAdFB(adId) {
   trackStat(adId, 'share_fb');
-  const url = encodeURIComponent('https://eslamantar142-source.github.io/hamouljop');
+  const url = encodeURIComponent(`${SHARE_FN_BASE}?type=ad&id=${encodeURIComponent(adId)}`);
   window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
 }
 
+function copyAdShareLink(adId) {
+  const link = `${SHARE_FN_BASE}?type=ad&id=${encodeURIComponent(adId)}`;
+  const doToast = () => showToast('✅ اتنسخ الرابط! الصقه بنفسك في فيسبوك عشان تطلع الصورة صح');
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(doToast).catch(()=>fallbackCopy(link, doToast));
+  } else {
+    fallbackCopy(link, doToast);
+  }
+}
+
 function copyAdLink(adId) {
-  const ad = allAds.find(a => a.id === adId);
-  if(!ad) return;
-  const text = getShareText(adId);
+  const link = `${SHARE_FN_BASE}?type=ad&id=${encodeURIComponent(adId)}`;
+  const doToast = () => showToast('✅ اتنسخ الرابط! الصقه في فيسبوك عشان تطلع الصورة صح');
   if(navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => showToast('✅ تم النسخ!'));
+    navigator.clipboard.writeText(link).then(doToast);
   } else {
     const ta = document.createElement('textarea');
-    ta.value = text;
+    ta.value = link;
     document.body.appendChild(ta);
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    showToast('✅ تم النسخ!');
+    showToast('✅ اتنسخ الرابط!');
   }
   trackStat(adId, 'share_copy');
 }
@@ -9449,14 +9463,19 @@ function showGoldPrices() {
   alert('💛 أسعار الذهب اليوم (للجرام)\n\nعيار 24: ' + p.k24.toLocaleString() + ' جنيه\nعيار 21: ' + p.k21.toLocaleString() + ' جنيه\nعيار 18: ' + p.k18.toLocaleString() + ' جنيه\n\n* الأسعار تقريبية وتتحدث كل 5 دقائق');
 }
 
-// لو حد فتح رابط مشاركة موضوع (?post=ID)، افتحله الموضوع ده مباشرة
+// لو حد فتح رابط مشاركة موضوع (?post=ID) أو إعلان (?ad=ID)، افتحله مباشرة
 (function(){
   try {
     const params = new URLSearchParams(window.location.search);
     const sharedPostId = params.get('post');
+    const sharedAdId = params.get('ad');
     if(sharedPostId) {
       window.addEventListener('load', function(){
         setTimeout(function(){ openPostDetail(sharedPostId); }, 300);
+      });
+    } else if(sharedAdId) {
+      window.addEventListener('load', function(){
+        setTimeout(function(){ openAdDetails(sharedAdId); }, 300);
       });
     }
   } catch(e) {}
