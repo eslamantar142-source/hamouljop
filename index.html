@@ -1924,7 +1924,7 @@ function shareAdWA(adId) {
   trackStat(adId, 'share_wa');
   const ad = allAds.find(a => a.id === adId);
   const cat = ad ? (CATEGORIES.find(c => c.id === ad.category) || {icon:'📋', name:'عام'}) : {icon:'📋', name:'عام'};
-  const link = `${SHARE_FN_BASE}?type=ad&id=${encodeURIComponent(adId)}`;
+  const link = `${SHARE_FN_BASE}/ad/${encodeURIComponent(adId)}`;
   const text = ad
     ? `${cat.icon} ${cat.name}${ad.subcategory?' — '+ad.subcategory:''}\n\n📌 ${ad.title}\n${ad.description?'📝 '+ad.description+'\n':''}📞 ${ad.phone}\n\n🔗 ${link}`
     : `🔗 ${link}`;
@@ -1933,12 +1933,12 @@ function shareAdWA(adId) {
 
 function shareAdFB(adId) {
   trackStat(adId, 'share_fb');
-  const url = encodeURIComponent(`${SHARE_FN_BASE}?type=ad&id=${encodeURIComponent(adId)}`);
+  const url = encodeURIComponent(`${SHARE_FN_BASE}/ad/${encodeURIComponent(adId)}`);
   window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
 }
 
 function copyAdShareLink(adId) {
-  const link = `${SHARE_FN_BASE}?type=ad&id=${encodeURIComponent(adId)}`;
+  const link = `${SHARE_FN_BASE}/ad/${encodeURIComponent(adId)}`;
   const doToast = () => showToast('✅ اتنسخ الرابط! الصقه بنفسك في فيسبوك عشان تطلع الصورة صح');
   if(navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(link).then(doToast).catch(()=>fallbackCopy(link, doToast));
@@ -1948,7 +1948,7 @@ function copyAdShareLink(adId) {
 }
 
 function copyAdLink(adId) {
-  const link = `${SHARE_FN_BASE}?type=ad&id=${encodeURIComponent(adId)}`;
+  const link = `${SHARE_FN_BASE}/ad/${encodeURIComponent(adId)}`;
   const doToast = () => showToast('✅ اتنسخ الرابط! الصقه في فيسبوك عشان تطلع الصورة صح');
   if(navigator.clipboard) {
     navigator.clipboard.writeText(link).then(doToast);
@@ -8575,7 +8575,7 @@ function sharePost(id, title) {
 const SHARE_FN_BASE = 'https://jzipkujsmlrckzbpjwys.supabase.co/functions/v1/share-post';
 
 function sharePostWA(id, title, imgUrl) {
-  const url = `${SHARE_FN_BASE}?id=${encodeURIComponent(id)}`;
+  const url = `${SHARE_FN_BASE}/post/${encodeURIComponent(id)}`;
   const msg = encodeURIComponent(`💬 ${title}\n\nشاركنا في النقاش على دليل الحامول\n${url}`);
   const a = document.createElement('a');
   a.href = `https://wa.me/?text=${msg}`;
@@ -8586,7 +8586,7 @@ function sharePostWA(id, title, imgUrl) {
 }
 
 function sharePostFB(id, title, imgUrl) {
-  const url = encodeURIComponent(`${SHARE_FN_BASE}?id=${encodeURIComponent(id)}`);
+  const url = encodeURIComponent(`${SHARE_FN_BASE}/post/${encodeURIComponent(id)}`);
   const a = document.createElement('a');
   a.href = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${encodeURIComponent(title)}`;
   a.target = '_blank';
@@ -8598,7 +8598,7 @@ function sharePostFB(id, title, imgUrl) {
 function sharePost(id, title) { sharePostWA(id, title); }
 
 function copyPostLink(id) {
-  const url = `${SHARE_FN_BASE}?id=${encodeURIComponent(id)}`;
+  const url = `${SHARE_FN_BASE}/post/${encodeURIComponent(id)}`;
   const doToast = () => showToast('✅ اتنسخ الرابط! الصقه بنفسك في فيسبوك عشان تطلع الصورة صح');
   if(navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(doToast).catch(()=>fallbackCopy(url, doToast));
