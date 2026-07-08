@@ -798,6 +798,14 @@ const CATEGORIES = [
 
 let allAds = [];
 let isAdmin = false;
+
+// ===== منطق انتهاء صلاحية إعلانات الوظائف (30 يوم) =====
+const JOB_AD_EXPIRY_DAYS = 30;
+function isAdExpired(ad) {
+  if(!ad || ad.category !== 'jobs' || !ad.created_at) return false;
+  var ageMs = Date.now() - new Date(ad.created_at).getTime();
+  return ageMs > JOB_AD_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+}
 let slideIdx = 0;
 let slideTimer;
 
@@ -836,7 +844,7 @@ async function loadAds() {
 // UPDATE CATEGORY COUNTS
 function updateCatCounts() {
   CATEGORIES.forEach(cat => {
-    const approved = allAds.filter(a => a.status==='approved' && a.category===cat.id);
+    const approved = allAds.filter(a => a.status==='approved' && a.category===cat.id && !isAdExpired(a));
     const el = document.getElementById('count_'+cat.id);
     if(el && approved.length > 0) {
       el.textContent = approved.length;
@@ -970,6 +978,7 @@ function showAdsPageV2(parentId, childId, subName) {
   const ads = allAds.filter(a => {
     if(a.status !== 'approved' && !isAdmin) return false;
     if(a.category !== parentId) return false;
+    if(!isAdmin && isAdExpired(a)) return false;
     if(isGeneral) {
       return a.subcategory?.startsWith(child?.name + ' —') || a.subcategory === child?.name || false;
     }
@@ -1009,6 +1018,7 @@ function filterAdsV2(parentId, childId, subName) {
   const ads = allAds.filter(a => {
     if(a.status !== 'approved' && !isAdmin) return false;
     if(a.category !== parentId) return false;
+    if(!isAdmin && isAdExpired(a)) return false;
     if(subName && a.subcategory !== `${child?.name} — ${subName}`) return false;
     if(q && !(a.title||'').toLowerCase().includes(q) && !(a.description||'').toLowerCase().includes(q)) return false;
     return true;
@@ -1088,6 +1098,7 @@ async function showAdsPage(cat, sub) {
   const ads = allAds.filter(a => {
     if(a.status !== 'approved' && !isAdmin) return false;
     if(a.category !== cat.id) return false;
+    if(!isAdmin && isAdExpired(a)) return false;
     if(sub && a.subcategory !== sub) return false;
     return true;
   });
@@ -1852,6 +1863,8 @@ function renderAdsList(ads, cat) {
     const imgHtml = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')">' : '';
     const addrHtml = ad.address ? '<div style="font-size:12px;color:var(--gray);margin-bottom:6px;">📍 ' + ad.address + '</div>' : '';
     const subHtml = ad.subcategory ? '<span class="ad-sub-badge">' + ad.subcategory + '</span>' : '';
+    const salaryHtml = ad.salary ? '<div style="font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:6px;">💰 ' + ad.salary + '</div>' : '';
+    const jobStatusHtml = ad.job_status ? '<div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px;">📌 ' + ad.job_status + '</div>' : '';
 
     const actionBtns = '<button onclick="toggleFav(\'' + ad.id + '\')" style="background:' + favBg + ';color:' + favColor + ';border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;" id="fav_' + ad.id + '">❤️</button>' +
       '<a href="https://wa.me/?text=' + shareMsg + '" target="_blank" style="background:#dcfce7;color:#166534;border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;">🔗</a>' +
@@ -1892,6 +1905,8 @@ function renderAdsList(ads, cat) {
       '<div class="ad-body">' +
       '<div class="ad-title" onclick="openAdDetails(\'' + ad.id + '\')">' + (ad.title||'') + '</div>' +
       subHtml +
+      salaryHtml +
+      jobStatusHtml +
       addrHtml +
       '<div class="ad-desc">' + (ad.description||'') + '</div>' +
       renderVideoLinks(ad.video_links) +
@@ -1905,6 +1920,7 @@ function filterAds(catId, sub) {
   let ads = allAds.filter(a => {
     if(a.status !== 'approved' && !isAdmin) return false;
     if(a.category !== catId) return false;
+    if(!isAdmin && isAdExpired(a)) return false;
     if(sub && a.subcategory !== sub) return false;
     if(q && !(a.title||'').toLowerCase().includes(q) && !(a.description||'').toLowerCase().includes(q)) return false;
     return true;
@@ -2127,12 +2143,14 @@ async function openAdDetails(adId) {
           <span style="font-size:12px;color:var(--gray);">📞 ${waClicks} تواصل</span>
           <span style="font-size:12px;color:var(--gray);">📅 ${new Date(ad.created_at).toLocaleDateString('ar-EG')}</span>
         </div>
-        ${(ad.phone||ad.address||ad.subcategory)?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;">
+        ${(ad.phone||ad.address||ad.subcategory||ad.salary||ad.job_status)?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:13px;font-weight:900;">ℹ️ معلومات عن النشاط</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             ${ad.subcategory?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">🏷️</span><div><div style="font-size:11px;color:#94a3b8;">التخصص</div><div style="font-size:13px;font-weight:700;">${ad.subcategory}</div></div></div>`:''}
+            ${ad.salary?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#eff6ff;border-radius:10px;"><span style="font-size:18px;">💰</span><div><div style="font-size:11px;color:#94a3b8;">الراتب</div><div style="font-size:13px;font-weight:700;color:#1d4ed8;">${ad.salary}</div></div></div>`:''}
+            ${ad.job_status?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f0fdf4;border-radius:10px;"><span style="font-size:18px;">📌</span><div><div style="font-size:11px;color:#94a3b8;">الحالة</div><div style="font-size:13px;font-weight:700;color:#166534;">${ad.job_status}</div></div></div>`:''}
             ${ad.address?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;cursor:pointer;" onclick="ad.location_url?window.open(fixMapUrl(ad.location_url),'_blank'):null"><span style="font-size:18px;">📍</span><div><div style="font-size:11px;color:#94a3b8;">العنوان</div><div style="font-size:13px;font-weight:700;">${ad.address}</div></div></div>`:''}
             ${ad.phone?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">📞</span><div><div style="font-size:11px;color:#94a3b8;">التليفون</div><div style="font-size:13px;font-weight:700;" dir="ltr">${ad.phone}</div></div></div>`:''}
             ${ad.phone2?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">📱</span><div><div style="font-size:11px;color:#94a3b8;">رقم ثاني</div><div style="font-size:13px;font-weight:700;" dir="ltr">${ad.phone2}</div></div></div>`:''}
@@ -2400,6 +2418,12 @@ function openEditAd(adId) {
     // السعر
     var fPrice = document.getElementById('fPrice');
     if(fPrice) fPrice.value = ad.price || '';
+
+    // بيانات الوظيفة (الراتب والحالة)
+    var fSalary = document.getElementById('fSalary');
+    if(fSalary) fSalary.value = ad.salary || '';
+    var fJobStatus = document.getElementById('fJobStatus');
+    if(fJobStatus) fJobStatus.value = ad.job_status || '';
     
     // روابط الفيديو
     fillVideoLinks(ad.video_links);
@@ -2410,6 +2434,7 @@ function openEditAd(adId) {
     setTimeout(function() {
       var fSub = document.getElementById('fSub');
       if(fSub && ad.subcategory) fSub.value = ad.subcategory;
+      updateJobsUI();
     }, 100);
     
     // تغيير العنوان والزرار للتعديل
@@ -2453,6 +2478,8 @@ async function submitEditAd(adId) {
     const price = document.getElementById('fPrice')?.value.trim();
     const cat = document.getElementById('fCat')?.value;
     const sub = document.getElementById('fSub')?.value;
+    const salary = document.getElementById('fSalary')?.value.trim();
+    const jobStatus = document.getElementById('fJobStatus')?.value;
     
     if(!title) { showToast('اكتب العنوان', 'error'); if(btn){btn.textContent='💾 حفظ التعديلات';btn.disabled=false;} return; }
     
@@ -2469,6 +2496,8 @@ async function submitEditAd(adId) {
       price: price || null,
       category: cat || null,
       subcategory: sub || null,
+      salary: cat === 'jobs' ? (salary || null) : null,
+      job_status: cat === 'jobs' ? (jobStatus || null) : null,
     };
     
     // لو في صور جديدة
@@ -2513,6 +2542,13 @@ async function submitEditAd(adId) {
       const vids = getVideoLinks();
       await sbFetch('PATCH', `ads?id=eq.${adId}`, {video_links: vids.length > 0 ? JSON.stringify(vids) : null});
     } catch(e){ console.error('video_links save failed:', e.message || e); showToast('⚠️ الإعلان اتحفظ بس الفيديو مش', 'error'); }
+
+    // تحديث الراتب وحالة الباحث عن عمل (لأقسام الوظائف فقط)
+    if(cat === 'jobs') {
+      try {
+        await sbFetch('PATCH', `ads?id=eq.${adId}`, {salary: salary || null, job_status: jobStatus || null});
+      } catch(e){ console.error('salary/job_status save failed:', e.message || e); }
+    }
     
     // تحديث allAds
     const idx = allAds.findIndex(a => a.id === adId);
@@ -2576,7 +2612,7 @@ function openAddModalForm(catId='', sub='') {
         </div>
         <div class="fg" id="fSubWrap" style="margin-bottom:0;">
           <label>التخصص</label>
-          <select id="fSub" style="font-size:14px;"></select>
+          <select id="fSub" onchange="updateJobsUI()" style="font-size:14px;"></select>
         </div>
       </div>
 
@@ -2584,13 +2620,33 @@ function openAddModalForm(catId='', sub='') {
       <div style="background:white;border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
         <div style="font-size:13px;font-weight:900;color:var(--primary);margin-bottom:12px;">2️⃣ تفاصيل الإعلان</div>
         <div class="fg">
-          <label>عنوان الإعلان *</label>
+          <label id="fTitleLabel">عنوان الإعلان *</label>
           <input type="text" id="fTitle" placeholder="اكتب عنوان إعلانك هنا" style="font-size:14px;">
         </div>
         <div class="fg">
-          <label>التفاصيل</label>
+          <label id="fDescLabel">التفاصيل</label>
           <textarea id="fDesc" rows="6" placeholder="اكتب كل خدمة أو معلومة في سطر لوحده، مثال:&#10;متابعة أمراض الأطفال&#10;علاج الحساسية&#10;مواعيد: 10 صباحاً - 3 مساءً&#10;يوجد سونار" style="font-size:14px;"></textarea>
-          <div style="font-size:11px;color:#94a3b8;margin-top:4px;padding-right:4px;">💡 اكتب كل خدمة أو معلومة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق</div>
+          <div id="fDescHint" style="font-size:11px;color:#94a3b8;margin-top:4px;padding-right:4px;">💡 اكتب كل خدمة أو معلومة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق</div>
+        </div>
+
+        <!-- حقول الوظائف (تظهر بس في قسم الوظائف) -->
+        <div id="jobsFields" style="display:none;">
+          <div style="background:#eff6ff;border-radius:12px;padding:12px;margin-bottom:4px;">
+            <div style="font-size:13px;font-weight:900;color:#1e40af;margin-bottom:10px;" id="jobsFieldsTitle">💼 بيانات الوظيفة</div>
+            <div class="fg" style="margin-bottom:10px;">
+              <label id="fSalaryLabel" style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">الراتب المتوقع / المعروض</label>
+              <input type="text" id="fSalary" placeholder="مثال: 3000 جنيه أو يحدد بالمقابلة" style="width:100%;padding:8px;border:1px solid #bfdbfe;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">
+            </div>
+            <div class="fg" id="fJobStatusWrap" style="margin-bottom:0;display:none;">
+              <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">الحالة</label>
+              <select id="fJobStatus" style="width:100%;padding:8px;border:1px solid #bfdbfe;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;background:white;">
+                <option value="">-- اختر حالتك --</option>
+                <option value="متاح فوراً">🟢 متاح فوراً</option>
+                <option value="يبحث عن عمل">🔵 يبحث عن عمل</option>
+                <option value="متاح للمقابلات">🟡 متاح للمقابلات</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <!-- حقول المتجر -->
@@ -2693,6 +2749,9 @@ function openAddModalForm(catId='', sub='') {
         <div style="font-size:12px;color:var(--gray);text-align:center;margin-bottom:12px;">
           ⚠️ إعلانك هيظهر بعد مراجعة المشرف إسلام عنتر
         </div>
+        <button type="button" onclick="showAdPreviewModal()" id="fPreviewBtn" style="display:none;width:100%;background:#fff7ed;color:#c2410c;border:2px solid #fdba74;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;margin-bottom:8px;">
+          👁️ معاينة الإعلان
+        </button>
         <button onclick="submitNewAd()" id="fSubmit"
           style="width:100%;background:var(--primary);color:white;border:none;padding:14px;border-radius:12px;font-family:Cairo,sans-serif;font-size:15px;font-weight:900;cursor:pointer;">
           🚀 إرسال الإعلان للمراجعة
@@ -2806,6 +2865,74 @@ function updateFSub() {
     sel.innerHTML = '<option value="">-- اختر تخصص --</option>' + allSubs.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
   } else {
     wrap.style.display = 'none';
+  }
+
+  updateJobsUI();
+}
+
+// ===== تحديد نوع الإعلان: وظيفة شاغرة ولا باحث عن عمل =====
+function getJobsMode() {
+  var catVal = document.getElementById('fCat')?.value;
+  if(catVal !== 'jobs') return null;
+  var subVal = document.getElementById('fSub')?.value || '';
+  if(subVal.indexOf('باحث عن عمل') === 0) return 'seeker';
+  if(subVal.indexOf('وظيفة شاغرة') === 0) return 'vacancy';
+  // لسه ما اخترش تخصص — نرجع لنوع القسم اللي اتفتح بيه الفورم
+  if(addCatId === 'jobs_seeker') return 'seeker';
+  if(addCatId === 'jobs_vacancy') return 'vacancy';
+  return 'vacancy'; // افتراضي داخل قسم الوظائف
+}
+
+// ===== تحديث واجهة قسم الوظائف (الراتب، الحالة، النصوص، زرار الإرسال) =====
+function updateJobsUI() {
+  var catVal = document.getElementById('fCat')?.value;
+  var jobsFields = document.getElementById('jobsFields');
+  var titleLabel = document.getElementById('fTitleLabel');
+  var titleInput = document.getElementById('fTitle');
+  var descLabel = document.getElementById('fDescLabel');
+  var descInput = document.getElementById('fDesc');
+  var descHint = document.getElementById('fDescHint');
+  var submitBtn = document.getElementById('fSubmit');
+  var previewBtn = document.getElementById('fPreviewBtn');
+  var salaryLabel = document.getElementById('fSalaryLabel');
+  var jobStatusWrap = document.getElementById('fJobStatusWrap');
+  var jobsFieldsTitle = document.getElementById('jobsFieldsTitle');
+
+  if(catVal !== 'jobs') {
+    if(jobsFields) jobsFields.style.display = 'none';
+    if(previewBtn) previewBtn.style.display = 'none';
+    if(titleLabel) titleLabel.textContent = 'عنوان الإعلان *';
+    if(titleInput) titleInput.placeholder = 'اكتب عنوان إعلانك هنا';
+    if(descLabel) descLabel.textContent = 'التفاصيل';
+    if(descHint) descHint.textContent = '💡 اكتب كل خدمة أو معلومة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق';
+    if(submitBtn) submitBtn.textContent = '🚀 إرسال الإعلان للمراجعة';
+    return;
+  }
+
+  var mode = getJobsMode();
+  if(jobsFields) jobsFields.style.display = 'block';
+  if(previewBtn) previewBtn.style.display = 'block';
+
+  if(mode === 'seeker') {
+    if(jobsFieldsTitle) jobsFieldsTitle.textContent = '🙋 بيانات الباحث عن عمل';
+    if(titleLabel) titleLabel.textContent = 'ملخص الخبرة/المهنة *';
+    if(titleInput) titleInput.placeholder = 'مثال: خريج محاسبة — خبرة سنتين مبيعات';
+    if(descLabel) descLabel.textContent = 'خبراتك ومهاراتك';
+    if(descInput) descInput.placeholder = 'اكتب خبراتك ومهاراتك كل نقطة في سطر، مثال:\nخبرة 3 سنوات محاسبة\nإجادة برامج الأوفيس\nمتاح للعمل الفوري';
+    if(descHint) descHint.textContent = '💡 اكتب كل مهارة أو خبرة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق';
+    if(salaryLabel) salaryLabel.textContent = 'الراتب المتوقع (اختياري)';
+    if(jobStatusWrap) jobStatusWrap.style.display = 'block';
+    if(submitBtn) submitBtn.textContent = '🚀 انشر طلبي';
+  } else {
+    if(jobsFieldsTitle) jobsFieldsTitle.textContent = '💼 بيانات الوظيفة';
+    if(titleLabel) titleLabel.textContent = 'عنوان الإعلان *';
+    if(titleInput) titleInput.placeholder = 'مثال: مطلوب محاسب — خبرة 3 سنوات';
+    if(descLabel) descLabel.textContent = 'تفاصيل ومتطلبات الوظيفة';
+    if(descInput) descInput.placeholder = 'اكتب متطلبات الوظيفة كل نقطة في سطر، مثال:\nخبرة سنتين على الأقل\nيفضل من سكان الحامول\nمواعيد العمل: 9ص - 5م';
+    if(descHint) descHint.textContent = '💡 اكتب كل شرط أو معلومة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق';
+    if(salaryLabel) salaryLabel.textContent = 'الراتب المعروض (اختياري)';
+    if(jobStatusWrap) jobStatusWrap.style.display = 'none';
+    if(submitBtn) submitBtn.textContent = '🚀 نشر الوظيفة';
   }
 }
 
@@ -2954,6 +3081,53 @@ function previewAddImages(input) {
   });
 }
 
+// ===== معاينة الإعلان قبل الإرسال =====
+function showAdPreviewModal() {
+  const title = document.getElementById('fTitle')?.value.trim() || '(من غير عنوان)';
+  const desc = document.getElementById('fDesc')?.value.trim() || '';
+  const phone = document.getElementById('fPhone')?.value.trim() || '';
+  const address = document.getElementById('fAddress')?.value.trim() || '';
+  const salary = document.getElementById('fSalary')?.value.trim() || '';
+  const jobStatus = document.getElementById('fJobStatus')?.value || '';
+  const catId = document.getElementById('fCat')?.value;
+  const subEl = document.getElementById('fSub');
+  const sub = (subEl && subEl.style.display !== 'none') ? subEl.value : '';
+  const cat = CATEGORIES.find(c => c.id === catId) || {icon:'📋', name:''};
+  const mode = getJobsMode();
+
+  const descHtml = desc ? desc.split(/\n/).map(l => l.trim()).filter(Boolean).map(l => '<div style="padding:6px 0;border-bottom:1px solid #f1f5f9;">• ' + escapeHtml(l) + '</div>').join('') : '<div style="color:#94a3b8;">لسه ما كتبتش تفاصيل</div>';
+
+  let modal = document.getElementById('adPreviewModal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'adPreviewModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:white;border-radius:18px 18px 0 0;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;padding:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-size:15px;font-weight:900;color:var(--primary);">👁️ معاينة الإعلان</div>
+        <button onclick="document.getElementById('adPreviewModal').remove()" style="background:#f3f4f6;border:none;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div style="background:#f8fafc;border-radius:14px;padding:14px;border:1px solid var(--border);">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          <span style="background:var(--primary-light);color:var(--primary);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${cat.icon} ${cat.name}</span>
+          ${sub ? `<span style="background:#f3f4f6;color:#555;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${escapeHtml(sub)}</span>` : ''}
+        </div>
+        <h3 style="font-size:16px;font-weight:900;margin-bottom:8px;">${escapeHtml(title)}</h3>
+        ${salary ? `<div style="font-size:14px;font-weight:800;color:#1d4ed8;margin-bottom:8px;">💰 ${mode==='seeker'?'الراتب المتوقع':'الراتب المعروض'}: ${escapeHtml(salary)}</div>` : ''}
+        ${jobStatus ? `<div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:8px;">📌 الحالة: ${escapeHtml(jobStatus)}</div>` : ''}
+        ${address ? `<div style="font-size:12px;color:var(--gray);margin-bottom:8px;">📍 ${escapeHtml(address)}</div>` : ''}
+        <div style="font-size:13px;margin:10px 0;">${descHtml}</div>
+        ${phone ? `<div style="font-size:13px;font-weight:700;margin-top:10px;">📞 ${escapeHtml(phone)}</div>` : ''}
+      </div>
+      <button onclick="document.getElementById('adPreviewModal').remove()" style="width:100%;background:var(--primary);color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;margin-top:14px;">
+        تمام، ارجع للتعديل
+      </button>
+    </div>`;
+}
+
 async function submitNewAd() {
   const title = document.getElementById('fTitle').value.trim();
   const phone = document.getElementById('fPhone').value.trim();
@@ -2985,7 +3159,9 @@ async function submitNewAd() {
       video_links: videoLks.length > 0 ? JSON.stringify(videoLks) : null,
       price: document.getElementById('fPrice')?.value ? parseFloat(document.getElementById('fPrice').value) : null,
       quantity: document.getElementById('fQty')?.value ? parseInt(document.getElementById('fQty').value) : null,
-      condition: document.getElementById('fCondition')?.value || null
+      condition: document.getElementById('fCondition')?.value || null,
+      salary: catId === 'jobs' ? (document.getElementById('fSalary')?.value.trim() || null) : null,
+      job_status: catId === 'jobs' ? (document.getElementById('fJobStatus')?.value || null) : null
     };
     // إضافة رابط الخريطة بعد التحقق
     var locVal = document.getElementById('fLocation')?.value.trim() || '';
