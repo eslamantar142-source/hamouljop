@@ -210,7 +210,7 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
 .ad-desc { font-size:13px; color:var(--gray); line-height:1.6; margin-bottom:10px; }
 .ad-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; }
 .ad-date { font-size:11px; color:#9ca3af; }
-.btn-wa { background:#25D366; color:white; border:none; padding:7px 12px; border-radius:8px; font-family:'Cairo',sans-serif; font-size:12px; font-weight:700; text-decoration:none; cursor:pointer; }
+.btn-wa { background:#25D366; color:white; border:none; padding:9px 16px; border-radius:10px; font-family:'Cairo',sans-serif; font-size:13px; font-weight:800; text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
 .btn-details { background:var(--primary-light); color:var(--primary); border:none; padding:7px 12px; border-radius:8px; font-family:'Cairo',sans-serif; font-size:12px; font-weight:700; cursor:pointer; }
 .btn-del { background:#fee2e2; color:var(--red); border:none; padding:7px 10px; border-radius:8px; cursor:pointer; font-size:13px; }
 
@@ -582,7 +582,7 @@ async function submitRegister() {
   const phone = document.getElementById('authPhone').value.trim();
   const pass = document.getElementById('authPass').value;
   if(!name) { showToast('اكتب الاسم', 'error'); return; }
-  if(!phone || phone.length < 11) { showToast('اكتب رقم موبايل صحيح', 'error'); return; }
+  if(!phone || !/^01[0-9]{9}$/.test(phone)) { showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
   if(!pass || pass.length < 6) { showToast('كلمة المرور لازم 6 على الأقل', 'error'); return; }
   const btn = document.getElementById('authSubmitBtn');
   btn.disabled = true; btn.textContent = 'جاري التسجيل...';
@@ -729,8 +729,11 @@ const CATEGORIES = [
   { id:'news',       name:'أخبار ومناقشات الحامول',         icon:'📰', color:'#e0f2fe', subs:[] },
   { id:'doctors',    name:'أطباء',              icon:'🩺', color:'#fee2e2', subs:['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','عام'] },
   { id:'medservices',name:'خدمات طبية',         icon:'🏥', color:'#fee2e2', subs:['صيدليات','معامل تحاليل','مراكز أشعة','مراكز تخاطب','مستلزمات طبية','معامل نظارات','تمريض منزلي','الطب التكميلي'] },
-  { id:'lost',       name:'مفقودات',            icon:'🔎', color:'#fff7ed', subs:[] },
-  { id:'deaths',     name:'وفيات',              icon:'🕌', color:'#f1f5f9', subs:[] },
+  { id:'lost',       name:'مفقودات',            icon:'🔎', color:'#fff7ed', subs:['أوراق وبطاقات','مفاتيح','محفظة / أموال','إلكترونيات','حيوانات أليفة','أخرى'] },
+  { id:'deaths',     name:'وفيات الحامول',      icon:'🕌', color:'#f1f5f9', children:[
+      { id:'deaths_announce', name:'نعي ووفيات', icon:'🕌' },
+      { id:'deaths_memorial', name:'توثيق الراحلين', icon:'🕯️' }
+    ] },
   { id:'used_market', name:'سوق المستعمل والاستبدال', icon:'🔄', color:'#fef3c7', subs:['موبايلات وأجهزة','أثاث وديكور','ملابس مستعملة','كتب ومستلزمات دراسية','أجهزة كهربائية','عفش كامل','سيارات وتكاتك','أدوات ومعدات','العاب أطفال','أخرى'] },
   { id:'food', name:'مطاعم وكافيهات', icon:'🍕', color:'#fef9c3', subs:[], children: [
     { id:'food_rest', name:'مطاعم', icon:'🍽️', color:'#fef9c3', subs:[
@@ -757,7 +760,8 @@ const CATEGORIES = [
   { id:'furniture',  name:'أدوات منزلية',        icon:'🛋️', color:'#dbeafe', subs:['أثاث','مطابخ ألوميتال','تكييفات','أدوات منزلية','ستائر ومفروشات','أنتيكات ونجف','سجاد','فلاتر مياه','قطع غيار أدوات كهربائية'] },
   { id:'fashion',    name:'ملابس',               icon:'👗', color:'#fce7f3', subs:['سنتر متكامل','حريمي','رجالي وشبابي','أطفال','ملابس داخلية'] },
   { id:'shoes',      name:'أحذية وأكسسوارات',   icon:'👟', color:'#fce7f3', subs:['أحذية','أكسسوارات وهدايا'] },
-  { id:'cars',       name:'سيارات وتكاتك',       icon:'🚗', color:'#f1f5f9', subs:['معارض بيع سيارات','معارض بيع تكاتك','إيجار سيارات','مغسلة سيارات','قطع غيار سيارات','قطع غيار تكاتك','صيانة','تروسيكل','🛺 اطلب توكتوك','نقل عفش','دليفري','سواقين'] },
+  { id:'cars',       name:'سيارات وتكاتك',       icon:'🚗', color:'#f1f5f9', subs:['إيجار سيارات','مغسلة سيارات','صيانة وزيت','تروسيكل','🛺 اطلب توكتوك','نقل عفش','دليفري','سواقين'] },
+  { id:'cars_market', name:'سوق السيارات والتكاتك', icon:'🚙', color:'#e0f2fe', subs:['معارض بيع سيارات','معارض بيع تكاتك','قطع غيار سيارات','قطع غيار تكاتك'] },
   { id:'charity', name:'قسم الخير والتبرعات', icon:'🤍', color:'#f0fdf4', subs:['ملابس وأدوات منزلية','أثاث وعفش','كتب ومستلزمات دراسية','أجهزة وموبايلات','طعام وغذاء','مساعدة مادية','تبرع بدم','غير ذلك'] },
   { id:'sports', name:'رياضة', icon:'⚽', color:'#dcfce7', subs:['صالات جيم','كرة قدم','أكاديمية فنون قتالية','ألعاب رياضية — مستلزمات وبيع','ملاعب رياضية','سباحة','دراجات'] },
   { id:'salon',      name:'صالونات وتجميل',      icon:'💇', color:'#fce7f3', subs:['حلاق رجالي','ميكب آرتيست','بيوتي سنتر','صالون حريمي'] },
@@ -917,6 +921,14 @@ function showChildrenPage(cat) {
       <span></span>
     </div>
     <div id="catBanner"></div>
+    ${cat.id === 'food' ? `
+    <div style="background:linear-gradient(135deg,#fef9c3,#fef08a);padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #fde047;">
+      <span style="font-size:26px;flex-shrink:0;">🍽️</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:900;color:#854d0e;">عندك مطعم أو كافيه في الحامول؟</div>
+        <div style="font-size:12px;color:#713f12;margin-top:2px;line-height:1.5;">أضف إعلانك مجانًا واظهر لآلاف العملاء اللي بيدوروا على أكل كل يوم</div>
+      </div>
+    </div>` : ''}
     <div class="dyn-content" style="padding:12px;">
       <div class="cats-grid">
         ${cat.children.map(child => `
@@ -1072,9 +1084,9 @@ function filterSubs(catId) {
 
 // ======= ADS PAGE =======
 async function showAdsPage(cat, sub) {
-  // لو قسم "البيع أونلاين" → روح لصفحة المعارض
-  if(cat.id === 'online' && sub) {
-    showShopsPage(sub);
+  // أقسام المعارض (البيع أونلاين + سوق السيارات) → روح لصفحة المعارض
+  if((cat.id === 'online' || cat.id === 'cars_market') && sub) {
+    showShopsPage(sub, cat.id);
     return;
   }
   // حفظ الصفحة الحالية كـ parent عشان زرار الرجوع
@@ -1105,7 +1117,7 @@ async function showAdsPage(cat, sub) {
 
   page.innerHTML = `
     <div class="dyn-header">
-      <button class="dyn-back" onclick="${cat.subs && cat.subs.length > 0 ? `showSubsPage(CATEGORIES.find(c=>c.id==='${cat.id}'))` : 'hideDynPage()'}">←</button>
+      <button class="dyn-back" onclick="${cat.id === 'deaths' ? `showChildrenPage(CATEGORIES.find(c=>c.id==='deaths'))` : (cat.subs && cat.subs.length > 0 ? `showSubsPage(CATEGORIES.find(c=>c.id==='${cat.id}'))` : 'hideDynPage()')}">←</button>
       <span>${cat.icon} ${title}</span>
       <button class="dyn-search-btn" onclick="toggleDynSearch()">🔍</button>
     </div>
@@ -1113,6 +1125,15 @@ async function showAdsPage(cat, sub) {
       <input type="text" id="dynSearchInput" placeholder="ابحث في ${title}..." oninput="filterAds('${cat.id}','${sub||''}')">
     </div>
     <div id="catBanner"></div>
+    ${cat.id === 'lost' ? `
+    <div style="background:linear-gradient(135deg,#fff7ed,#ffedd5);border-bottom:1px solid #fdba74;padding:14px 16px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:26px;flex-shrink:0;">🔎</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:900;color:#9a3412;">فقدت حاجة؟ ولا لقيت حاجة؟</div>
+        <div style="font-size:12px;color:#7c2d12;margin-top:2px;line-height:1.5;">أضف إعلان دلوقتي — ربما تجد من عثر عليه بين أهالي الحامول</div>
+      </div>
+      <button onclick="openAddModal('lost','${sub||''}')" style="background:#ea580c;color:white;border:none;padding:8px 14px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;flex-shrink:0;">+ أضف</button>
+    </div>` : ''}
     <div class="dyn-content" id="adsContent" style="padding:${['online','used_market','fashion','shoes'].includes(cat.id)?'12px':'0 0 16px'};">
       ${['online','used_market','fashion','shoes'].includes(cat.id) ? renderShopGrid(ads, cat) : renderAdsList(ads, cat)}
     </div>
@@ -1125,30 +1146,51 @@ async function showAdsPage(cat, sub) {
 
 // ======= نظام المعارض (البيع أونلاين) =======
 
-async function showShopsPage(subcategory) {
-  sessionStorage.setItem('dynState', JSON.stringify({type:'shops', sub:subcategory}));
+// يحدد القسم اللي التصنيف ده تابع له (online / cars_market)
+function getShopCatId(subcategory) {
+  const carsCat = CATEGORIES.find(c => c.id === 'cars_market');
+  if(carsCat && carsCat.subs && carsCat.subs.indexOf(subcategory) !== -1) return 'cars_market';
+  return 'online';
+}
+
+async function showShopsPage(subcategory, catId) {
+  catId = catId || 'online';
+  const shopCat = CATEGORIES.find(c=>c.id===catId) || {icon:'🛍️', color:'#ede9fe', name:''};
+  sessionStorage.setItem('dynState', JSON.stringify({type:'shops', sub:subcategory, catId:catId}));
   try{history.pushState({dyn:1},'');}catch(e){}
   const page = document.getElementById('dynamicPage');
-  const onlineCat = CATEGORIES.find(c=>c.id==='online') || {icon:'🛍️', color:'#ede9fe'};
+  const onlineCat = shopCat;
 
   page.innerHTML =
     '<div class="dyn-header">' +
-      '<button class="dyn-back" onclick="showSubsPage(CATEGORIES.find(c=>c.id===\'online\'))">←</button>' +
-      '<span>🛍️ ' + subcategory + '</span>' +
+      '<button class="dyn-back" onclick="showSubsPage(CATEGORIES.find(c=>c.id===\'' + catId + '\'))">←</button>' +
+      '<span>' + shopCat.icon + ' ' + subcategory + '</span>' +
       '<span></span>' +
     '</div>' +
     '<div id="catBanner"></div>' +
     '<div class="dyn-content" id="shopsContent" style="padding:14px 12px 80px;">' +
       '<div style="text-align:center;padding:40px;color:var(--gray);">⏳ جاري التحميل...</div>' +
     '</div>' +
-    '<button onclick="showShopRegister(\'' + subcategory + '\')" style="position:fixed;bottom:20px;left:20px;background:#7c3aed;color:white;border:none;padding:14px 20px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.4);z-index:100;">🏪 افتح معرضك</button>';
+    '<button onclick="showShopRegister(\'' + subcategory + '\',\'' + catId + '\')" style="position:fixed;bottom:20px;left:20px;background:#7c3aed;color:white;border:none;padding:14px 20px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.4);z-index:100;">🏪 افتح معرضك</button>';
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
-  loadCatBanner('online', subcategory);
+  loadCatBanner(catId, subcategory);
 
-  // جيب المعارض المعتمدة في هذا القسم
-  const traders = await sbFetch('GET', 'shop_traders?subcategory=eq.'+encodeURIComponent(subcategory)+'&status=eq.approved&order=created_at.desc') || [];
+  // جيب المعارض المعتمدة في هذا التصنيف
+  let traders = await sbFetch('GET', 'shop_traders?subcategory=eq.'+encodeURIComponent(subcategory)+'&status=eq.approved&order=created_at.desc') || [];
+
+  // fallback: لو مفيش نتيجة بالمطابقة التامة، نجيب كل معارض القسم المعتمدة ونفلتر يدويًا
+  // (بيمسك أي اختلاف بسيط في التخزين زي مسافات زيادة)
+  if(!traders.length) {
+    try {
+      const allApproved = await sbFetch('GET', 'shop_traders?status=eq.approved&order=created_at.desc&limit=500') || [];
+      const norm = function(s){ return (s||'').replace(/\s+/g,' ').trim(); };
+      const target = norm(subcategory);
+      traders = allApproved.filter(function(t){ return norm(t.subcategory) === target; });
+    } catch(e) { console.warn('fallback shops fetch failed', e); }
+  }
+
   const content = document.getElementById('shopsContent');
   if(!content) return;
 
@@ -1169,7 +1211,7 @@ async function showShopsPage(subcategory) {
       return '<div onclick="openShop(\'' + t.id + '\')" style="background:white;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden;cursor:pointer;">' +
         (t.logo_url ?
           '<img src="' + t.logo_url + '" loading="lazy" style="width:100%;height:100px;object-fit:cover;" onerror="this.style.display=\'none\'">' :
-          '<div style="width:100%;height:100px;background:' + onlineCat.color + ';display:flex;align-items:center;justify-content:center;font-size:36px;">🛍️</div>') +
+          '<div style="width:100%;height:100px;background:' + onlineCat.color + ';display:flex;align-items:center;justify-content:center;font-size:36px;">' + shopCat.icon + '</div>') +
         '<div style="padding:10px;">' +
           '<div style="font-size:13px;font-weight:900;color:#1e293b;">' + escapeHtml(t.shop_name) + '</div>' +
           (t.description ? '<div style="font-size:11px;color:#64748b;margin-top:3px;line-height:1.5;">' + escapeHtml(t.description.substring(0,50)) + (t.description.length>50?'...':'') + '</div>' : '') +
@@ -1195,6 +1237,7 @@ async function openShop(traderId) {
   ]);
   const trader = traderArr && traderArr[0];
   if(!trader) return;
+  const visibleProducts = products.filter(function(p){ return p.is_active !== false; });
 
   // هل الزائر هو صاحب المعرض؟ (بيتحقق من localStorage)
   var myShopPhone = localStorage.getItem('my_shop_phone_'+traderId);
@@ -1202,7 +1245,7 @@ async function openShop(traderId) {
 
   page.innerHTML =
     '<div class="dyn-header">' +
-      '<button class="dyn-back" onclick="showShopsPage(\'' + trader.subcategory + '\')">←</button>' +
+      '<button class="dyn-back" onclick="showShopsPage(\'' + trader.subcategory + '\',\'' + getShopCatId(trader.subcategory) + '\')">←</button>' +
       '<span>🏪 ' + escapeHtml(trader.shop_name) + '</span>' +
       (isOwner ? '<button onclick="openShopOwnerPanel(\'' + traderId + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:5px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⚙️ إدارة</button>' : '<span></span>') +
     '</div>' +
@@ -1225,7 +1268,7 @@ async function openShop(traderId) {
       '</div>'
     : '') +
     '<div class="dyn-content" id="shopContent" style="padding:12px 12px 80px;">' +
-      renderShopProductsBySection(sections, products) +
+      renderShopProductsBySection(sections, visibleProducts) +
     '</div>' +
     // زرار "إدارة معرضي" لو ما كانش مسجل دخول بعد
     (!isOwner ? '<button onclick="showShopLoginForId(\'' + traderId + '\',\'' + trader.subcategory + '\')" style="position:fixed;bottom:20px;left:20px;background:#7c3aed;color:white;border:none;padding:12px 16px;border-radius:12px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.4);z-index:100;">🔑 إدارة معرضي</button>' : '');
@@ -1282,11 +1325,11 @@ function renderProductsGrid(products) {
         imgHtml = '<div style="width:100%;height:80px;background:#f8fafc;display:flex;align-items:center;justify-content:center;font-size:28px;">🛍️</div>';
       }
 
-      // لينكات
+      // وسائل التواصل
       var linksHtml = '';
       if(p.links && p.links.length) {
         linksHtml = '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">' +
-          p.links.map(function(l){ return '<a href="'+escapeHtml(l.url)+'" target="_blank" style="background:#f0f9ff;color:#0369a1;padding:3px 7px;border-radius:6px;font-size:10px;text-decoration:none;font-weight:700;">🔗 '+escapeHtml(l.label||'لينك')+'</a>'; }).join('') +
+          p.links.map(function(l){ return '<a href="'+escapeHtml(l.url)+'" target="_blank" style="background:#f0f9ff;color:#0369a1;padding:3px 7px;border-radius:6px;font-size:10px;text-decoration:none;font-weight:700;">'+(l.icon||'🔗')+' '+escapeHtml(l.label||'لينك')+'</a>'; }).join('') +
         '</div>';
       }
 
@@ -1359,7 +1402,7 @@ async function openShopOwnerPanel(traderId) {
 }
 
 // ===== تسجيل تاجر جديد =====
-function showShopRegister(subcategory) {
+function showShopRegister(subcategory, catId) {
   var overlay = document.createElement('div');
   overlay.id = 'shopRegOverlay';
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
@@ -1379,7 +1422,7 @@ function showShopRegister(subcategory) {
       '</label>' +
       '<div id="sr_logo_preview" style="margin-bottom:10px;"></div>' +
       '<div style="display:flex;gap:8px;">' +
-        '<button onclick="submitShopRegister(\'' + subcategory + '\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ سجّل معرضي</button>' +
+        '<button onclick="submitShopRegister(\'' + subcategory + '\',\'' + (catId || '') + '\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ سجّل معرضي</button>' +
         '<button onclick="document.getElementById(\'shopRegOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
       '</div>' +
     '</div>';
@@ -1408,18 +1451,25 @@ function previewShopLogo(input) {
   reader.readAsDataURL(input.files[0]);
 }
 
-async function submitShopRegister(subcategory) {
+async function submitShopRegister(subcategory, catId) {
   var name = document.getElementById('sr_name').value.trim();
   var phone = document.getElementById('sr_phone').value.trim();
   var pass = document.getElementById('sr_pass').value.trim();
   var desc = document.getElementById('sr_desc').value.trim();
   if(!name){ showToast('اكتب اسم المعرض', 'error'); return; }
-  if(!phone){ showToast('اكتب رقم موبايلك', 'error'); return; }
+  if(!phone || !/^01[0-9]{9}$/.test(phone)){ showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
   if(!pass || pass.length < 4){ showToast('كلمة السر لازم تكون 4 أحرف على الأقل', 'error'); return; }
 
   // تحقق إن الموبايل مش مسجل قبل كده في نفس القسم
   var existing = await sbFetch('GET', 'shop_traders?phone=eq.'+encodeURIComponent(phone)+'&subcategory=eq.'+encodeURIComponent(subcategory)+'&limit=1') || [];
-  if(existing.length){ showToast('الرقم ده عنده معرض بالفعل في هذا القسم — سجّل دخول', 'error'); return; }
+  if(existing.length){
+    var exTrader = existing[0];
+    if(confirm('الرقم ده عنده معرض بالفعل في "' + subcategory + '" (' + (exTrader.shop_name||'') + ').\n\n' + (exTrader.status==='pending' ? 'المعرض لسه تحت المراجعة من الأدمن.' : 'المعرض معتمد وظاهر.') + '\n\nتحب تدخل على معرضك؟')) {
+      document.getElementById('shopRegOverlay').remove();
+      openShop(exTrader.id);
+    }
+    return;
+  }
 
   var address = document.getElementById('sr_address').value.trim();
   var mapurl = document.getElementById('sr_mapurl').value.trim();
@@ -1427,11 +1477,16 @@ async function submitShopRegister(subcategory) {
   var logoUrl = null;
   if(logoFile) {
     showToast('⏳ جاري رفع الصورة...');
-    logoUrl = await uploadImage(logoFile);
+    try {
+      logoUrl = await uploadImage(logoFile);
+    } catch(imgErr) {
+      console.warn('logo upload failed, continuing without it:', imgErr);
+      showToast('⚠️ تعذّر رفع الصورة — هنكمّل التسجيل بدونها');
+      logoUrl = null;
+    }
   }
   var passHash = await hashPass(pass);
-  var newTrader = await sbFetch('POST', 'shop_traders', {
-    category: 'online',
+  var shopData = {
     subcategory: subcategory,
     shop_name: name,
     phone: phone,
@@ -1441,7 +1496,47 @@ async function submitShopRegister(subcategory) {
     map_url: mapurl || null,
     logo_url: logoUrl || null,
     status: 'pending'
-  }, true);
+  };
+
+  // دالة تسجيل بترجّع الصف المحفوظ فعليًا (return=representation)
+  async function insertTrader(payload) {
+    var res = await fetch(SB_URL + '/rest/v1/shop_traders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) { throw new Error(await res.text()); }
+    return res.json();
+  }
+
+  var newTrader = null;
+  var savedOk = false;
+  try {
+    // نحاول نحفظ مع عمود القسم (category)
+    newTrader = await insertTrader(Object.assign({category: catId || getShopCatId(subcategory)}, shopData));
+    savedOk = true;
+  } catch(err) {
+    console.warn('register with category failed, retrying without:', err);
+    // لو فشل (غالبًا عمود category لسه مش موجود) — نحاول من غيره
+    try {
+      newTrader = await insertTrader(shopData);
+      savedOk = true;
+    } catch(err2) {
+      showToast('⚠️ حصل خطأ في التسجيل — تأكد من الاتصال وحاول تاني', 'error');
+      console.error('Shop register error:', err2);
+      return;
+    }
+  }
+
+  if(!savedOk) {
+    showToast('⚠️ تعذّر حفظ المعرض — جرّب تاني بعد شوية', 'error');
+    return;
+  }
 
   // احفظ بيانات الدخول في الجهاز عشان ما يكتبهاش تاني
   if(newTrader && newTrader[0]) {
@@ -1450,7 +1545,25 @@ async function submitShopRegister(subcategory) {
   }
 
   document.getElementById('shopRegOverlay').remove();
-  showToast('✅ تم التسجيل! معرضك بيتراجع من الأدمن وهيظهر قريباً');
+  showShopRegSuccessModal();
+}
+
+// ===== رسالة تأكيد واضحة بعد تسجيل معرض جديد =====
+function showShopRegSuccessModal() {
+  let modal = document.getElementById('submitSuccessModal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'submitSuccessModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10002;display:flex;align-items:center;justify-content:center;padding:20px;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:white;border-radius:20px;max-width:380px;width:100%;padding:26px 22px;text-align:center;">
+      <div style="font-size:52px;margin-bottom:12px;">✅</div>
+      <div style="font-size:16px;font-weight:900;color:#7c3aed;margin-bottom:8px;">تم استلام تسجيل معرضك!</div>
+      <div style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:18px;">هيراجعه المشرف إسلام عنتر وعادةً بيظهر خلال ساعة تقريبًا في أوقات النهار.</div>
+      <button onclick="document.getElementById('submitSuccessModal').remove()" style="width:100%;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">تمام 👍</button>
+    </div>`;
 }
 
 // ===== دخول تاجر موجود =====
@@ -1490,6 +1603,9 @@ async function showShopDashboard(trader) {
   var sections = await sbFetch('GET', 'shop_sections?trader_id=eq.'+trader.id+'&order=sort_order.asc') || [];
   var products = await sbFetch('GET', 'shop_products?trader_id=eq.'+trader.id+'&order=created_at.desc') || [];
 
+  var totalProducts = products.length;
+  var outOfStockCount = products.filter(function(p){ return p.stock === 0 || p.stock === '0'; }).length;
+
   var overlay = document.createElement('div');
   overlay.id = 'shopDashOverlay';
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;overflow-y:auto;';
@@ -1497,7 +1613,7 @@ async function showShopDashboard(trader) {
     '<div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:14px 16px;display:flex;align-items:center;gap:10px;color:white;">' +
       '<button onclick="document.getElementById(\'shopDashOverlay\').remove()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">✕ خروج</button>' +
       '<div style="flex:1;text-align:center;font-size:15px;font-weight:900;">لوحة تحكم ' + escapeHtml(trader.shop_name) + '</div>' +
-      '<button onclick="showShopsPage(\'' + trader.subcategory + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">👁️ شوف</button>' +
+      '<button onclick="showShopsPage(\'' + trader.subcategory + '\',\'' + getShopCatId(trader.subcategory) + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">👁️ شوف</button>' +
     '</div>' +
     // بوستر المعرض مع زرار تغيير
     '<div style="position:relative;">' +
@@ -1505,9 +1621,20 @@ async function showShopDashboard(trader) {
         '<img src="'+trader.logo_url+'" style="width:100%;height:140px;object-fit:cover;">' :
         '<div style="width:100%;height:100px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);display:flex;align-items:center;justify-content:center;font-size:36px;">🏪</div>'
       ) +
-      '<label style="position:absolute;bottom:8px;left:8px;background:rgba(124,58,237,.9);color:white;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🖼️ غيّر البوستر<input type="file" accept="image/*" style="display:none;" onchange="updateShopLogo(this,\''+trader.id+'\',\''+trader.subcategory+'\')"></label>' +
+      '<label style="position:absolute;bottom:8px;left:8px;background:rgba(124,58,237,.9);color:white;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🖼️ تغيير صورة الغلاف<input type="file" accept="image/*" style="display:none;" onchange="updateShopLogo(this,\''+trader.id+'\',\''+trader.subcategory+'\')"></label>' +
     '</div>' +
     '<div style="padding:14px 12px 80px;" id="dashContent">' +
+      // إحصائيات سريعة
+      '<div style="display:flex;gap:10px;margin-bottom:12px;">' +
+        '<div style="flex:1;background:#f5f3ff;border-radius:12px;padding:12px;text-align:center;border:1px solid #ddd6fe;">' +
+          '<div style="font-size:20px;font-weight:900;color:#7c3aed;">' + totalProducts + '</div>' +
+          '<div style="font-size:11px;color:#6d28d9;font-weight:700;">📦 إجمالي المنتجات</div>' +
+        '</div>' +
+        '<div style="flex:1;background:#fef2f2;border-radius:12px;padding:12px;text-align:center;border:1px solid #fecaca;">' +
+          '<div style="font-size:20px;font-weight:900;color:#dc2626;">' + outOfStockCount + '</div>' +
+          '<div style="font-size:11px;color:#b91c1c;font-weight:700;">⚠️ نفدت كميته</div>' +
+        '</div>' +
+      '</div>' +
       // أقسام المعرض
       '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
@@ -1515,7 +1642,10 @@ async function showShopDashboard(trader) {
           '<button onclick="showAddSection(\'' + trader.id + '\')" style="background:#7c3aed;color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ قسم</button>' +
         '</div>' +
         (sections.length ?
-          '<div id="sectionsList">' + sections.map(function(s){ return '<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:6px;">' +
+          '<div id="sectionsList" style="font-size:11px;">' +
+          '<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;">↕️ اسحب وأفلت لترتيب الأقسام</div>' +
+          sections.map(function(s){ return '<div class="sec-drag-row" draggable="true" data-sid="'+s.id+'" ondragstart="secDragStart(event)" ondragover="secDragOver(event)" ondrop="secDrop(event,\''+trader.id+'\')" ondragend="secDragEnd(event)" style="display:flex;align-items:center;gap:8px;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:6px;cursor:grab;">' +
+            '<span style="color:#c7c7c7;font-size:16px;">⠿</span>' +
             '<div style="flex:1;font-size:13px;font-weight:700;">📁 ' + escapeHtml(s.name) + '</div>' +
             '<span style="font-size:11px;color:#94a3b8;">' + products.filter(function(p){return p.section_id===s.id;}).length + ' منتج</span>' +
             '<button data-sid="'+s.id+'" onclick="deleteShopSection(this.dataset.sid,\''+trader.id+'\')" style="background:#fee2e2;color:#dc2626;border:none;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;">حذف</button>' +
@@ -1528,8 +1658,15 @@ async function showShopDashboard(trader) {
         '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">➕ أضف منتج جديد</div>' +
         (sections.length ? '<select id="dp_section" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;"><option value="">— بدون قسم —</option>' + sections.map(function(s){ return '<option value="'+s.id+'">'+escapeHtml(s.name)+'</option>'; }).join('') + '</select>' : '') +
         '<input id="dp_title" type="text" placeholder="اسم المنتج" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
-        '<input id="dp_price" type="number" placeholder="السعر (جنيه)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
-        '<input id="dp_stock" type="number" placeholder="الكمية المتاحة" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+        '<input id="dp_price" type="number" min="0" step="0.01" placeholder="السعر (جنيه)" oninput="if(this.value<0)this.value=0;" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+        '<input id="dp_stock" type="number" min="0" step="1" placeholder="الكمية المتاحة" oninput="if(this.value<0)this.value=0;" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+        '<div style="margin-bottom:8px;">' +
+          '<label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">حالة المنتج</label>' +
+          '<select id="dp_active" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;background:white;">' +
+            '<option value="true">🟢 متوفر</option>' +
+            '<option value="false">🔴 غير متوفر</option>' +
+          '</select>' +
+        '</div>' +
         '<textarea id="dp_desc" placeholder="وصف المنتج (اختياري)" rows="2" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;"></textarea>' +
         '<!-- صور المنتج - حتى 5 صور -->' +
         '<label style="display:flex;align-items:center;justify-content:center;gap:8px;background:#f0fdf4;color:#16a34a;padding:11px;border-radius:10px;cursor:pointer;border:1.5px dashed #16a34a;font-weight:700;font-size:13px;margin-bottom:8px;">' +
@@ -1537,28 +1674,33 @@ async function showShopDashboard(trader) {
           '<input type="file" id="dp_imgs" accept="image/*" multiple style="display:none;" onchange="previewDashImgs(this)">' +
         '</label>' +
         '<div id="dp_imgs_preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>' +
-        '<!-- لينكات المنتج -->' +
-        '<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;">🔗 لينكات (واتساب / فيسبوك / تيك توك / موقع...)</div>' +
-        '<div id="dp_links_wrap">' +
-          '<div style="display:flex;gap:6px;margin-bottom:6px;">' +
-            '<input class="dp_link_input" type="url" placeholder="https://..." dir="ltr" style="flex:1;padding:9px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">' +
-            '<input class="dp_link_label" type="text" placeholder="اسم" style="width:80px;padding:9px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">' +
-          '</div>' +
-        '</div>' +
-        '<button onclick="addLinkRow()" style="background:#f3f4f6;color:#64748b;border:none;padding:7px 14px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;margin-bottom:10px;">+ أضف لينك</button>' +
+        '<!-- وسائل التواصل -->' +
+        '<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;">📱 وسائل التواصل (واتساب / فيسبوك / تيك توك / موقع...)</div>' +
+        '<div id="dp_links_wrap">' + renderLinkRow() + '</div>' +
+        '<button onclick="addLinkRow()" style="background:#f3f4f6;color:#64748b;border:none;padding:7px 14px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;margin-bottom:10px;">+ أضف وسيلة تواصل</button>' +
         '<button onclick="submitShopProduct(\'' + trader.id + '\')" style="width:100%;background:#16a34a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ أضف المنتج</button>' +
       '</div>' +
       // المنتجات الحالية
       '<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);">' +
         '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">📦 منتجاتك (' + products.length + ')</div>' +
         (products.length ?
-          '<div>' + products.map(function(p){ return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:6px;">' +
+          '<div>' + products.map(function(p){
+            var active = p.is_active !== false;
+            return '<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:6px;opacity:'+(active?'1':'.55')+';">' +
             (p.image_url ? '<img src="'+p.image_url+'" style="width:44px;height:44px;border-radius:8px;object-fit:cover;">' : '<div style="width:44px;height:44px;border-radius:8px;background:#e5e7eb;display:flex;align-items:center;justify-content:center;">🛍️</div>') +
-            '<div style="flex:1;">' +
-              '<div style="font-size:13px;font-weight:700;">' + escapeHtml(p.title) + '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(p.title) + '</div>' +
               (p.price ? '<div style="font-size:12px;color:#7c3aed;font-weight:700;">' + parseFloat(p.price).toLocaleString() + ' ج</div>' : '') +
+              (p.stock === 0 || p.stock === '0' ? '<div style="font-size:10px;color:#dc2626;font-weight:700;">نفدت الكمية</div>' : '') +
             '</div>' +
-            '<button data-pid="'+p.id+'" onclick="deleteShopProduct(this.dataset.pid,\''+trader.id+'\')" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️</button>' +
+            // سويتش التفعيل
+            '<label style="position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0;cursor:pointer;" title="'+(active?'ظاهر للعملاء':'مخفي عن العملاء')+'">' +
+              '<input type="checkbox" data-pid="'+p.id+'" onchange="toggleProductActive(this,\''+trader.id+'\')" '+(active?'checked':'')+' style="opacity:0;width:0;height:0;">' +
+              '<span style="position:absolute;inset:0;background:'+(active?'#16a34a':'#cbd5e1')+';border-radius:22px;transition:.2s;"></span>' +
+              '<span style="position:absolute;height:16px;width:16px;left:'+(active?'3px':'19px')+';top:3px;background:white;border-radius:50%;transition:.2s;"></span>' +
+            '</label>' +
+            '<button data-pid="'+p.id+'" onclick="editShopProduct(this.dataset.pid,\''+trader.id+'\')" style="background:#eff6ff;color:#1d4ed8;border:none;padding:5px 8px;border-radius:8px;font-size:12px;cursor:pointer;flex-shrink:0;">✏️</button>' +
+            '<button data-pid="'+p.id+'" onclick="deleteShopProduct(this.dataset.pid,\''+trader.id+'\')" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;flex-shrink:0;">🗑️</button>' +
           '</div>'; }).join('') + '</div>' :
           '<p style="font-size:12px;color:#94a3b8;">مفيش منتجات لحد دلوقتي</p>'
         ) +
@@ -1617,17 +1759,35 @@ function previewDashImgs(input) {
   if(input.files.length > 5) showToast('هيتم رفع أول 5 صور بس', 'error');
 }
 
+// ===== وسائل التواصل (منصات) =====
+var LINK_PLATFORMS = {
+  whatsapp:  {icon:'💬', label:'واتساب'},
+  facebook:  {icon:'📘', label:'فيسبوك'},
+  tiktok:    {icon:'🎵', label:'تيك توك'},
+  instagram: {icon:'📸', label:'انستجرام'},
+  website:   {icon:'🔗', label:'موقع / لينك'}
+};
+
+function renderLinkRow(platform, url) {
+  platform = platform || 'whatsapp';
+  url = url || '';
+  return '<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;">' +
+    '<select class="dp_link_platform" style="width:118px;flex-shrink:0;padding:9px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;background:white;">' +
+      Object.keys(LINK_PLATFORMS).map(function(key){ var o=LINK_PLATFORMS[key]; return '<option value="'+key+'"'+(key===platform?' selected':'')+'>'+o.icon+' '+o.label+'</option>'; }).join('') +
+    '</select>' +
+    '<input class="dp_link_input" type="url" value="'+escapeHtml(url)+'" placeholder="https://..." dir="ltr" style="flex:1;padding:9px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">' +
+    '<button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2;color:#dc2626;border:none;padding:7px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">×</button>' +
+  '</div>';
+}
+
 function addLinkRow() {
   var wrap = document.getElementById('dp_links_wrap');
   if(!wrap) return;
   var rows = wrap.querySelectorAll('.dp_link_input').length;
-  if(rows >= 5) { showToast('حد أقصى 5 لينكات', 'error'); return; }
-  var div = document.createElement('div');
-  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
-  div.innerHTML = '<input class="dp_link_input" type="url" placeholder="https://..." dir="ltr" style="flex:1;padding:9px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">' +
-    '<input class="dp_link_label" type="text" placeholder="اسم" style="width:80px;padding:9px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">' +
-    '<button onclick="this.parentElement.remove()" style="background:#fee2e2;color:#dc2626;border:none;padding:7px 10px;border-radius:8px;font-size:14px;cursor:pointer;">×</button>';
-  wrap.appendChild(div);
+  if(rows >= 5) { showToast('حد أقصى 5 وسائل تواصل', 'error'); return; }
+  var temp = document.createElement('div');
+  temp.innerHTML = renderLinkRow();
+  wrap.appendChild(temp.firstChild);
 }
 
 async function submitShopProduct(traderId) {
@@ -1635,20 +1795,28 @@ async function submitShopProduct(traderId) {
   var price = document.getElementById('dp_price').value.trim();
   var stock = document.getElementById('dp_stock').value.trim();
   var desc = document.getElementById('dp_desc').value.trim();
+  var activeEl = document.getElementById('dp_active');
+  var isActive = activeEl ? activeEl.value !== 'false' : true;
   var secEl = document.getElementById('dp_section');
   var sectionId = secEl ? secEl.value : '';
   var imgFiles = Array.from((document.getElementById('dp_imgs') || {files:[]}).files).slice(0, 5);
   if(!title){ showToast('اكتب اسم المنتج', 'error'); return; }
+  if(price && parseFloat(price) < 0){ showToast('السعر مينفعش يكون رقم سالب', 'error'); return; }
+  if(stock && parseInt(stock) < 0){ showToast('الكمية مينفعش تكون رقم سالب', 'error'); return; }
 
-  // جمع اللينكات
+  // جمع وسائل التواصل
   var links = [];
-  var linkInputs = document.querySelectorAll('.dp_link_input');
-  var linkLabels = document.querySelectorAll('.dp_link_label');
-  for(var i=0; i<linkInputs.length; i++) {
-    var url = linkInputs[i].value.trim();
-    var label = linkLabels[i] ? linkLabels[i].value.trim() : '';
-    if(url) links.push({url: url, label: label || 'لينك'});
-  }
+  var linkRows = document.querySelectorAll('#dp_links_wrap > div');
+  linkRows.forEach(function(row){
+    var sel = row.querySelector('.dp_link_platform');
+    var inp = row.querySelector('.dp_link_input');
+    var url = inp ? inp.value.trim() : '';
+    if(url) {
+      var platform = sel ? sel.value : 'website';
+      var meta = LINK_PLATFORMS[platform] || LINK_PLATFORMS.website;
+      links.push({url: url, label: meta.label, icon: meta.icon, platform: platform});
+    }
+  });
 
   // رفع الصور
   var imageUrls = [];
@@ -1666,6 +1834,7 @@ async function submitShopProduct(traderId) {
     title: title,
     price: price ? parseFloat(price) : null,
     stock: stock ? parseInt(stock) : null,
+    is_active: isActive,
     description: desc || null,
     image_url: imageUrls[0] || null,  // الصورة الأولى كصورة رئيسية
     images: imageUrls,
@@ -1687,9 +1856,116 @@ async function deleteShopProduct(productId, traderId) {
   sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
 }
 
+// ===== تعديل منتج (السعر / الكمية / الاسم / الحالة) بدون حذف =====
+async function editShopProduct(productId, traderId) {
+  var rows = await sbFetch('GET', 'shop_products?id=eq.'+productId+'&limit=1') || [];
+  var p = rows[0];
+  if(!p) { showToast('مش لاقي المنتج', 'error'); return; }
+  var overlay = document.createElement('div');
+  overlay.id = 'editProdOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:10000;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;">' +
+      '<div style="font-size:15px;font-weight:900;margin-bottom:14px;text-align:center;">✏️ تعديل المنتج</div>' +
+      '<input id="ep_title" type="text" value="'+escapeHtml(p.title||'')+'" placeholder="اسم المنتج" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="ep_price" type="number" min="0" step="0.01" value="'+(p.price!=null?p.price:'')+'" placeholder="السعر (جنيه)" oninput="if(this.value<0)this.value=0;" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="ep_stock" type="number" min="0" step="1" value="'+(p.stock!=null?p.stock:'')+'" placeholder="الكمية المتاحة" oninput="if(this.value<0)this.value=0;" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<div style="margin-bottom:10px;">' +
+        '<label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">حالة المنتج</label>' +
+        '<select id="ep_active" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;background:white;">' +
+          '<option value="true"'+(p.is_active!==false?' selected':'')+'>🟢 متوفر</option>' +
+          '<option value="false"'+(p.is_active===false?' selected':'')+'>🔴 غير متوفر</option>' +
+        '</select>' +
+      '</div>' +
+      '<textarea id="ep_desc" placeholder="وصف المنتج (اختياري)" rows="2" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:10px;resize:none;">'+escapeHtml(p.description||'')+'</textarea>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="saveEditedProduct(\''+productId+'\',\''+traderId+'\')" style="flex:1;background:#16a34a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💾 حفظ التعديلات</button>' +
+        '<button onclick="document.getElementById(\'editProdOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function saveEditedProduct(productId, traderId) {
+  var title = document.getElementById('ep_title').value.trim();
+  var price = document.getElementById('ep_price').value;
+  var stock = document.getElementById('ep_stock').value;
+  var active = document.getElementById('ep_active').value !== 'false';
+  var desc = document.getElementById('ep_desc').value.trim();
+  if(!title) { showToast('اكتب اسم المنتج', 'error'); return; }
+  if(price !== '' && parseFloat(price) < 0) { showToast('السعر مينفعش يكون رقم سالب', 'error'); return; }
+  if(stock !== '' && parseInt(stock) < 0) { showToast('الكمية مينفعش تكون رقم سالب', 'error'); return; }
+  try {
+    await sbFetch('PATCH', 'shop_products?id=eq.'+productId, {
+      title: title,
+      price: price !== '' ? parseFloat(price) : null,
+      stock: stock !== '' ? parseInt(stock) : null,
+      is_active: active,
+      description: desc || null
+    });
+  } catch(e) { showToast('حصل خطأ في الحفظ', 'error'); return; }
+  showToast('✅ تم حفظ التعديلات!');
+  var eo = document.getElementById('editProdOverlay'); if(eo) eo.remove();
+  var overlay = document.getElementById('shopDashOverlay');
+  if(overlay) overlay.remove();
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+}
+
+// ===== سويتش إخفاء/إظهار منتج =====
+async function toggleProductActive(checkbox, traderId) {
+  var pid = checkbox.dataset.pid;
+  var newState = checkbox.checked;
+  checkbox.disabled = true;
+  try {
+    await sbFetch('PATCH', 'shop_products?id=eq.'+pid, {is_active: newState});
+    showToast(newState ? '✅ المنتج بقى ظاهر للعملاء' : '🙈 المنتج اتخفى عن العملاء');
+  } catch(e) {
+    showToast('حصل خطأ، حاول تاني', 'error');
+    checkbox.checked = !newState;
+    checkbox.disabled = false;
+    return;
+  }
+  var overlay = document.getElementById('shopDashOverlay');
+  if(overlay) overlay.remove();
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+}
+
+// ===== سحب وإفلات لترتيب الأقسام =====
+var secDragSrc = null;
+function secDragStart(e) {
+  secDragSrc = e.currentTarget;
+  try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', e.currentTarget.dataset.sid); } catch(err){}
+  e.currentTarget.style.opacity = '.4';
+}
+function secDragOver(e) {
+  e.preventDefault();
+  var target = e.currentTarget;
+  if(!secDragSrc || target === secDragSrc) return;
+  var list = target.parentNode;
+  var rect = target.getBoundingClientRect();
+  var placeAfter = (e.clientY - rect.top) / rect.height > 0.5;
+  list.insertBefore(secDragSrc, placeAfter ? target.nextSibling : target);
+}
+function secDragEnd(e) {
+  e.currentTarget.style.opacity = '1';
+  secDragSrc = null;
+}
+async function secDrop(e, traderId) {
+  e.preventDefault();
+  var list = document.getElementById('sectionsList');
+  if(!list) return;
+  var rows = list.querySelectorAll('.sec-drag-row');
+  var updates = [];
+  rows.forEach(function(row, idx){
+    updates.push(sbFetch('PATCH', 'shop_sections?id=eq.'+row.dataset.sid, {sort_order: idx}));
+  });
+  try { await Promise.all(updates); showToast('✅ اتغير ترتيب الأقسام'); } catch(err) { showToast('حصل خطأ في الترتيب', 'error'); }
+}
+
 async function openShopSection(sectionId, sectionName) {
   // جيب كل منتجات القسم ده
-  var products = await sbFetch('GET', 'shop_products?section_id=eq.'+sectionId+'&order=created_at.desc') || [];
+  var rawProducts = await sbFetch('GET', 'shop_products?section_id=eq.'+sectionId+'&order=created_at.desc') || [];
+  var products = rawProducts.filter(function(p){ return p.is_active !== false; });
   var secInfo = await sbFetch('GET', 'shop_sections?id=eq.'+sectionId+'&limit=1') || [];
 
   var overlay = document.createElement('div');
@@ -1749,15 +2025,15 @@ async function openShopProduct(productId) {
     sliderHtml = '<div style="height:200px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:48px;">🛍️</div>';
   }
 
-  // اللينكات
+  // وسائل التواصل
   var linksHtml = '';
   if(p.links && p.links.length) {
     linksHtml = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">' +
       p.links.map(function(l){
-        var icon = l.url.includes('wa.me')||l.url.includes('whatsapp') ? '💬' :
+        var icon = l.icon || (l.url.includes('wa.me')||l.url.includes('whatsapp') ? '💬' :
                    l.url.includes('facebook')||l.url.includes('fb.') ? '📘' :
                    l.url.includes('tiktok') ? '🎵' :
-                   l.url.includes('instagram') ? '📸' : '🔗';
+                   l.url.includes('instagram') ? '📸' : '🔗');
         return '<a href="'+escapeHtml(l.url)+'" target="_blank" style="flex:1;min-width:120px;background:#f0fdf4;color:#16a34a;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-size:13px;font-weight:700;border:1px solid #bbf7d0;">'+icon+' '+escapeHtml(l.label||'لينك')+'</a>';
       }).join('') +
     '</div>';
@@ -1831,7 +2107,8 @@ function renderShopGrid(ads, cat) {
           '<div style="width:100%;height:130px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);display:flex;align-items:center;justify-content:center;font-size:40px;">🛍️</div>') +
         '<div style="padding:8px;">' +
         '<div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:4px;line-height:1.3;">' + (ad.title||'') + '</div>' +
-        (ad.condition ? '<div style="font-size:10px;color:#64748b;margin-bottom:4px;">' + ad.condition + '</div>' : '') +
+        (ad.condition ? '<div style="font-size:10px;color:#64748b;margin-bottom:4px;">' + ad.condition + (ad.color?' · 🎨 '+ad.color:'') + '</div>' : (ad.color ? '<div style="font-size:10px;color:#64748b;margin-bottom:4px;">🎨 '+ad.color+'</div>' : '')) +
+        (ad.warranty ? '<div style="font-size:10px;color:#166534;margin-bottom:4px;">🛡️ '+ad.warranty+'</div>' : '') +
         (ad.price ? '<div style="font-size:16px;font-weight:900;color:#16a34a;margin-bottom:6px;">' + ad.price.toLocaleString('ar-EG') + ' <span style="font-size:11px;">جنيه</span></div>' :
           '<div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:6px;">تواصل للسعر</div>') +
         (ad.quantity ? '<div style="font-size:10px;color:#64748b;margin-bottom:6px;">📦 متاح: '+ad.quantity+'</div>' : '') +
@@ -1865,12 +2142,18 @@ function renderAdsList(ads, cat) {
     const subHtml = ad.subcategory ? '<span class="ad-sub-badge">' + ad.subcategory + '</span>' : '';
     const salaryHtml = ad.salary ? '<div style="font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:6px;">💰 ' + ad.salary + '</div>' : '';
     const jobStatusHtml = ad.job_status ? '<div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px;">📌 ' + ad.job_status + '</div>' : '';
+    const lostModeHtml = ad.category === 'lost' ? '<div style="font-size:11px;font-weight:900;color:' + (ad.lost_mode==='found'?'#166534':'#dc2626') + ';margin-bottom:6px;">' + (ad.lost_mode==='found'?'🙂 لقيت حاجة':'😟 فقدت حاجة') + '</div>' : '';
+    const rewardHtml = ad.reward ? '<div style="font-size:12px;font-weight:800;color:#c2410c;background:#fff7ed;display:inline-block;padding:2px 10px;border-radius:20px;margin-bottom:6px;">🎁 مكافأة: ' + ad.reward + '</div>' : '';
+    const funeralHtml = ad.funeral_info ? '<div style="font-size:12px;color:#334155;margin-bottom:4px;">🕌 ' + ad.funeral_info + '</div>' : '';
+    const condolenceHtml = ad.condolence_info ? '<div style="font-size:12px;color:#334155;margin-bottom:6px;">🤲 ' + ad.condolence_info + '</div>' : '';
+    const deathDateHtml = ad.death_date ? '<div style="font-size:12px;color:#64748b;margin-bottom:6px;">📅 ' + formatDeathDate(ad.death_date) + '</div>' : '';
+    const foodInfoHtml = (ad.opening_hours || ad.delivery) ? '<div style="font-size:12px;color:#854d0e;margin-bottom:6px;">' + (ad.opening_hours?'🕐 '+ad.opening_hours:'') + (ad.opening_hours&&ad.delivery?' · ':'') + (ad.delivery==='متاح'?'🛵 توصيل متاح':ad.delivery==='غير متاح'?'🚫 بدون توصيل':'') + '</div>' : '';
 
     const actionBtns = '<button onclick="toggleFav(\'' + ad.id + '\')" style="background:' + favBg + ';color:' + favColor + ';border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;" id="fav_' + ad.id + '">❤️</button>' +
       '<a href="https://wa.me/?text=' + shareMsg + '" target="_blank" style="background:#dcfce7;color:#166534;border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;">🔗</a>' +
       adminBtn +
       '<button class="btn-details" onclick="openAdDetails(\'' + ad.id + '\')">التفاصيل</button>' +
-      '<a href="' + waUrl + '" target="_blank" class="btn-wa" onclick="trackStat(\'' + ad.id + '\',\'whatsapp\')">📞 تواصل</a>';
+      '<a href="' + waUrl + '" target="_blank" class="btn-wa" onclick="trackStat(\'' + ad.id + '\',\'whatsapp\')">💬 واتساب</a>';
 
     if(ad.is_sponsored) {
       const imgSponsored = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')" style="border-bottom:2px solid #7c3aed;">' : '';
@@ -1907,6 +2190,12 @@ function renderAdsList(ads, cat) {
       subHtml +
       salaryHtml +
       jobStatusHtml +
+      lostModeHtml +
+      rewardHtml +
+      deathDateHtml +
+      foodInfoHtml +
+      funeralHtml +
+      condolenceHtml +
       addrHtml +
       '<div class="ad-desc">' + (ad.description||'') + '</div>' +
       renderVideoLinks(ad.video_links) +
@@ -1936,14 +2225,37 @@ function getShareText(adId) {
   return `${cat.icon} ${cat.name}${ad.subcategory?' — '+ad.subcategory:''}\n\n📌 ${ad.title}\n${ad.description?'📝 '+ad.description+'\n':''}📞 ${ad.phone}\n\n🔗 دليل الحامول — eslamantar142-source.github.io/hamouljop`;
 }
 
+function formatDeathDate(dateStr) {
+  if(!dateStr) return '';
+  try {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('ar-EG', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  } catch(e) { return dateStr; }
+}
+
 function shareAdWA(adId) {
   trackStat(adId, 'share_wa');
   const ad = allAds.find(a => a.id === adId);
   const cat = ad ? (CATEGORIES.find(c => c.id === ad.category) || {icon:'📋', name:'عام'}) : {icon:'📋', name:'عام'};
   const link = `${SHARE_FN_BASE}/ad/${encodeURIComponent(adId)}`;
-  const text = ad
-    ? `${cat.icon} ${cat.name}${ad.subcategory?' — '+ad.subcategory:''}\n\n📌 ${ad.title}\n${ad.description?'📝 '+ad.description+'\n':''}📞 ${ad.phone}\n\n🔗 ${link}`
-    : `🔗 ${link}`;
+  let text;
+  if(ad && ad.category === 'deaths' && ad.subcategory !== 'توثيق الراحلين') {
+    text = `🕌 إنا لله وإنا إليه راجعون\n\nانتقل إلى رحمة الله تعالى: ${ad.title}\n` +
+      (ad.death_date ? `\n📅 ${formatDeathDate(ad.death_date)}` : '') +
+      (ad.funeral_info ? `\n⚰️ الجنازة: ${ad.funeral_info}` : '') +
+      (ad.condolence_info ? `\n🤲 العزاء: ${ad.condolence_info}` : '') +
+      (ad.description ? `\n\n📝 ${ad.description}` : '') +
+      `\n\n${ad.phone ? '📞 '+ad.phone+'\n' : ''}🔗 ${link}`;
+  } else if(ad && ad.category === 'deaths' && ad.subcategory === 'توثيق الراحلين') {
+    text = `🕯️ في ذكرى الفقيد: ${ad.title}\n` +
+      (ad.death_date ? `\n📅 تاريخ الوفاة: ${formatDeathDate(ad.death_date)}` : '') +
+      (ad.description ? `\n\n📝 ${ad.description}` : '') +
+      `\n\n🔗 ${link}`;
+  } else {
+    text = ad
+      ? `${cat.icon} ${cat.name}${ad.subcategory?' — '+ad.subcategory:''}\n\n📌 ${ad.title}\n${ad.description?'📝 '+ad.description+'\n':''}📞 ${ad.phone}\n\n🔗 ${link}`
+      : `🔗 ${link}`;
+  }
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 }
 
@@ -2022,7 +2334,7 @@ function goBackFromAdDetail() {
         var cat3 = CATEGORIES.find(function(c){ return c.id === ps.catId; });
         if(cat3) { showChildrenPage(cat3); return; }
       } else if(ps.type === 'shops') {
-        showShopsPage(ps.sub);
+        showShopsPage(ps.sub, ps.catId || getShopCatId(ps.sub));
         return;
       } else {
         restoreDynState(ps);
@@ -2143,7 +2455,7 @@ async function openAdDetails(adId) {
           <span style="font-size:12px;color:var(--gray);">📞 ${waClicks} تواصل</span>
           <span style="font-size:12px;color:var(--gray);">📅 ${new Date(ad.created_at).toLocaleDateString('ar-EG')}</span>
         </div>
-        ${(ad.phone||ad.address||ad.subcategory||ad.salary||ad.job_status)?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;">
+        ${(ad.phone||ad.address||ad.subcategory||ad.salary||ad.job_status||ad.reward||ad.category==='lost'||ad.funeral_info||ad.condolence_info||ad.relation||ad.death_date||ad.condition||ad.color||ad.warranty||ad.quantity||ad.opening_hours||ad.delivery)?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:13px;font-weight:900;">ℹ️ معلومات عن النشاط</div>
           </div>
@@ -2151,6 +2463,18 @@ async function openAdDetails(adId) {
             ${ad.subcategory?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">🏷️</span><div><div style="font-size:11px;color:#94a3b8;">التخصص</div><div style="font-size:13px;font-weight:700;">${ad.subcategory}</div></div></div>`:''}
             ${ad.salary?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#eff6ff;border-radius:10px;"><span style="font-size:18px;">💰</span><div><div style="font-size:11px;color:#94a3b8;">الراتب</div><div style="font-size:13px;font-weight:700;color:#1d4ed8;">${ad.salary}</div></div></div>`:''}
             ${ad.job_status?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f0fdf4;border-radius:10px;"><span style="font-size:18px;">📌</span><div><div style="font-size:11px;color:#94a3b8;">الحالة</div><div style="font-size:13px;font-weight:700;color:#166534;">${ad.job_status}</div></div></div>`:''}
+            ${ad.category==='lost'?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:${ad.lost_mode==='found'?'#f0fdf4':'#fef2f2'};border-radius:10px;"><span style="font-size:18px;">${ad.lost_mode==='found'?'🙂':'😟'}</span><div><div style="font-size:11px;color:#94a3b8;">النوع</div><div style="font-size:13px;font-weight:700;color:${ad.lost_mode==='found'?'#166534':'#dc2626'};">${ad.lost_mode==='found'?'لقيت حاجة':'فقدت حاجة'}</div></div></div>`:''}
+            ${ad.reward?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fff7ed;border-radius:10px;"><span style="font-size:18px;">🎁</span><div><div style="font-size:11px;color:#94a3b8;">مكافأة</div><div style="font-size:13px;font-weight:700;color:#c2410c;">${ad.reward}</div></div></div>`:''}
+            ${ad.funeral_info?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f1f5f9;border-radius:10px;"><span style="font-size:18px;">🕌</span><div><div style="font-size:11px;color:#94a3b8;">موعد ومكان الجنازة</div><div style="font-size:13px;font-weight:700;color:#334155;">${ad.funeral_info}</div></div></div>`:''}
+            ${ad.condolence_info?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f1f5f9;border-radius:10px;"><span style="font-size:18px;">🤲</span><div><div style="font-size:11px;color:#94a3b8;">مكان العزاء</div><div style="font-size:13px;font-weight:700;color:#334155;">${ad.condolence_info}</div></div></div>`:''}
+            ${ad.condition?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f0fdf4;border-radius:10px;"><span style="font-size:18px;">🏷️</span><div><div style="font-size:11px;color:#94a3b8;">حالة المنتج</div><div style="font-size:13px;font-weight:700;color:#166534;">${ad.condition}</div></div></div>`:''}
+            ${ad.color?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f0fdf4;border-radius:10px;"><span style="font-size:18px;">🎨</span><div><div style="font-size:11px;color:#94a3b8;">اللون</div><div style="font-size:13px;font-weight:700;color:#166534;">${ad.color}</div></div></div>`:''}
+            ${ad.warranty?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f0fdf4;border-radius:10px;"><span style="font-size:18px;">🛡️</span><div><div style="font-size:11px;color:#94a3b8;">الضمان</div><div style="font-size:13px;font-weight:700;color:#166534;">${ad.warranty}</div></div></div>`:''}
+            ${ad.quantity?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f0fdf4;border-radius:10px;"><span style="font-size:18px;">📦</span><div><div style="font-size:11px;color:#94a3b8;">الكمية المتاحة</div><div style="font-size:13px;font-weight:700;color:#166534;">${ad.quantity}</div></div></div>`:''}
+            ${ad.relation?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f1f5f9;border-radius:10px;"><span style="font-size:18px;">👤</span><div><div style="font-size:11px;color:#94a3b8;">صلة القرابة</div><div style="font-size:13px;font-weight:700;color:#334155;">${ad.relation}</div></div></div>`:''}
+            ${ad.death_date?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f1f5f9;border-radius:10px;"><span style="font-size:18px;">📅</span><div><div style="font-size:11px;color:#94a3b8;">تاريخ الوفاة</div><div style="font-size:13px;font-weight:700;color:#334155;">${formatDeathDate(ad.death_date)}</div></div></div>`:''}
+            ${ad.opening_hours?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fef9c3;border-radius:10px;"><span style="font-size:18px;">🕐</span><div><div style="font-size:11px;color:#94a3b8;">مواعيد العمل</div><div style="font-size:13px;font-weight:700;color:#854d0e;">${ad.opening_hours}</div></div></div>`:''}
+            ${ad.delivery?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fef9c3;border-radius:10px;"><span style="font-size:18px;">🛵</span><div><div style="font-size:11px;color:#94a3b8;">التوصيل</div><div style="font-size:13px;font-weight:700;color:#854d0e;">${ad.delivery}</div></div></div>`:''}
             ${ad.address?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;cursor:pointer;" onclick="ad.location_url?window.open(fixMapUrl(ad.location_url),'_blank'):null"><span style="font-size:18px;">📍</span><div><div style="font-size:11px;color:#94a3b8;">العنوان</div><div style="font-size:13px;font-weight:700;">${ad.address}</div></div></div>`:''}
             ${ad.phone?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">📞</span><div><div style="font-size:11px;color:#94a3b8;">التليفون</div><div style="font-size:13px;font-weight:700;" dir="ltr">${ad.phone}</div></div></div>`:''}
             ${ad.phone2?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">📱</span><div><div style="font-size:11px;color:#94a3b8;">رقم ثاني</div><div style="font-size:13px;font-weight:700;" dir="ltr">${ad.phone2}</div></div></div>`:''}
@@ -2215,9 +2539,9 @@ async function openAdDetails(adId) {
   // زرار فركة كعب في المطاعم والكافيهات
   var isFood = ad.category && (ad.category.indexOf('food') !== -1 || (ad.subcategory && ad.subcategory.indexOf('food') !== -1));
   var isDoctor = ad.category && (ad.category === 'doctors' || ad.category === 'medservices' || (ad.subcategory && (ad.subcategory === 'doctors' || ad.subcategory === 'medservices')));
-  var isHome = ad.category === 'home' || ad.category === 'furniture' || ad.category === 'tech' || ad.category === 'used_market' || ad.category === 'fashion' || ad.category === 'shoes';
+  var isHome = ad.category === 'home' || ad.category === 'furniture' || ad.category === 'tech' || ad.category === 'used_market' || ad.category === 'fashion' || ad.category === 'shoes' || ad.category === 'cars_market';
   if(isFood || isDoctor || isHome) {
-    var farketLabel = (ad.category === 'doctors') ? '🏥 احجز الآن من فركة كعب — أسهل وأسرع!' : (ad.category === 'used_market' || ad.category === 'fashion' || ad.category === 'shoes') ? '📦 محتاج توصيل؟ اطلب فركة كعب! 🛵' : '🛵 اطلب الآن من فركة كعب — أسهل وأسرع!';
+    var farketLabel = (ad.category === 'doctors') ? '🏥 احجز الآن من فركة كعب — أسهل وأسرع!' : (ad.category === 'home' || ad.category === 'furniture' || ad.category === 'fashion' || ad.category === 'shoes') ? '🛒 اطلب من فركة كعب — أسهل وأسرع!' : (ad.category === 'used_market') ? '📦 محتاج توصيل؟ اطلب فركة كعب! 🛵' : '🛵 اطلب الآن من فركة كعب — أسهل وأسرع!';
     var farketMsg = encodeURIComponent('السلام عليكم فركة كعب 🛵' + ' - أنا شايف إعلان: ' + ad.title + ' - وعايز أطلب منكم');
     var farketBtn = document.createElement('div');
     farketBtn.style.cssText = 'padding:0 16px 80px;';
@@ -2329,7 +2653,7 @@ function restoreDynState(state) {
   } else if(state.type === 'ads2') {
     if(state.catId && state.childId && state.subName) showAdsPageV2(state.catId, state.childId, state.subName);
   } else if(state.type === 'shops') {
-    if(state.sub) showShopsPage(state.sub);
+    if(state.sub) showShopsPage(state.sub, state.catId || getShopCatId(state.sub));
   } else {
     document.getElementById('dynamicPage').classList.remove('active');
     document.body.style.overflow = '';
@@ -2406,6 +2730,12 @@ function openEditAd(adId) {
     if(fPhone) fPhone.value = ad.phone || '';
     var fPhone2 = document.getElementById('fPhone2');
     if(fPhone2) fPhone2.value = ad.phone2 || '';
+    if(ad.phone2) {
+      var f2Toggle = document.getElementById('fPhone2Toggle');
+      var f2Wrap = document.getElementById('fPhone2Wrap');
+      if(f2Toggle) f2Toggle.style.display = 'none';
+      if(f2Wrap) f2Wrap.style.display = 'block';
+    }
     
     // الموقع (العنوان النصي)
     var fLocation = document.getElementById('fAddress');
@@ -2418,12 +2748,52 @@ function openEditAd(adId) {
     // السعر
     var fPrice = document.getElementById('fPrice');
     if(fPrice) fPrice.value = ad.price || '';
+    var fPriceOnRequest = document.getElementById('fPriceOnRequest');
+    if(fPriceOnRequest) {
+      fPriceOnRequest.checked = !!ad.price_on_request;
+      if(fPrice) fPrice.disabled = !!ad.price_on_request;
+    }
+
+    // بيانات المنتج (الكمية، الحالة، اللون، الضمان) — لسوق المستعمل والمعارض
+    var fQty = document.getElementById('fQty');
+    if(fQty) fQty.value = ad.quantity != null ? ad.quantity : '';
+    var fCondition = document.getElementById('fCondition');
+    if(fCondition) fCondition.value = ad.condition || '';
+    var fColor = document.getElementById('fColor');
+    if(fColor) fColor.value = ad.color || '';
+    var fWarranty = document.getElementById('fWarranty');
+    if(fWarranty) fWarranty.value = ad.warranty || '';
 
     // بيانات الوظيفة (الراتب والحالة)
     var fSalary = document.getElementById('fSalary');
     if(fSalary) fSalary.value = ad.salary || '';
     var fJobStatus = document.getElementById('fJobStatus');
     if(fJobStatus) fJobStatus.value = ad.job_status || '';
+
+    // بيانات المفقودات (النوع والمكافأة)
+    if(document.getElementById('fLostMode')) setLostMode(ad.lost_mode || 'lost');
+    var fHasReward = document.getElementById('fHasReward');
+    if(fHasReward) {
+      fHasReward.checked = !!ad.reward;
+      var fRewardAmountWrap = document.getElementById('fRewardAmountWrap');
+      if(fRewardAmountWrap) fRewardAmountWrap.style.display = ad.reward ? 'block' : 'none';
+    }
+    var fRewardAmount = document.getElementById('fRewardAmount');
+    if(fRewardAmount) fRewardAmount.value = ad.reward || '';
+
+    // بيانات الوفيات
+    var fFuneralInfo = document.getElementById('fFuneralInfo');
+    if(fFuneralInfo) fFuneralInfo.value = ad.funeral_info || '';
+    var fCondolenceInfo = document.getElementById('fCondolenceInfo');
+    if(fCondolenceInfo) fCondolenceInfo.value = ad.condolence_info || '';
+    var fRelation = document.getElementById('fRelation');
+    if(fRelation) fRelation.value = ad.relation || '';
+    var fDeathDate = document.getElementById('fDeathDate');
+    if(fDeathDate) fDeathDate.value = ad.death_date || '';
+    var fOpeningHours = document.getElementById('fOpeningHours');
+    if(fOpeningHours) fOpeningHours.value = ad.opening_hours || '';
+    var fDelivery = document.getElementById('fDelivery');
+    if(fDelivery) fDelivery.value = ad.delivery || '';
     
     // روابط الفيديو
     fillVideoLinks(ad.video_links);
@@ -2434,7 +2804,10 @@ function openEditAd(adId) {
     setTimeout(function() {
       var fSub = document.getElementById('fSub');
       if(fSub && ad.subcategory) fSub.value = ad.subcategory;
+      updateDescPlaceholder();
       updateJobsUI();
+      updateLostUI();
+      updateDeathsUI();
     }, 100);
     
     // تغيير العنوان والزرار للتعديل
@@ -2475,7 +2848,8 @@ async function submitEditAd(adId) {
     const phone2 = (document.getElementById('fPhone2')?.value || '').trim();
     const location = document.getElementById('fAddress')?.value.trim();
     const locationUrl = document.getElementById('fLocation')?.value.trim();
-    const price = document.getElementById('fPrice')?.value.trim();
+    const priceOnRequest = document.getElementById('fPriceOnRequest')?.checked || false;
+    const price = priceOnRequest ? '' : document.getElementById('fPrice')?.value.trim();
     const cat = document.getElementById('fCat')?.value;
     const sub = document.getElementById('fSub')?.value;
     const salary = document.getElementById('fSalary')?.value.trim();
@@ -2549,6 +2923,61 @@ async function submitEditAd(adId) {
         await sbFetch('PATCH', `ads?id=eq.${adId}`, {salary: salary || null, job_status: jobStatus || null});
       } catch(e){ console.error('salary/job_status save failed:', e.message || e); }
     }
+
+    // تحديث نوع المفقود والمكافأة (لقسم المفقودات فقط)
+    if(cat === 'lost') {
+      try {
+        const lostMode = document.getElementById('fLostMode')?.value || 'lost';
+        const reward = document.getElementById('fHasReward')?.checked ? (document.getElementById('fRewardAmount')?.value.trim() || null) : null;
+        await sbFetch('PATCH', `ads?id=eq.${adId}`, {lost_mode: lostMode, reward: reward});
+      } catch(e){ console.error('lost_mode/reward save failed:', e.message || e); }
+    }
+
+    // تحديث بيانات الجنازة والعزاء (لنعي ووفيات بس، مش توثيق الراحلين)
+    if(cat === 'deaths' && getDeathsMode() === 'announce') {
+      try {
+        const funeralInfo = document.getElementById('fFuneralInfo')?.value.trim() || null;
+        const condolenceInfo = document.getElementById('fCondolenceInfo')?.value.trim() || null;
+        const relation = document.getElementById('fRelation')?.value || null;
+        await sbFetch('PATCH', `ads?id=eq.${adId}`, {funeral_info: funeralInfo, condolence_info: condolenceInfo, relation: relation});
+      } catch(e){ console.error('funeral/condolence save failed:', e.message || e); }
+    }
+
+    // تحديث تاريخ الوفاة (وفيات الحامول وتوثيق الراحلين مع بعض)
+    if(cat === 'deaths') {
+      try {
+        const deathDate = document.getElementById('fDeathDate')?.value || null;
+        await sbFetch('PATCH', `ads?id=eq.${adId}`, {death_date: deathDate});
+      } catch(e){ console.error('death_date save failed:', e.message || e); }
+    }
+
+    // تحديث مواعيد العمل والتوصيل (مطاعم وكافيهات فقط)
+    if(cat === 'food') {
+      try {
+        const openingHours = document.getElementById('fOpeningHours')?.value.trim() || null;
+        const delivery = document.getElementById('fDelivery')?.value || null;
+        await sbFetch('PATCH', `ads?id=eq.${adId}`, {opening_hours: openingHours, delivery: delivery});
+      } catch(e){ console.error('opening_hours/delivery save failed:', e.message || e); }
+    }
+
+    // تحديث "تواصل للسعر" (لأقسام سوق المستعمل والمعارض)
+    try {
+      await sbFetch('PATCH', `ads?id=eq.${adId}`, {price_on_request: priceOnRequest});
+    } catch(e){ console.error('price_on_request save failed:', e.message || e); }
+
+    // تحديث بيانات المنتج (الكمية، الحالة، اللون، الضمان)
+    try {
+      const qtyVal = document.getElementById('fQty')?.value;
+      const conditionVal = document.getElementById('fCondition')?.value || null;
+      const colorVal = document.getElementById('fColor')?.value.trim() || null;
+      const warrantyVal = document.getElementById('fWarranty')?.value.trim() || null;
+      await sbFetch('PATCH', `ads?id=eq.${adId}`, {
+        quantity: qtyVal ? parseInt(qtyVal) : null,
+        condition: conditionVal,
+        color: colorVal,
+        warranty: warrantyVal
+      });
+    } catch(e){ console.error('product fields save failed:', e.message || e); }
     
     // تحديث allAds
     const idx = allAds.findIndex(a => a.id === adId);
@@ -2611,8 +3040,8 @@ function openAddModalForm(catId='', sub='') {
           </select>
         </div>
         <div class="fg" id="fSubWrap" style="margin-bottom:0;">
-          <label>التخصص</label>
-          <select id="fSub" onchange="updateJobsUI()" style="font-size:14px;"></select>
+          <label id="fSubLabel">التخصص</label>
+          <select id="fSub" onchange="updateDescPlaceholder();updateJobsUI();updateLostUI();updateDeathsUI();" style="font-size:14px;"></select>
         </div>
       </div>
 
@@ -2625,8 +3054,93 @@ function openAddModalForm(catId='', sub='') {
         </div>
         <div class="fg">
           <label id="fDescLabel">التفاصيل</label>
-          <textarea id="fDesc" rows="6" placeholder="اكتب كل خدمة أو معلومة في سطر لوحده، مثال:&#10;متابعة أمراض الأطفال&#10;علاج الحساسية&#10;مواعيد: 10 صباحاً - 3 مساءً&#10;يوجد سونار" style="font-size:14px;"></textarea>
-          <div id="fDescHint" style="font-size:11px;color:#94a3b8;margin-top:4px;padding-right:4px;">💡 اكتب كل خدمة أو معلومة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق</div>
+          <textarea id="fDesc" rows="6" placeholder="اكتب كل خدمة أو معلومة في سطر لوحده — كل معلومة في سطر" onkeydown="autoListOnEnter(event,this)" oninput="document.getElementById('fDescCounter').textContent=this.value.length+' حرف'" style="font-size:14px;"></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+            <div id="fDescHint" style="font-size:11px;color:#94a3b8;padding-right:4px;">💡 اكتب كل خدمة أو معلومة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق</div>
+            <div id="fDescCounter" style="font-size:11px;color:#cbd5e1;flex-shrink:0;padding-left:4px;">0 حرف</div>
+          </div>
+        </div>
+
+        <!-- حقول المفقودات (تظهر بس في قسم مفقودات) -->
+        <div id="lostFields" style="display:none;">
+          <div style="background:#fff7ed;border-radius:12px;padding:12px;margin-bottom:4px;">
+            <div style="font-size:13px;font-weight:900;color:#9a3412;margin-bottom:10px;">🔎 إيه الموضوع؟</div>
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+              <button type="button" id="fLostModeBtnLost" onclick="setLostMode('lost')" style="flex:1;padding:10px;border-radius:10px;border:2px solid #f87171;background:#fee2e2;color:#dc2626;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;">😟 فقدت حاجة</button>
+              <button type="button" id="fLostModeBtnFound" onclick="setLostMode('found')" style="flex:1;padding:10px;border-radius:10px;border:2px solid #e5e7eb;background:white;color:#64748b;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;">🙂 لقيت حاجة</button>
+            </div>
+            <input type="hidden" id="fLostMode" value="lost">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;" id="fRewardCheckWrap">
+              <input type="checkbox" id="fHasReward" onchange="document.getElementById('fRewardAmountWrap').style.display=this.checked?'block':'none'" style="width:18px;height:18px;accent-color:#dc2626;">
+              <span style="font-size:13px;font-weight:700;color:#374151;">🎁 هعرض مكافأة مالية لمن يجدها</span>
+            </label>
+            <div id="fRewardAmountWrap" style="display:none;margin-top:8px;">
+              <input type="text" id="fRewardAmount" placeholder="مثال: 100 جنيه أو حسب الاتفاق" style="width:100%;padding:8px;border:1px solid #fdba74;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">
+            </div>
+          </div>
+        </div>
+
+        <!-- حقول المطاعم والكافيهات -->
+        <div id="foodFields" style="display:none;">
+          <div style="background:#fef9c3;border-radius:12px;padding:12px;margin-bottom:4px;">
+            <div style="font-size:13px;font-weight:900;color:#854d0e;margin-bottom:10px;">🍽️ بيانات إضافية</div>
+            <div class="fg" style="margin-bottom:10px;">
+              <label style="font-size:11px;color:#713f12;font-weight:700;display:block;margin-bottom:4px;">مواعيد العمل (اختياري)</label>
+              <input type="text" id="fOpeningHours" placeholder="مثال: يوميًا من 12 ظهرًا لـ 2 فجرًا" style="width:100%;padding:8px;border:1px solid #fde047;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label style="font-size:11px;color:#713f12;font-weight:700;display:block;margin-bottom:4px;">التوصيل متاح؟</label>
+              <select id="fDelivery" style="width:100%;padding:8px;border:1px solid #fde047;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;background:white;">
+                <option value="">-- اختر --</option>
+                <option value="متاح">🛵 متاح</option>
+                <option value="غير متاح">🚫 غير متاح — استلام بس</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- حقول الوفيات (تظهر بس في قسم الوفيات) -->
+        <!-- تاريخ الوفاة (يظهر في وفيات الحامول وتوثيق الراحلين) -->
+        <div id="deathDateField" style="display:none;margin-bottom:12px;">
+          <div class="fg" style="margin-bottom:0;">
+            <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">تاريخ الوفاة (اختياري)</label>
+            <input type="date" id="fDeathDate" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">
+          </div>
+        </div>
+
+        <!-- حقول وفيات الحامول -->
+        <div id="deathsFields" style="display:none;">
+          <div style="background:#f1f5f9;border-radius:12px;padding:12px;margin-bottom:4px;">
+            <div style="font-size:13px;font-weight:900;color:#334155;margin-bottom:10px;">🕌 بيانات النعي</div>
+            <div class="fg" style="margin-bottom:10px;">
+              <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">صلة القرابة (اختياري)</label>
+              <select id="fRelation" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;background:white;">
+                <option value="">-- اختر صلة القرابة --</option>
+                <option value="ابن/ابنة المتوفى">ابن/ابنة المتوفى</option>
+                <option value="زوج/زوجة المتوفى">زوج/زوجة المتوفى</option>
+                <option value="أخ/أخت المتوفى">أخ/أخت المتوفى</option>
+                <option value="أحد أقارب المتوفى">أحد أقارب المتوفى</option>
+                <option value="أحد معارف المتوفى">أحد معارف المتوفى</option>
+                <option value="أخرى">أخرى</option>
+              </select>
+            </div>
+            <div class="fg" style="margin-bottom:10px;">
+              <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">موعد ومكان الجنازة (اختياري)</label>
+              <input type="text" id="fFuneralInfo" placeholder="مثال: عصر اليوم بعد صلاة العصر، من مسجد النور" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">مكان العزاء (اختياري)</label>
+              <input type="text" id="fCondolenceInfo" placeholder="مثال: عزاء الرجال بمنزل العائلة من الساعة 4 لـ 7 مساءً" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">
+            </div>
+          </div>
+        </div>
+
+        <!-- حقول توثيق الراحلين -->
+        <div id="memorialFields" style="display:none;">
+          <div style="background:#f5f3ff;border-radius:12px;padding:12px;margin-bottom:4px;border:1px dashed #c4b5fd;">
+            <div style="font-size:13px;font-weight:900;color:#6d28d9;margin-bottom:6px;">🕯️ تخليد الذكرى</div>
+            <div style="font-size:12px;color:#5b21b6;line-height:1.7;">ارفع صور أو فيديوهات للفقيد في قسم الصور تحت، واكتب كلمة أو ذكرى عنه في التفاصيل — هيفضل محفوظ هنا يقدر أي حد يرجع يتصفحه.</div>
+          </div>
         </div>
 
         <!-- حقول الوظائف (تظهر بس في قسم الوظائف) -->
@@ -2655,36 +3169,53 @@ function openAddModalForm(catId='', sub='') {
             <div style="font-size:13px;font-weight:900;color:#166534;margin-bottom:10px;">🛍️ بيانات المنتج</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
               <div>
-                <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">💰 السعر *</label>
+                <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">💰 السعر</label>
                 <div style="display:flex;align-items:center;border:1px solid #d1fae5;border-radius:8px;overflow:hidden;background:white;">
                   <input type="number" id="fPrice" placeholder="0" min="0" style="flex:1;padding:8px;border:none;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;width:100%;">
                   <span style="padding:0 8px;color:#16a34a;font-weight:900;font-size:13px;">ج</span>
                 </div>
+                <label style="display:flex;align-items:center;gap:5px;margin-top:5px;cursor:pointer;">
+                  <input type="checkbox" id="fPriceOnRequest" onchange="var p=document.getElementById('fPrice'); p.disabled=this.checked; if(this.checked) p.value='';" style="width:14px;height:14px;accent-color:#16a34a;">
+                  <span style="font-size:11px;color:#64748b;">💬 تواصل للسعر</span>
+                </label>
               </div>
               <div>
                 <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">📦 الكمية المتاحة</label>
                 <input type="number" id="fQty" placeholder="مثال: 10" min="1" style="width:100%;padding:8px;border:1px solid #d1fae5;border-radius:8px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;background:white;">
               </div>
             </div>
-            <div>
-              <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">🏷️ حالة المنتج</label>
-              <select id="fCondition" style="width:100%;padding:8px;border:1px solid #d1fae5;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;background:white;">
-                <option value="">-- اختر --</option>
-                <option value="جديد">✨ جديد</option>
-                <option value="مستعمل نظيف">👍 مستعمل نظيف</option>
-                <option value="مستعمل">🔄 مستعمل</option>
-                <option value="للتفاوض">💬 للتفاوض</option>
-              </select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+              <div>
+                <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">🏷️ حالة المنتج</label>
+                <select id="fCondition" style="width:100%;padding:8px;border:1px solid #d1fae5;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;background:white;">
+                  <option value="">-- اختر --</option>
+                  <option value="جديد">✨ جديد</option>
+                  <option value="كسر زيرو">📦 كسر زيرو</option>
+                  <option value="مستعمل بحالة جيدة">👍 مستعمل بحالة جيدة</option>
+                  <option value="مستعمل بحالة متوسطة">🔄 مستعمل بحالة متوسطة</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">🎨 اللون (اختياري)</label>
+                <input type="text" id="fColor" placeholder="مثال: أسود" style="width:100%;padding:8px;border:1px solid #d1fae5;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">🛡️ الضمان (اختياري)</label>
+              <input type="text" id="fWarranty" placeholder="مثال: سنة ضمان وكيل، أو بدون ضمان" style="width:100%;padding:8px;border:1px solid #d1fae5;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">
             </div>
           </div>
         </div>
         <div class="fg" style="margin-bottom:0;">
           <label id="fPhoneLabel">رقم التليفون / واتساب *</label>
-          <input type="tel" id="fPhone" placeholder="01xxxxxxxxx" maxlength="11" style="font-size:16px;letter-spacing:2px;">
+          <input type="tel" id="fPhone" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="font-size:16px;letter-spacing:2px;">
         </div>
-        <div class="fg" style="margin-bottom:0;margin-top:10px;">
+        <div id="fPhone2Toggle" style="margin-top:8px;">
+          <span onclick="document.getElementById('fPhone2Toggle').style.display='none';document.getElementById('fPhone2Wrap').style.display='block';document.getElementById('fPhone2').focus();" style="font-size:12px;color:var(--primary);font-weight:700;cursor:pointer;">+ أضف رقم تاني (اختياري)</span>
+        </div>
+        <div class="fg" id="fPhone2Wrap" style="margin-bottom:0;margin-top:10px;display:none;">
           <label>رقم تاني (اختياري)</label>
-          <input type="tel" id="fPhone2" placeholder="01xxxxxxxxx" maxlength="11" style="font-size:16px;letter-spacing:2px;">
+          <input type="tel" id="fPhone2" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="font-size:16px;letter-spacing:2px;">
         </div>
       </div>
 
@@ -2692,11 +3223,11 @@ function openAddModalForm(catId='', sub='') {
       <div style="background:white;border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--border);">
         <div style="font-size:13px;font-weight:900;color:var(--primary);margin-bottom:12px;">3️⃣ الموقع (اختياري)</div>
         <div class="fg">
-          <label>العنوان بالتفصيل</label>
+          <label id="fAddressLabel">العنوان بالتفصيل</label>
           <input type="text" id="fAddress" placeholder="مثال: شارع الجمهورية، بجوار مسجد النور" style="font-size:14px;">
         </div>
-        <div class="fg" style="margin-bottom:0;">
-          <label>رابط الخريطة</label>
+        <div class="fg" style="margin-bottom:0;" id="fMapUrlBlock">
+          <label id="fMapLabel">رابط الخريطة</label>
           <input type="url" id="fLocation" placeholder="https://maps.google.com/..." style="font-size:13px;" oninput="checkMapUrl(this)">
           <div id="mapUrlHint" style="font-size:11px;color:#64748b;margin-top:6px;line-height:1.8;background:#f0fdf4;border-radius:8px;padding:8px;">
             📱 <b>إزاي تجيب رابط صح:</b><br>
@@ -2705,14 +3236,15 @@ function openAddModalForm(catId='', sub='') {
             3️⃣ اضغط <b>مشاركة</b> ثم <b>نسخ الرابط</b><br>
             ✅ الرابط الصح يبدأ بـ <b>maps.google.com</b> أو <b>maps.app.goo.gl</b>
           </div>
+          <div id="mapUrlPreview" style="display:none;margin-top:8px;border-radius:10px;overflow:hidden;border:1px solid var(--border);height:160px;"></div>
         </div>
 
         <!-- روابط الفيديو -->
-        <div style="background:#fef3c7;border-radius:12px;padding:12px;margin-top:8px;">
+        <div style="background:#fef3c7;border-radius:12px;padding:12px;margin-top:8px;" id="fVideoLinksBlock">
           <div style="font-size:13px;font-weight:900;color:#92400e;margin-bottom:8px;">🎥 روابط فيديو (اختياري)</div>
           <div id="videoLinksContainer">
             <div class="video-link-row" style="display:flex;gap:6px;margin-bottom:6px;">
-              <input type="url" placeholder="يوتيوب / تيك توك / فيسبوك ..." style="flex:1;padding:8px;border:1px solid #d97706;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">
+              <input type="url" placeholder="يوتيوب / تيك توك / فيسبوك ..." oninput="checkVideoUrl(this)" style="flex:1;padding:8px;border:1px solid #d97706;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">
               <button type="button" onclick="addVideoLink()" style="background:#f59e0b;color:white;border:none;width:34px;height:34px;border-radius:8px;font-size:18px;cursor:pointer;flex-shrink:0;">+</button>
             </div>
           </div>
@@ -2730,6 +3262,15 @@ function openAddModalForm(catId='', sub='') {
         </label>
         <div id="addImgPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
         <div id="imgCountText" style="font-size:11px;color:var(--gray);margin-top:6px;"></div>
+        <div id="imgUploadProgressWrap" style="display:none;margin-top:10px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;">
+            <span id="imgUploadProgressLabel">جاري رفع الصور...</span>
+            <span id="imgUploadProgressPct">0%</span>
+          </div>
+          <div style="background:#f1f5f9;border-radius:20px;height:8px;overflow:hidden;">
+            <div id="imgUploadProgressBar" style="background:var(--primary);height:100%;width:0%;transition:width .3s;"></div>
+          </div>
+        </div>
       </div>
 
       ${isAdmin ? `
@@ -2746,8 +3287,12 @@ function openAddModalForm(catId='', sub='') {
 
       <!-- إرسال -->
       <div style="background:white;border-radius:14px;padding:16px;border:1px solid var(--border);">
-        <div style="font-size:12px;color:var(--gray);text-align:center;margin-bottom:12px;">
-          ⚠️ إعلانك هيظهر بعد مراجعة المشرف إسلام عنتر
+        <div style="font-size:12px;color:var(--gray);text-align:center;margin-bottom:12px;position:relative;">
+          <span>⚠️ إعلانك هيظهر بعد مراجعة المشرف إسلام عنتر</span>
+          <span onclick="toggleReviewTooltip(this)" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#e2e8f0;color:#475569;font-size:10px;font-weight:900;cursor:pointer;margin-right:4px;vertical-align:middle;">ⓘ</span>
+          <div class="review-tooltip" style="display:none;background:#1e293b;color:white;font-size:11px;line-height:1.6;padding:8px 12px;border-radius:8px;margin-top:8px;text-align:center;">
+            ⏱️ المراجعة بتتم عادةً خلال ساعة في أوقات النهار — هتوصلك رسالة واتساب فور الموافقة
+          </div>
         </div>
         <button type="button" onclick="showAdPreviewModal()" id="fPreviewBtn" style="display:none;width:100%;background:#fff7ed;color:#c2410c;border:2px solid #fdba74;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;margin-bottom:8px;">
           👁️ معاينة الإعلان
@@ -2766,9 +3311,9 @@ function openAddModalForm(catId='', sub='') {
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
-  setTimeout(function(){ updateFSub(); if(sub){ var fs=document.getElementById('fSub'); if(fs){ for(var i=0;i<fs.options.length;i++){ if(fs.options[i].value===sub){fs.value=sub;break;} } } } }, 50);
+  setTimeout(function(){ updateFSub(); if(sub){ var fs=document.getElementById('fSub'); if(fs){ for(var i=0;i<fs.options.length;i++){ if(fs.options[i].value===sub){fs.value=sub;break;} } } } updateDescPlaceholder(); updateJobsUI(); updateLostUI(); updateDeathsUI(); }, 50);
   updateFSub();
-  if(sub) { setTimeout(() => { const sel = document.getElementById('fSub'); if(sel) sel.value = sub; }, 100); }
+  if(sub) { setTimeout(() => { const sel = document.getElementById('fSub'); if(sel) sel.value = sub; updateDescPlaceholder(); updateJobsUI(); updateLostUI(); updateDeathsUI(); }, 100); }
 }
 
 function buildAddForm(catId, sub) { openAddModal(catId, sub); }
@@ -2784,16 +3329,18 @@ function updateFSub() {
     're_rent': 'مثال: شقة للإيجار — دور ثاني — الحامول',
     're_sale': 'مثال: شقة للبيع — 120 متر — بالحامول',
     're_wanted': 'مثال: مطلوب شقة للإيجار في الحامول',
-    'food': 'مثال: مطعم كشري الأصيل — توصيل سريع',
-    'food_rest': 'مثال: مطعم فراخ مشوية — الحامول',
-    'food_cafe': 'مثال: كافيه الورد — قهوة وعصائر طازجة',
+    'food': 'اكتب اسم المطعم أو الكافيه',
+    'food_rest': 'اكتب اسم المطعم',
+    'food_cafe': 'اكتب اسم الكافيه',
     'doctors': 'مثال: دكتور محمد علي — طبيب أسنان',
     'teachers_hub': 'مثال: مدرس رياضيات — ثانوي عام',
     'cars': 'مثال: سيارة هيونداي 2020 للبيع',
     'used_market': 'مثال: تليفزيون سامسونج 55 بوصة للبيع',
-    'fashion': 'مثال: ملابس أطفال — جديدة بأسعار مناسبة',
-    'home': 'مثال: أدوات منزلية للبيع — حالة ممتازة',
-    'furniture': 'مثال: غرفة نوم كاملة للبيع',
+    'fashion': 'اكتب اسم المحل أو الشركة',
+    'shoes': 'اكتب اسم المحل أو الشركة',
+    'home': 'اكتب اسم المحل',
+    'furniture': 'اكتب اسم المحل أو الشركة',
+    'cars_market': 'مثال: هيونداي فيرنا 2020 — فبريكا',
     'building': 'مثال: مقاول بناء وتشطيب — الحامول',
     'crafts': 'مثال: سباك — صيانة فورية',
     'tech': 'مثال: تصليح موبايلات وأجهزة',
@@ -2831,7 +3378,7 @@ function updateFSub() {
   // حقول المتجر - تظهر بس في البيع أونلاين والمستعمل
   var shopFields = document.getElementById('shopFields');
   if(shopFields) {
-    var isShop = (phCatId === 'online' || phCatId === 'used_market' || phCatId === 'fashion' || phCatId === 'shoes');
+    var isShop = (phCatId === 'online' || phCatId === 'used_market');
     shopFields.style.display = isShop ? 'block' : 'none';
   }
   const catId = document.getElementById('fCat').value;
@@ -2867,7 +3414,217 @@ function updateFSub() {
     wrap.style.display = 'none';
   }
 
+  updateDescPlaceholder();
   updateJobsUI();
+  updateLostUI();
+  updateDeathsUI();
+}
+
+// ===== نص إرشادي مخصص لحقل التفاصيل حسب القسم (خاصة العقارات) =====
+function updateDescPlaceholder() {
+  const catId = document.getElementById('fCat')?.value;
+  const descInput = document.getElementById('fDesc');
+  const descHint = document.getElementById('fDescHint');
+
+  const foodFields = document.getElementById('foodFields');
+  if(foodFields) foodFields.style.display = (catId === 'food') ? 'block' : 'none';
+
+  // تسمية حقل العنوان حسب القسم (الوظائف/المفقودات/الوفيات بيتحكموا في تسميتهم بنفسهم)
+  const titleLabelEl = document.getElementById('fTitleLabel');
+  const TITLE_LABELS = {
+    'food': 'اسم المطعم / الكافيه *',
+    'home': 'اسم المحل *',
+    'furniture': 'اسم المحل / الشركة *',
+    'fashion': 'اسم المحل / الشركة *',
+    'shoes': 'اسم المحل / الشركة *',
+  };
+  if(titleLabelEl && catId !== 'jobs' && catId !== 'lost' && catId !== 'deaths' && catId !== 'memorial') {
+    titleLabelEl.textContent = TITLE_LABELS[catId] || 'عنوان الإعلان *';
+  }
+
+  if(!descInput || catId === 'jobs' || catId === 'lost') return; // الوظائف والمفقودات ليهم دوال خاصة
+
+  if(catId === 'food') {
+    const subVal = document.getElementById('fSub')?.value || '';
+    const isCafe = subVal.indexOf('كافيهات') === 0;
+    if(isCafe) {
+      descInput.placeholder = 'مثال:\nأشهر المشروبات عندك\nمواعيد العمل\nهل فيه توصيل؟\nهل فيه جلسة خارجية؟';
+      if(descHint) descHint.textContent = '💡 اذكر مواعيد العمل وأشهر الأصناف — كل ما البيانات أوضح كل ما جالك زباين أسرع';
+    } else {
+      descInput.placeholder = 'مثال:\nأشهر الأصناف عندك\nمواعيد العمل\nهل فيه توصيل؟ ولحد فين\nهل فيه صالة ولا تيك أواي بس';
+      if(descHint) descHint.textContent = '💡 اذكر مواعيد العمل وخدمة التوصيل — دي أكتر حاجة بيسأل عنها العميل';
+    }
+    return;
+  }
+
+  if(catId === 'home') {
+    descInput.placeholder = 'اكتب المنتجات أو الخدمات اللي بتقدمها، مثال:\nتوصيل طلبات للمنزل\nمواعيد العمل\nأشهر المنتجات عندك\nهل فيه عروض؟';
+    if(descHint) descHint.textContent = '💡 اذكر مواعيد العمل والتوصيل وأشهر المنتجات — دي أكتر حاجة بيسأل عنها الزبون';
+    return;
+  }
+
+  if(catId === 'furniture') {
+    const subVal = document.getElementById('fSub')?.value || '';
+    if(subVal === 'تكييفات') {
+      descInput.placeholder = 'اكتب تفاصيل المنتج أو الخدمة، مثال:\nالنوع والقدرة (1.5 حصان / 3 حصان)\nبارد ولا بارد ساخن\nجديد ولا مستعمل\nهل فيه تركيب؟';
+    } else if(subVal === 'قطع غيار أدوات كهربائية') {
+      descInput.placeholder = 'اكتب تفاصيل القطع المتوفرة، مثال:\nقطع غيار لأنهي أجهزة\nأصلي ولا تجاري\nهل فيه ضمان؟\nمواعيد العمل';
+    } else if(subVal === 'فلاتر مياه') {
+      descInput.placeholder = 'اكتب تفاصيل المنتج أو الخدمة، مثال:\nعدد المراحل\nهل فيه تركيب وصيانة؟\nمواعيد العمل\nأسعار الشمعات';
+    } else {
+      descInput.placeholder = 'اكتب تفاصيل المنتج أو المحل، مثال:\nنوع المنتجات المتوفرة\nجديد ولا مستعمل\nمواعيد العمل\nهل فيه توصيل؟';
+    }
+    if(descHint) descHint.textContent = '💡 اذكر نوع المنتجات والمواعيد والتوصيل — كل ما البيانات أوضح كل ما جالك زباين أسرع';
+    return;
+  }
+
+  if(catId === 'fashion') {
+    descInput.placeholder = 'اكتب تفاصيل المحل، مثال:\nنوع الملابس المتوفرة\nالماركات أو التشكيلات\nمواعيد العمل\nهل فيه توصيل؟';
+    if(descHint) descHint.textContent = '💡 اذكر نوع الملابس والمواعيد والتوصيل — كل ما البيانات أوضح كل ما جالك زباين أكتر';
+    return;
+  }
+
+  if(catId === 'shoes') {
+    descInput.placeholder = 'اكتب تفاصيل المحل، مثال:\nنوع الأحذية والأكسسوارات المتوفرة\nالماركات أو التشكيلات\nمواعيد العمل\nهل فيه توصيل؟';
+    if(descHint) descHint.textContent = '💡 اذكر نوع المنتجات والمواعيد والتوصيل — كل ما البيانات أوضح كل ما جالك زباين أكتر';
+    return;
+  }
+
+  if(catId === 'cars_market') {
+    const subVal = document.getElementById('fSub')?.value || '';
+    if(subVal.indexOf('قطع غيار') === 0) {
+      descInput.placeholder = 'اكتب تفاصيل القطعة، مثال:\nالقطعة مناسبة لأنهي موديل\nأصلي ولا تجاري\nجديد ولا مستعمل\nحالة القطعة';
+      if(descHint) descHint.textContent = '💡 اذكر الموديل المناسب وحالة القطعة — كل ما البيانات أدق كل ما قل السؤال';
+    } else {
+      descInput.placeholder = 'اكتب تفاصيل العربية أو التوكتوك، مثال:\nالموديل وسنة الصنع\nعدد الكيلومترات\nحالة الموتور والفرش\nسبب البيع';
+      if(descHint) descHint.textContent = '💡 اذكر الموديل والسنة والكيلومترات وحالة العربية — دي أهم حاجة بيسأل عنها المشتري';
+    }
+    return;
+  }
+
+  if(catId === 'used_market') {
+    const subVal = document.getElementById('fSub')?.value || '';
+    const USED_PLACEHOLDERS = {
+      'موبايلات وأجهزة': 'مثال:\nالنوع والموديل: آيفون 12\nحالة البطارية: 88%\nمعاه العلبة والشاحن؟\nسبب البيع',
+      'أثاث وديكور': 'مثال:\nالنوع: دولاب 4 أبواب\nالخامة: خشب زان\nالأبعاد تقريبًا\nسبب البيع',
+      'ملابس مستعملة': 'مثال:\nالمقاس\nعدد مرات الاستخدام\nهل فيه أي عيوب\nسبب البيع',
+      'كتب ومستلزمات دراسية': 'مثال:\nاسم الكتاب/المنهج\nالسنة الدراسية\nحالة الكتاب (مكتوب فيه ولا لأ)',
+      'أجهزة كهربائية': 'مثال:\nالنوع والموديل: غسالة توشيبا 8 كيلو\nسنة الشراء\nهل فيها أي أعطال\nسبب البيع',
+      'عفش كامل': 'مثال:\nمحتويات العفش بالتفصيل\nحالة كل قطعة\nهل ممكن البيع بالقطعة',
+      'سيارات وتكاتك': 'مثال:\nالموديل وسنة الصنع\nعدد الكيلومترات\nحالة الموتور والكهرباء\nسبب البيع',
+      'أدوات ومعدات': 'مثال:\nنوع الأداة والاستخدام\nحالة التشغيل\nسبب البيع',
+      'العاب أطفال': 'مثال:\nنوع اللعبة والسن المناسب\nحالة اللعبة\nمعاها كل القطع؟',
+    };
+    const cfg = USED_PLACEHOLDERS[subVal];
+    descInput.placeholder = cfg || 'اكتب المواصفات هنا (مثال: النوع، الموديل، حالة القطعة، سبب البيع)';
+    if(descHint) descHint.textContent = '💡 كل ما وصفت الحالة بدقة كل ما قل السؤال والتفاوض بعد كده';
+    return;
+  }
+
+  if(catId === 'realestate') {
+    const subVal = document.getElementById('fSub')?.value || '';
+    let mode = null;
+    if(subVal.indexOf('إيجار') === 0) mode = 'rent';
+    else if(subVal.indexOf('بيع') === 0) mode = 'sale';
+    else if(subVal.indexOf('مطلوب') === 0) mode = 'wanted';
+    else if(addCatId === 're_rent') mode = 'rent';
+    else if(addCatId === 're_sale') mode = 'sale';
+    else if(addCatId === 're_wanted') mode = 'wanted';
+
+    if(mode === 'rent') {
+      descInput.placeholder = 'مثال:\nدور تاني — 3 غرف وصالة\nمفروشة جزئيًا\nالسعر الشهري: 3000 جنيه\nقريبة من السوق';
+      if(descHint) descHint.textContent = '💡 اذكر الدور وعدد الغرف والأثاث والسعر الشهري بالتفصيل — كل ما البيانات أدق كل ما جالك اتصال جاد';
+      return;
+    }
+    if(mode === 'sale') {
+      descInput.placeholder = 'مثال:\n120 متر — 3 غرف وصالة\nتشطيب سوبر لوكس\nدور رابع بدون أسانسير\nالسعر الإجمالي: 850,000 جنيه';
+      if(descHint) descHint.textContent = '💡 اذكر المساحة والتشطيب والدور والسعر الإجمالي بالتفصيل — كل ما البيانات أدق كل ما جالك اتصال جاد';
+      return;
+    }
+    if(mode === 'wanted') {
+      descInput.placeholder = 'مثال:\nعايز شقة 3 غرف في الحامول\nالميزانية: حتى 15,000 شهريًا\nدور أول أو تاني\nقريبة من السوق أو المستشفى';
+      if(descHint) descHint.textContent = '💡 اذكر نوع العقار المطلوب والميزانية والمنطقة المفضلة بالتفصيل — كل ما طلبك واضح كل ما جالك عروض مناسبة بسرعة';
+      return;
+    }
+    // عقارات عام — لسه محددش تخصص
+    descInput.placeholder = 'مثال:\nنوع العقار (شقة / محل / أرض)\nالمساحة أو عدد الغرف\nالسعر\nالمنطقة بالتفصيل';
+    if(descHint) descHint.textContent = '💡 اذكر تفاصيل العقار والسعر والمنطقة بدقة — كل ما البيانات أوضح كل ما جالك اهتمام أسرع';
+    return;
+  }
+
+  if(catId === 'medservices') {
+    const subVal = document.getElementById('fSub')?.value || '';
+    const addressInput = document.getElementById('fAddress');
+    const MED_PLACEHOLDERS = {
+      'صيدليات': {
+        desc: 'مثال:\nتوصيل أدوية للمنازل\nمستحضرات تجميل\nخدمة 24 ساعة\nصرف روشتة التأمين الصحي',
+        hint: '💡 اذكر خدمات التوصيل والمنتجات المتوفرة ومواعيد العمل بالتفصيل',
+        addr: 'مثال: شارع الجمهورية، بجوار صيدلية العزبي القديمة'
+      },
+      'معامل تحاليل': {
+        desc: 'مثال:\nتحليل سكر\nتحاليل شاملة\nخدمة سحب عينات من المنزل\nمواعيد العمل: 8 صباحاً - 10 مساءً',
+        hint: '💡 اذكر أنواع التحاليل المتاحة وهل فيه سحب عينات من المنزل ومواعيد استلام النتائج',
+        addr: 'مثال: شارع المحطة، أمام مستشفى الحامول المركزي'
+      },
+      'مراكز أشعة': {
+        desc: 'مثال:\nأشعة إكس\nسونار\nرنين مغناطيسي (MRI)\nمواعيد الحجز والاستلام',
+        hint: '💡 اذكر أنواع الأشعة المتاحة وهل الحجز محتاج معاد مسبق',
+        addr: 'مثال: بجوار مستشفى الحامول، الدور الأول'
+      },
+      'مراكز تخاطب': {
+        desc: 'مثال:\nجلسات تخاطب للأطفال\nعلاج تأخر النطق\nتقييم مبدئي مجاني\nمواعيد الجلسات الأسبوعية',
+        hint: '💡 اذكر الفئة العمرية والمشاكل اللي بتتعالج ونظام الحجز',
+        addr: 'مثال: شارع النادي، الدور الثاني'
+      },
+      'مستلزمات طبية': {
+        desc: 'مثال:\nكراسي متحركة\nأجهزة ضغط وسكر\nتأجير أجهزة\nتوصيل للمنزل',
+        hint: '💡 اذكر المنتجات المتوفرة وهل فيه تأجير أو بيع بس',
+        addr: 'مثال: شارع السوق، بجوار البنك الأهلي'
+      },
+      'معامل نظارات': {
+        desc: 'مثال:\nفحص نظر مجاني\nعدسات لاصقة\nتصنيع نظارات في نفس اليوم\nخصومات وتقسيط',
+        hint: '💡 اذكر خدمة الفحص ومدة تجهيز النظارة ونظام الدفع',
+        addr: 'مثال: شارع الجمهورية، أمام محطة البنزين'
+      },
+      'تمريض منزلي': {
+        desc: 'مثال:\nحقن وقياس ضغط بالمنزل\nمتابعة مرضى بعد العمليات\nرعاية كبار السن\nمتاح على مدار اليوم',
+        hint: '💡 اذكر الخدمات المتاحة ونطاق التغطية (داخل الحامول بس ولا القرى المجاورة كمان)',
+        addr: ''
+      },
+      'الطب التكميلي': {
+        desc: 'مثال:\nجلسات علاج طبيعي\nحجامة وعلاج بالأعشاب\nتدليك علاجي\nمواعيد الجلسات',
+        hint: '💡 اذكر نوع الجلسات والمدة وهل بتتم في العيادة ولا بزيارة منزلية',
+        addr: 'مثال: شارع الجمهورية، بجوار مسجد النور'
+      }
+    };
+    const cfg = MED_PLACEHOLDERS[subVal];
+    if(cfg) {
+      descInput.placeholder = cfg.desc;
+      if(descHint) descHint.textContent = cfg.hint;
+      if(addressInput) addressInput.placeholder = cfg.addr || 'مثال: شارع الجمهورية، بجوار مسجد النور';
+      return;
+    }
+    // خدمات طبية عام — لسه محددش تخصص
+    descInput.placeholder = 'مثال:\nنوع الخدمة الطبية بالتفصيل\nمواعيد العمل\nهل التوصيل متاح للمنزل';
+    if(descHint) descHint.textContent = '💡 اختار التخصص فوق الأول عشان يظهرلك مثال مخصص لنوع الخدمة';
+    if(addressInput) addressInput.placeholder = 'مثال: شارع الجمهورية، بجوار مسجد النور';
+    return;
+  }
+
+  // خدمات طبية — المثال الطبي مناسب ليها
+  if(catId === 'medservices') {
+    descInput.placeholder = 'اكتب كل خدمة أو معلومة في سطر لوحده، مثال:\nمتابعة أمراض الأطفال\nعلاج الحساسية\nمواعيد: 10 صباحاً - 3 مساءً\nيوجد سونار';
+    if(descHint) descHint.textContent = '💡 اكتب كل خدمة أو معلومة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق';
+    const addrEl0 = document.getElementById('fAddress');
+    if(addrEl0) addrEl0.placeholder = 'مثال: شارع الجمهورية، بجوار مسجد النور';
+    return;
+  }
+
+  // افتراضي لباقي الأقسام — محايد بدون مثال طبي
+  descInput.placeholder = 'اكتب كل خدمة أو معلومة في سطر لوحده — كل معلومة في سطر';
+  if(descHint) descHint.textContent = '💡 اكتب كل خدمة أو معلومة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق';
+  const addressInput = document.getElementById('fAddress');
+  if(addressInput) addressInput.placeholder = 'مثال: شارع الجمهورية، بجوار مسجد النور';
 }
 
 // ===== تحديد نوع الإعلان: وظيفة شاغرة ولا باحث عن عمل =====
@@ -2900,11 +3657,8 @@ function updateJobsUI() {
 
   if(catVal !== 'jobs') {
     if(jobsFields) jobsFields.style.display = 'none';
-    if(previewBtn) previewBtn.style.display = 'none';
-    if(titleLabel) titleLabel.textContent = 'عنوان الإعلان *';
-    if(titleInput) titleInput.placeholder = 'اكتب عنوان إعلانك هنا';
+    if(previewBtn) previewBtn.style.display = 'block';
     if(descLabel) descLabel.textContent = 'التفاصيل';
-    if(descHint) descHint.textContent = '💡 اكتب كل خدمة أو معلومة في سطر منفصل — هتظهر منظمة كأيقونات بالتطبيق';
     if(submitBtn) submitBtn.textContent = '🚀 إرسال الإعلان للمراجعة';
     return;
   }
@@ -2933,6 +3687,141 @@ function updateJobsUI() {
     if(salaryLabel) salaryLabel.textContent = 'الراتب المعروض (اختياري)';
     if(jobStatusWrap) jobStatusWrap.style.display = 'none';
     if(submitBtn) submitBtn.textContent = '🚀 نشر الوظيفة';
+  }
+}
+
+// ===== تبديل وضع "فقدت / لقيت" =====
+function setLostMode(mode) {
+  const hidden = document.getElementById('fLostMode');
+  if(hidden) hidden.value = mode;
+  const lostBtn = document.getElementById('fLostModeBtnLost');
+  const foundBtn = document.getElementById('fLostModeBtnFound');
+  if(lostBtn && foundBtn) {
+    if(mode === 'lost') {
+      lostBtn.style.background = '#fee2e2'; lostBtn.style.color = '#dc2626'; lostBtn.style.borderColor = '#f87171';
+      foundBtn.style.background = 'white'; foundBtn.style.color = '#64748b'; foundBtn.style.borderColor = '#e5e7eb';
+    } else {
+      foundBtn.style.background = '#dcfce7'; foundBtn.style.color = '#166534'; foundBtn.style.borderColor = '#4ade80';
+      lostBtn.style.background = 'white'; lostBtn.style.color = '#64748b'; lostBtn.style.borderColor = '#e5e7eb';
+    }
+  }
+  updateLostUI();
+}
+
+// ===== تحديث واجهة قسم المفقودات =====
+function updateLostUI() {
+  const catVal = document.getElementById('fCat')?.value;
+  const lostFields = document.getElementById('lostFields');
+  const mapBlock = document.getElementById('fMapUrlBlock');
+  const videoBlock = document.getElementById('fVideoLinksBlock');
+  const titleLabel = document.getElementById('fTitleLabel');
+  const titleInput = document.getElementById('fTitle');
+  const descInput = document.getElementById('fDesc');
+  const descHint = document.getElementById('fDescHint');
+  const addressLabel = document.getElementById('fAddressLabel');
+  const addressInput = document.getElementById('fAddress');
+  const rewardCheckWrap = document.getElementById('fRewardCheckWrap');
+
+  if(catVal !== 'lost') {
+    if(lostFields) lostFields.style.display = 'none';
+    if(mapBlock) mapBlock.style.display = 'block';
+    if(videoBlock) videoBlock.style.display = 'block';
+    if(addressLabel) addressLabel.textContent = 'العنوان بالتفصيل';
+    if(addressInput) addressInput.placeholder = 'مثال: شارع الجمهورية، بجوار مسجد النور';
+    return;
+  }
+
+  // إخفاء الحقول اللي مش لازمة لسرعة الإنجاز
+  if(lostFields) lostFields.style.display = 'block';
+  if(mapBlock) mapBlock.style.display = 'none';
+  if(videoBlock) videoBlock.style.display = 'none';
+
+  const mode = document.getElementById('fLostMode')?.value || 'lost';
+
+  if(mode === 'lost') {
+    if(titleLabel) titleLabel.textContent = 'ماذا فقدت؟ *';
+    if(titleInput) titleInput.placeholder = 'مثال: محفظة جلد بني، مفاتيح فيها ميدالية';
+    if(descInput) descInput.placeholder = 'مثال:\nلون ومواصفات الغرض\nمكان وتوقيت الفقد تقريبًا\nأي علامة مميزة تساعد في التعرف عليه';
+    if(descHint) descHint.textContent = '💡 كل ما وصفت الغرض بدقة كل ما سهل على اللي لقاه إنه يتعرف عليه';
+    if(addressLabel) addressLabel.textContent = 'مكان وتوقيت الفقد (اختياري)';
+    if(addressInput) addressInput.placeholder = 'مثال: شارع السوق، يوم الخميس بعد صلاة العصر';
+    if(rewardCheckWrap) rewardCheckWrap.style.display = 'flex';
+  } else {
+    if(titleLabel) titleLabel.textContent = 'ماذا وجدت؟ *';
+    if(titleInput) titleInput.placeholder = 'مثال: مفتاح لقيته بالقرب من السوق';
+    if(descInput) descInput.placeholder = 'مثال:\nلون ومواصفات الغرض\nمكان وتوقيت العثور عليه\nموجود عندك من امتى';
+    if(descHint) descHint.textContent = '💡 وصف دقيق هيسهّل على صاحب الغرض إنه يثبت ملكيته';
+    if(addressLabel) addressLabel.textContent = 'مكان وتوقيت العثور عليه (اختياري)';
+    if(addressInput) addressInput.placeholder = 'مثال: أمام مسجد النور، يوم الجمعة الصبح';
+    // اللي لقى حاجة مش محتاج يعرض مكافأة
+    if(rewardCheckWrap) rewardCheckWrap.style.display = 'none';
+    const hasRewardBox = document.getElementById('fHasReward');
+    if(hasRewardBox) hasRewardBox.checked = false;
+    const rewardAmountWrap = document.getElementById('fRewardAmountWrap');
+    if(rewardAmountWrap) rewardAmountWrap.style.display = 'none';
+  }
+}
+
+// ===== تحديث واجهة قسم الوفيات =====
+// ===== تحديد وضع قسم الوفيات: نعي عادي ولا توثيق راحلين =====
+function getDeathsMode() {
+  const catVal = document.getElementById('fCat')?.value;
+  if(catVal !== 'deaths') return null;
+  const subVal = document.getElementById('fSub')?.value || '';
+  if(subVal === 'توثيق الراحلين') return 'memorial';
+  if(subVal === 'نعي ووفيات') return 'announce';
+  if(addCatId === 'deaths_memorial') return 'memorial';
+  if(addCatId === 'deaths_announce') return 'announce';
+  return 'announce'; // افتراضي
+}
+
+function updateDeathsUI() {
+  const catVal = document.getElementById('fCat')?.value;
+  const deathsFields = document.getElementById('deathsFields');
+  const memorialFields = document.getElementById('memorialFields');
+  const deathDateField = document.getElementById('deathDateField');
+  const videoBlock = document.getElementById('fVideoLinksBlock');
+  const titleLabel = document.getElementById('fTitleLabel');
+  const titleInput = document.getElementById('fTitle');
+  const descLabel = document.getElementById('fDescLabel');
+  const descInput = document.getElementById('fDesc');
+  const descHint = document.getElementById('fDescHint');
+  const mapLabel = document.getElementById('fMapLabel');
+
+  if(catVal !== 'deaths') {
+    if(deathsFields) deathsFields.style.display = 'none';
+    if(memorialFields) memorialFields.style.display = 'none';
+    if(deathDateField) deathDateField.style.display = 'none';
+    if(mapLabel) mapLabel.textContent = 'رابط الخريطة';
+    // فيديو بيرجع يظهر إلا لو قسم مفقودات هو اللي مسيطر (updateLostUI بتتحكم فيه لوحدها)
+    if(videoBlock && catVal !== 'lost') videoBlock.style.display = 'block';
+    return;
+  }
+
+  const mode = getDeathsMode();
+  if(deathDateField) deathDateField.style.display = 'block';
+
+  if(mode === 'announce') {
+    if(deathsFields) deathsFields.style.display = 'block';
+    if(memorialFields) memorialFields.style.display = 'none';
+    if(videoBlock) videoBlock.style.display = 'none'; // مش لازم فيديوهات في نعي
+    if(mapLabel) mapLabel.textContent = '📍 موقع الجنازة أو العزاء (اختياري)';
+    if(titleLabel) titleLabel.textContent = 'اسم المتوفى *';
+    if(titleInput) titleInput.placeholder = 'مثال: المرحوم الحاج محمد أحمد علي';
+    if(descLabel) descLabel.textContent = 'تفاصيل إضافية (اختياري)';
+    if(descInput) descInput.placeholder = 'أي تفاصيل إضافية حابب تضيفها (اختياري)';
+    if(descHint) descHint.textContent = '💡 موعد الجنازة ومكان العزاء ليهم حقول مخصصة فوق — الحقل ده لأي تفاصيل تانية بس';
+  } else {
+    // توثيق الراحلين
+    if(deathsFields) deathsFields.style.display = 'none';
+    if(memorialFields) memorialFields.style.display = 'block';
+    if(videoBlock) videoBlock.style.display = 'block'; // فيديوهات مسموحة هنا للتخليد
+    if(mapLabel) mapLabel.textContent = 'رابط الخريطة (اختياري)';
+    if(titleLabel) titleLabel.textContent = 'اسم المتوفى *';
+    if(titleInput) titleInput.placeholder = 'مثال: المرحوم الحاج محمد أحمد علي';
+    if(descLabel) descLabel.textContent = 'كلمة أو ذكرى عن الفقيد (اختياري)';
+    if(descInput) descInput.placeholder = 'مثال: كان رحمه الله معروف بكرمه وحسن خلقه بين أهالي الحامول';
+    if(descHint) descHint.textContent = '💡 اكتب أي ذكرى أو كلمة حلوة — هتفضل محفوظة مع صوره وفيديوهاته';
   }
 }
 
@@ -3000,30 +3889,106 @@ function isValidMapUrl(url) {
          u.includes('google.com/maps');
 }
 
+function isValidVideoUrl(url) {
+  if(!url) return false;
+  if(!/^https?:\/\//i.test(url.trim())) return false;
+  const u = url.toLowerCase();
+  return u.includes('youtube.com') || u.includes('youtu.be') ||
+         u.includes('tiktok.com') || u.includes('facebook.com') ||
+         u.includes('fb.watch') || u.includes('instagram.com');
+}
+
+function checkVideoUrl(input) {
+  const v = input.value.trim();
+  if(!v) { input.style.borderColor = '#d97706'; return; }
+  input.style.borderColor = isValidVideoUrl(v) ? '#16a34a' : '#dc2626';
+}
+
+function toggleReviewTooltip(el) {
+  const tip = el.nextElementSibling;
+  if(!tip) return;
+  tip.style.display = tip.style.display === 'none' ? 'block' : 'none';
+}
+
+// ===== تنسيق تلقائي (Auto-list) لحقل التفاصيل عند الضغط على Enter =====
+function autoListOnEnter(e, textarea) {
+  if(e.key !== 'Enter' || e.shiftKey) return;
+  e.preventDefault();
+  const start = textarea.selectionStart;
+  const value = textarea.value;
+  const beforeCursor = value.substring(0, start);
+  const afterCursor = value.substring(start);
+  const lastNewline = beforeCursor.lastIndexOf('\n');
+  const currentLine = beforeCursor.substring(lastNewline + 1);
+  const bulletMatch = currentLine.match(/^(\s*)•\s?/);
+  let insert;
+  if(bulletMatch) {
+    const lineContent = currentLine.substring(bulletMatch[0].length).trim();
+    if(!lineContent) {
+      // سطر بولت فاضي — اقفل القايمة (شيل البولت وانزل سطر عادي)
+      const newBefore = beforeCursor.substring(0, lastNewline + 1);
+      textarea.value = newBefore + afterCursor;
+      textarea.selectionStart = textarea.selectionEnd = newBefore.length;
+      return;
+    }
+    insert = '\n• ';
+  } else if(currentLine.trim()) {
+    insert = '\n• ';
+  } else {
+    insert = '\n';
+  }
+  textarea.value = beforeCursor + insert + afterCursor;
+  const newPos = start + insert.length;
+  textarea.selectionStart = textarea.selectionEnd = newPos;
+}
+
 function checkMapUrl(input) {
   const hint = document.getElementById('mapUrlHint');
+  const preview = document.getElementById('mapUrlPreview');
   if(!hint) return;
   const v = input.value.trim();
   if(!v) {
     hint.style.background = '#f0fdf4';
     hint.style.color = '#64748b';
     hint.innerHTML = '📱 <b>إزاي تجيب رابط صح:</b><br>1️⃣ افتح تطبيق <b>Google Maps</b><br>2️⃣ ابحث عن موقعك<br>3️⃣ اضغط <b>مشاركة</b> ثم <b>نسخ الرابط</b><br>✅ الرابط الصح يبدأ بـ <b>maps.google.com</b> أو <b>maps.app.goo.gl</b>';
+    if(preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
   } else if(v.includes('goo.gl/app/maps') || (v.includes('firebase') && !v.includes('maps'))) {
     hint.style.background = '#fef2f2';
     hint.style.color = '#dc2626';
     hint.innerHTML = '❌ الرابط ده Firebase مش هيشتغل على الموبايل!<br>افتح Google Maps واضغط <b>مشاركة → نسخ الرابط</b>';
     input.style.borderColor = '#dc2626';
+    if(preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
   } else if(isValidMapUrl(v)) {
     hint.style.background = '#f0fdf4';
     hint.style.color = '#16a34a';
     hint.innerHTML = '✅ رابط صح — هيشتغل على الموبايل والكمبيوتر';
     input.style.borderColor = '#16a34a';
+    showMapLivePreview(v, preview);
   } else {
     hint.style.background = '#fff7ed';
     hint.style.color = '#92400e';
     hint.innerHTML = '⚠️ تأكد إن الرابط من Google Maps';
     input.style.borderColor = '#f59e0b';
+    if(preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
   }
+}
+
+// ===== معاينة فورية لرابط الخريطة (من غير أي مفتاح API — بنستخدم OpenStreetMap) =====
+function showMapLivePreview(url, preview) {
+  if(!preview) return;
+  // روابط Google Maps غالبًا بتحتوي إحداثيات بالشكل @lat,lng
+  const m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if(!m) {
+    // مفيش إحداثيات ظاهرة في الرابط (زي روابط maps.app.goo.gl المختصرة) — مينفعش نعمل معاينة من غير API key
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+    return;
+  }
+  const lat = m[1], lng = m[2];
+  const d = 0.006;
+  const bbox = (parseFloat(lng)-d) + ',' + (parseFloat(lat)-d) + ',' + (parseFloat(lng)+d) + ',' + (parseFloat(lat)+d);
+  preview.style.display = 'block';
+  preview.innerHTML = '<iframe style="width:100%;height:100%;border:0;" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox='+bbox+'&marker='+lat+','+lng+'"></iframe>';
 }
 
 function addVideoLink() {
@@ -3034,7 +3999,7 @@ function addVideoLink() {
   const div = document.createElement('div');
   div.className = 'video-link-row';
   div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
-  div.innerHTML = '<input type="url" placeholder="يوتيوب / تيك توك / فيسبوك ..." style="flex:1;padding:8px;border:1px solid #d97706;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">' +
+  div.innerHTML = '<input type="url" placeholder="يوتيوب / تيك توك / فيسبوك ..." oninput="checkVideoUrl(this)" style="flex:1;padding:8px;border:1px solid #d97706;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">' +
     '<button type="button" onclick="this.parentElement.remove()" style="background:#ef4444;color:white;border:none;width:34px;height:34px;border-radius:8px;font-size:18px;cursor:pointer;flex-shrink:0;">−</button>';
   container.appendChild(div);
 }
@@ -3082,6 +4047,43 @@ function previewAddImages(input) {
 }
 
 // ===== معاينة الإعلان قبل الإرسال =====
+// ===== رسالة تأكيد واضحة بعد إرسال الإعلان =====
+function showSubmitSuccessModal(title) {
+  let modal = document.getElementById('submitSuccessModal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'submitSuccessModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10002;display:flex;align-items:center;justify-content:center;padding:20px;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:white;border-radius:20px;max-width:380px;width:100%;padding:26px 22px;text-align:center;">
+      <div style="font-size:52px;margin-bottom:12px;">✅</div>
+      <div style="font-size:16px;font-weight:900;color:#166534;margin-bottom:8px;">تم استلام إعلانك!</div>
+      <div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:6px;">"${escapeHtml(title)}"</div>
+      <div style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:18px;">هيراجعه المشرف إسلام عنتر وعادةً بيظهر خلال ساعة تقريبًا في أوقات النهار.</div>
+      <button onclick="document.getElementById('submitSuccessModal').remove()" style="width:100%;background:#16a34a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">تمام 👍</button>
+    </div>`;
+}
+
+// ===== رسالة تأكيد واضحة بعد إرسال ملف بيت الحلال =====
+function showMarriageSubmitSuccessModal() {
+  let modal = document.getElementById('submitSuccessModal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'submitSuccessModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10002;display:flex;align-items:center;justify-content:center;padding:20px;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:white;border-radius:20px;max-width:380px;width:100%;padding:26px 22px;text-align:center;">
+      <div style="font-size:52px;margin-bottom:12px;">✅</div>
+      <div style="font-size:16px;font-weight:900;color:#be185d;margin-bottom:8px;">تم استلام طلبك!</div>
+      <div style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:18px;">هيراجعه المشرف إسلام عنتر وعادةً بيظهر خلال ساعة تقريبًا في أوقات النهار. بياناتك سرية ومحدش هيشوفها غير الإدارة.</div>
+      <button onclick="document.getElementById('submitSuccessModal').remove()" style="width:100%;background:#be185d;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">تمام 👍</button>
+    </div>`;
+}
+
 function showAdPreviewModal() {
   const title = document.getElementById('fTitle')?.value.trim() || '(من غير عنوان)';
   const desc = document.getElementById('fDesc')?.value.trim() || '';
@@ -3089,11 +4091,18 @@ function showAdPreviewModal() {
   const address = document.getElementById('fAddress')?.value.trim() || '';
   const salary = document.getElementById('fSalary')?.value.trim() || '';
   const jobStatus = document.getElementById('fJobStatus')?.value || '';
+  const priceOnRequest = document.getElementById('fPriceOnRequest')?.checked;
+  const price = priceOnRequest ? '' : (document.getElementById('fPrice')?.value.trim() || '');
+  const qty = document.getElementById('fQty')?.value.trim() || '';
+  const condition = document.getElementById('fCondition')?.value || '';
+  const color = document.getElementById('fColor')?.value.trim() || '';
+  const warranty = document.getElementById('fWarranty')?.value.trim() || '';
   const catId = document.getElementById('fCat')?.value;
   const subEl = document.getElementById('fSub');
   const sub = (subEl && subEl.style.display !== 'none') ? subEl.value : '';
   const cat = CATEGORIES.find(c => c.id === catId) || {icon:'📋', name:''};
   const mode = getJobsMode();
+  const imgCount = (typeof addSelectedFiles !== 'undefined' && addSelectedFiles) ? addSelectedFiles.length : 0;
 
   const descHtml = desc ? desc.split(/\n/).map(l => l.trim()).filter(Boolean).map(l => '<div style="padding:6px 0;border-bottom:1px solid #f1f5f9;">• ' + escapeHtml(l) + '</div>').join('') : '<div style="color:#94a3b8;">لسه ما كتبتش تفاصيل</div>';
 
@@ -3114,8 +4123,14 @@ function showAdPreviewModal() {
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
           <span style="background:var(--primary-light);color:var(--primary);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${cat.icon} ${cat.name}</span>
           ${sub ? `<span style="background:#f3f4f6;color:#555;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${escapeHtml(sub)}</span>` : ''}
+          ${imgCount ? `<span style="background:#f3f4f6;color:#555;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">🖼️ ${imgCount} صورة</span>` : ''}
         </div>
         <h3 style="font-size:16px;font-weight:900;margin-bottom:8px;">${escapeHtml(title)}</h3>
+        ${price ? `<div style="font-size:16px;font-weight:900;color:#16a34a;margin-bottom:8px;">💰 ${escapeHtml(price)} جنيه</div>` : (priceOnRequest ? `<div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:8px;">💬 تواصل للسعر</div>` : '')}
+        ${condition ? `<div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px;">🏷️ الحالة: ${escapeHtml(condition)}</div>` : ''}
+        ${color ? `<div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px;">🎨 اللون: ${escapeHtml(color)}</div>` : ''}
+        ${warranty ? `<div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px;">🛡️ الضمان: ${escapeHtml(warranty)}</div>` : ''}
+        ${qty ? `<div style="font-size:12px;color:#64748b;margin-bottom:8px;">📦 الكمية المتاحة: ${escapeHtml(qty)}</div>` : ''}
         ${salary ? `<div style="font-size:14px;font-weight:800;color:#1d4ed8;margin-bottom:8px;">💰 ${mode==='seeker'?'الراتب المتوقع':'الراتب المعروض'}: ${escapeHtml(salary)}</div>` : ''}
         ${jobStatus ? `<div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:8px;">📌 الحالة: ${escapeHtml(jobStatus)}</div>` : ''}
         ${address ? `<div style="font-size:12px;color:var(--gray);margin-bottom:8px;">📍 ${escapeHtml(address)}</div>` : ''}
@@ -3138,7 +4153,7 @@ async function submitNewAd() {
   const sub = (subEl && subEl.style.display !== 'none') ? subEl.value : '';
   if(!title) { showToast('اكتب عنوان الإعلان','error'); return; }
   // رقم التليفون اختياري في قسم الوفيات فقط
-  if(catId !== 'deaths' && (!phone || phone.length < 11)) { showToast('رقم التليفون ناقص','error'); return; }
+  if(catId !== 'deaths' && (!phone || !/^01[0-9]{9}$/.test(phone))) { showToast('رقم التليفون لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
   const btn = document.getElementById('fSubmit');
   btn.disabled=true; btn.textContent='جاري الإرسال...';
   try {
@@ -3157,11 +4172,22 @@ async function submitNewAd() {
       address: document.getElementById('fAddress')?.value.trim() || null,
       location_url: null,
       video_links: videoLks.length > 0 ? JSON.stringify(videoLks) : null,
-      price: document.getElementById('fPrice')?.value ? parseFloat(document.getElementById('fPrice').value) : null,
+      price: document.getElementById('fPriceOnRequest')?.checked ? null : (document.getElementById('fPrice')?.value ? parseFloat(document.getElementById('fPrice').value) : null),
+      price_on_request: document.getElementById('fPriceOnRequest')?.checked ? true : false,
       quantity: document.getElementById('fQty')?.value ? parseInt(document.getElementById('fQty').value) : null,
       condition: document.getElementById('fCondition')?.value || null,
+      color: document.getElementById('fColor')?.value.trim() || null,
+      warranty: document.getElementById('fWarranty')?.value.trim() || null,
       salary: catId === 'jobs' ? (document.getElementById('fSalary')?.value.trim() || null) : null,
-      job_status: catId === 'jobs' ? (document.getElementById('fJobStatus')?.value || null) : null
+      job_status: catId === 'jobs' ? (document.getElementById('fJobStatus')?.value || null) : null,
+      lost_mode: catId === 'lost' ? (document.getElementById('fLostMode')?.value || 'lost') : null,
+      reward: (catId === 'lost' && document.getElementById('fHasReward')?.checked) ? (document.getElementById('fRewardAmount')?.value.trim() || null) : null,
+      funeral_info: getDeathsMode() === 'announce' ? (document.getElementById('fFuneralInfo')?.value.trim() || null) : null,
+      condolence_info: getDeathsMode() === 'announce' ? (document.getElementById('fCondolenceInfo')?.value.trim() || null) : null,
+      relation: getDeathsMode() === 'announce' ? (document.getElementById('fRelation')?.value || null) : null,
+      death_date: catId === 'deaths' ? (document.getElementById('fDeathDate')?.value || null) : null,
+      opening_hours: catId === 'food' ? (document.getElementById('fOpeningHours')?.value.trim() || null) : null,
+      delivery: catId === 'food' ? (document.getElementById('fDelivery')?.value || null) : null
     };
     // إضافة رابط الخريطة بعد التحقق
     var locVal = document.getElementById('fLocation')?.value.trim() || '';
@@ -3171,6 +4197,14 @@ async function submitNewAd() {
       showToast('⚠️ رابط الخريطة مش صح — حطه من Google Maps', 'error');
       btn.disabled=false; btn.textContent='إرسال للمراجعة 🚀';
       return;
+    }
+    // التحقق من روابط الفيديو
+    for(var vi=0; vi<videoLks.length; vi++) {
+      if(!isValidVideoUrl(videoLks[vi])) {
+        showToast('⚠️ رابط الفيديو مش صح — لازم يكون من يوتيوب أو تيك توك أو فيسبوك أو انستجرام', 'error');
+        btn.disabled=false; btn.textContent='إرسال للمراجعة 🚀';
+        return;
+      }
     }
     console.log('Sending adData:', JSON.stringify(adData));
     const res = await fetch(SB_URL+'/rest/v1/ads', {
@@ -3185,9 +4219,16 @@ async function submitNewAd() {
 
     if(newAdId && addSelectedFiles.length > 0) {
       btn.textContent='جاري رفع الصور...';
+      const progWrap = document.getElementById('imgUploadProgressWrap');
+      const progBar = document.getElementById('imgUploadProgressBar');
+      const progPct = document.getElementById('imgUploadProgressPct');
+      const progLabel = document.getElementById('imgUploadProgressLabel');
+      // لو الرفع استغرق أكتر من ثانيتين، اظهر شريط التقدم
+      const showProgTimer = setTimeout(function(){ if(progWrap) progWrap.style.display = 'block'; }, 2000);
       let firstUrl = null;
       for(let i=0; i<addSelectedFiles.length; i++) {
         try {
+          if(progLabel) progLabel.textContent = 'جاري رفع الصورة ' + (i+1) + ' من ' + addSelectedFiles.length;
           const url = await uploadImage(addSelectedFiles[i]);
           if(i===0) firstUrl = url;
           await fetch(SB_URL+'/rest/v1/ad_images', {
@@ -3195,8 +4236,13 @@ async function submitNewAd() {
             headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Prefer':'return=minimal' },
             body: JSON.stringify({ad_id:newAdId, image_url:url})
           });
+          const pct = Math.round(((i+1)/addSelectedFiles.length)*100);
+          if(progBar) progBar.style.width = pct + '%';
+          if(progPct) progPct.textContent = pct + '%';
         } catch(imgErr) { console.error('Image upload error:', imgErr); }
       }
+      clearTimeout(showProgTimer);
+      if(progWrap) progWrap.style.display = 'none';
       if(firstUrl) {
         await fetch(SB_URL+`/rest/v1/ads?id=eq.${newAdId}`, {
           method:'PATCH',
@@ -3206,7 +4252,7 @@ async function submitNewAd() {
       }
     }
     closeAddModal();
-    showToast('✅ تم إرسال إعلانك!');
+    showSubmitSuccessModal(title);
     // إشعار واتساب
     const cat = CATEGORIES.find(c=>c.id===catId);
     const msg = `🔔 إعلان جديد على دليل الحامول!\n\nالقسم: ${cat?.name||catId}\n${sub?'التخصص: '+sub+'\n':''}العنوان: ${title}\n${desc?'التفاصيل: '+desc+'\n':''}التليفون: ${phone}\n\n⏳ في انتظار موافقتك`;
@@ -3252,7 +4298,45 @@ async function submitNewAd() {
   btn.disabled=false; btn.textContent='إرسال للمراجعة 🚀';
 }
 
+// ===== ضغط الصور قبل الرفع (تقليل الحجم بدون فقدان جودة ملحوظة) =====
+function compressImageFile(file, maxDim = 1600, quality = 0.75) {
+  return new Promise((resolve) => {
+    if(!file || !file.type || !file.type.startsWith('image/') || file.type === 'image/gif') {
+      resolve(file); // مش هنضغط GIF (بيفقد الحركة) أو ملفات مش صور
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const { width, height } = img;
+        // لو الصورة صغيرة بالفعل، مفيش داعي نضغطها
+        if(width <= maxDim && height <= maxDim && file.size < 400*1024) {
+          resolve(file);
+          return;
+        }
+        const scale = Math.min(1, maxDim / Math.max(width, height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if(!blob || blob.size >= file.size) { resolve(file); return; }
+          const newName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+          resolve(new File([blob], newName, {type:'image/jpeg', lastModified: Date.now()}));
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
 async function uploadImage(file) {
+  file = await compressImageFile(file);
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
   const safeExt = ['jpg','jpeg','png','gif','webp','bmp'].includes(ext) ? ext : 'jpg';
   const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${safeExt}`;
@@ -3323,6 +4407,7 @@ async function showAdminPanel(tab='pending') {
   const pending = allAds.filter(a=>a.status==='pending');
   const approved = allAds.filter(a=>a.status==='approved');
   const rejected = allAds.filter(a=>a.status==='rejected');
+  const pendingTeachers = pending.filter(a=>a.category==='teachers_hub').length;
 
   const tabList = [
     ['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],
@@ -3337,8 +4422,9 @@ async function showAdminPanel(tab='pending') {
         <span>⚙️ لوحة تحكم إسلام عنتر</span>
         <button onclick="adminLogout()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:6px;font-family:Cairo,sans-serif;font-size:11px;cursor:pointer;">خروج</button>
       </div>
+      ${pendingTeachers > 0 ? `<div onclick="showAdminPanel('pending')" style="background:#7c3aed;color:white;padding:6px 12px;font-size:12px;font-weight:700;text-align:center;cursor:pointer;">👨‍🏫 عندك ${pendingTeachers} منشور من مجتمع المدرسين في انتظار المراجعة</div>` : ''}
       <div style="display:flex;width:100%;background:white;border-bottom:2px solid var(--border);overflow-x:auto;">
-        ${tabList.map(([t,l])=>`<button onclick="showAdminPanel('${t}')" style="flex-shrink:0;padding:10px 8px;border:none;background:${tab===t?'#0284c7':'white'};color:${tab===t?'white':'var(--gray)'};font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">${l}</button>`).join('')}
+        ${tabList.map(([t,l])=>`<button onclick="showAdminPanel('${t}')" style="flex-shrink:0;padding:10px 8px;border:none;background:${tab===t?'#0284c7':'white'};color:${tab===t?'white':'var(--gray)'};font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;position:relative;">${l}${t==='pending'&&pendingTeachers>0?`<span style="position:absolute;top:2px;right:0;background:#ef4444;color:white;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:900;">${pendingTeachers}</span>`:''}</button>`).join('')}
       </div>
     </div>
     <div class="dyn-content" style="padding:12px;" id="adminContent">
@@ -4045,8 +5131,9 @@ function renderMarriageAdminCards(profiles) {
         ${p.requirements?`<div style="font-size:12px;color:var(--gray);margin-bottom:6px;line-height:1.5;">🎯 ${escapeHtml(p.requirements)}</div>`:''}
 
         <div style="background:#f0fdf4;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;font-weight:700;color:#166534;">
-          📞 ${p.phone||'—'}
+          📞 ${p.phone||'—'}${p.whatsapp?' | 💬 '+p.whatsapp:''}
         </div>
+        ${p.is_verified?`<div style="background:#dcfce7;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:11px;font-weight:700;color:#166534;">🛡️ متحقق منه — تم التواصل والتأكد من الجدية</div>`:''}
 
         ${p.card_image?`
           <div style="margin-bottom:8px;">
@@ -4067,6 +5154,7 @@ function renderMarriageAdminCards(profiles) {
           `:''}
           ${p.status==='approved'?`
             <button onclick="rejectMarriageProfile('${p.id}')" style="background:#fee2e2;color:var(--red);border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🗑️ إلغاء موافقة</button>
+            <button onclick="toggleMarriageVerified('${p.id}',${p.is_verified?'false':'true'})" style="background:${p.is_verified?'#f3f4f6':'#dcfce7'};color:${p.is_verified?'#64748b':'#166534'};border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">${p.is_verified?'↩️ إلغاء التوثيق':'🛡️ توثيق (تم التواصل)'}</button>
           `:''}
           ${p.status==='rejected'?`
             <button onclick="approveMarriageProfile('${p.id}')" style="background:#f0fdf4;color:var(--green);border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">↩️ استعادة</button>
@@ -4080,8 +5168,15 @@ function renderMarriageAdminCards(profiles) {
 }
 
 async function approveMarriageProfile(id) {
-  await sbFetch('PATCH', `marriage_profiles?id=eq.${id}`, {status:'approved', is_verified:true});
+  await sbFetch('PATCH', `marriage_profiles?id=eq.${id}`, {status:'approved'});
   showToast('✅ تم الموافقة على الملف');
+  loadAdminMarriage(document.getElementById('dynamicPage'));
+}
+
+// التوثيق منفصل عن الموافقة — بيتحط بعد ما الإدارة تتواصل فعليًا مع صاحب الملف وتتأكد من جديته
+async function toggleMarriageVerified(id, newState) {
+  await sbFetch('PATCH', `marriage_profiles?id=eq.${id}`, {is_verified: newState});
+  showToast(newState ? '🛡️ تم توثيق الملف' : 'تم إلغاء التوثيق');
   loadAdminMarriage(document.getElementById('dynamicPage'));
 }
 
@@ -4400,7 +5495,7 @@ async function loadAdminStatsPage(page, tab='stats') {
                 ` : ''}
                 ${tab==='pending' ? `
                   <button onclick="approveAd('${ad.id}')" style="flex:1;background:var(--green);color:white;border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">✅ موافقة</button>
-                  <button onclick="rejectAd('${ad.id}')" style="flex:1;background:var(--red);color:white;border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">❌ رفض</button>
+                  <button onclick="openRejectReasonModal('${ad.id}')" style="flex:1;background:var(--red);color:white;border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">❌ رفض</button>
                 ` : ''}
                 ${tab==='approved' ? `
                   <button onclick="rejectAd('${ad.id}')" style="background:#fee2e2;color:var(--red);border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🗑️ حذف</button>
@@ -4653,6 +5748,60 @@ async function approveAd(id) {
 async function rejectAd(id) {
   await sbFetch('PATCH',`ads?id=eq.${id}`,{status:'rejected'});
   showToast('❌ تم الرفض');
+  await loadAds();
+  showAdminPanel('pending');
+}
+
+// ===== رفض الإعلان مع ذكر السبب (وتنبيه صاحب الإعلان لو رقمه متوفر) =====
+function openRejectReasonModal(id) {
+  const ad = allAds.find(a => a.id === id);
+  const reasons = ['صورة غير واضحة','بيانات ناقصة أو غير كافية','السعر غير منطقي','مخالف لسياسة الموقع','إعلان مكرر','رقم تليفون غير صحيح','أخرى'];
+  let modal = document.getElementById('rejectReasonModal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'rejectReasonModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10001;display:flex;align-items:flex-end;justify-content:center;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:white;border-radius:18px 18px 0 0;max-width:480px;width:100%;padding:18px;max-height:85vh;overflow-y:auto;">
+      <div style="font-size:15px;font-weight:900;margin-bottom:4px;">❌ رفض الإعلان</div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:14px;">${ad ? escapeHtml(ad.title) : ''}</div>
+      <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">سبب الرفض</label>
+      <select id="rejectReasonSelect" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:10px;background:white;">
+        ${reasons.map(r=>`<option value="${r}">${r}</option>`).join('')}
+      </select>
+      <textarea id="rejectReasonNote" rows="2" placeholder="ملاحظة إضافية (اختياري)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:14px;resize:none;box-sizing:border-box;"></textarea>
+      <div style="display:flex;gap:8px;">
+        <button onclick="rejectAdWithReason('${id}')" style="flex:1;background:var(--red);color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">❌ تأكيد الرفض</button>
+        <button onclick="document.getElementById('rejectReasonModal').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>
+      </div>
+    </div>`;
+}
+
+async function rejectAdWithReason(id) {
+  const reason = document.getElementById('rejectReasonSelect')?.value || 'أخرى';
+  const note = document.getElementById('rejectReasonNote')?.value.trim() || '';
+  const fullReason = note ? `${reason} — ${note}` : reason;
+  const ad = allAds.find(a => a.id === id);
+
+  await sbFetch('PATCH', `ads?id=eq.${id}`, {status:'rejected', rejection_reason: fullReason});
+  document.getElementById('rejectReasonModal')?.remove();
+  showToast('❌ تم الرفض وحفظ السبب');
+
+  // تنبيه صاحب الإعلان بالسبب لو رقمه متوفر
+  if(ad && ad.phone && /^01[0-9]{9}$/.test(ad.phone)) {
+    const msg = `مرحبًا، للأسف تم رفض إعلانك "${ad.title}" في دليل الحامول.\n\nالسبب: ${fullReason}\n\nتقدر تعدّل الإعلان وتعيد إرساله للمراجعة.`;
+    try {
+      const a = document.createElement('a');
+      a.href = `https://wa.me/20${ad.phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(()=>document.body.removeChild(a), 500);
+    } catch(e) {}
+  }
+
   await loadAds();
   showAdminPanel('pending');
 }
@@ -4981,7 +6130,7 @@ function showFavorites() {
                 <div style="display:flex;gap:6px;align-items:center;">
                   <button onclick="toggleFav('${ad.id}');showFavorites()" style="background:#fee2e2;color:#dc2626;border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;">❤️</button>
                   <button class="btn-details" onclick="openAdDetails('${ad.id}')">التفاصيل</button>
-                  <a href="${waUrl}" target="_blank" class="btn-wa">واتساب</a>
+                  <a href="${waUrl}" target="_blank" class="btn-wa">💬 واتساب</a>
                 </div>
               </div>
             </div>
@@ -5046,7 +6195,7 @@ function showDeals() {
                   <button onclick="toggleFav('${ad.id}')" style="background:${isFav(ad.id)?'#fee2e2':'#f3f4f6'};color:${isFav(ad.id)?'#dc2626':'#aaa'};border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;">❤️</button>
                   ${isAdmin ? `<button onclick="toggleOffer('${ad.id}',${!ad.is_offer})" style="background:${ad.is_offer?'#fee2e2':'#fff7ed'};color:${ad.is_offer?'var(--red)':'var(--orange)'};border:none;padding:6px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">${ad.is_offer?'❌ إلغاء التمييز':'⭐ تمييز كعرض'}</button>` : ''}
                   <button class="btn-details" onclick="openAdDetails('${ad.id}')">التفاصيل</button>
-                  <a href="${waUrl}" target="_blank" class="btn-wa" onclick="trackStat('${ad.id}','whatsapp')">واتساب</a>
+                  <a href="${waUrl}" target="_blank" class="btn-wa" onclick="trackStat('${ad.id}','whatsapp')">💬 واتساب</a>
                 </div>
               </div>
             </div>
@@ -5159,7 +6308,7 @@ async function doGlobalSearch() {
             ${ad.description?`<div class="ad-desc">${ad.description.substring(0,80)}...</div>`:''}
             <div style="margin-top:8px;display:flex;gap:6px;">
               <button class="btn-details" onclick="event.stopPropagation();openAdDetails('${ad.id}')">التفاصيل</button>
-              ${phone?`<a href="https://wa.me/${phone}?text=%D8%A7%D9%84%D8%B3%D9%84%D8%A7%D9%85+%D8%B9%D9%84%D9%8A%D9%83%D9%85%D8%8C+%D8%B1%D8%A3%D9%8A%D8%AA+%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D9%83%D9%85+%D8%B9%D9%84%D9%89+%D8%AF%D9%84%D9%8A%D9%84+%D8%A7%D9%84%D8%AD%D8%A7%D9%85%D9%88%D9%84+%D9%88%D8%A3%D8%B1%D9%8A%D8%AF+%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1" target="_blank" class="btn-wa" onclick="event.stopPropagation()">واتساب</a>`:''}
+              ${phone?`<a href="https://wa.me/${phone}?text=%D8%A7%D9%84%D8%B3%D9%84%D8%A7%D9%85+%D8%B9%D9%84%D9%8A%D9%83%D9%85%D8%8C+%D8%B1%D8%A3%D9%8A%D8%AA+%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D9%83%D9%85+%D8%B9%D9%84%D9%89+%D8%AF%D9%84%D9%8A%D9%84+%D8%A7%D9%84%D8%AD%D8%A7%D9%85%D9%88%D9%84+%D9%88%D8%A3%D8%B1%D9%8A%D8%AF+%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1" target="_blank" class="btn-wa" onclick="event.stopPropagation()">💬 واتساب</a>`:''}
             </div>
           </div>
         </div>`;
@@ -5675,6 +6824,31 @@ function showEmergencyPage() {
 }
 
 // ========== بيت الحلال ==========
+// ===== نصائح للتعارف الشرعي =====
+function renderMarriageTipsCard() {
+  return `
+    <div id="marriageTipsCard" style="background:#fffbeb;border-bottom:2px solid #fde68a;padding:14px 16px;">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <span style="font-size:22px;flex-shrink:0;">🕌</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:900;color:#92400e;margin-bottom:6px;">نصائح للتعارف الشرعي</div>
+          <ul style="margin:0;padding-right:16px;font-size:12px;color:#78350f;line-height:1.9;">
+            <li>التواصل الأول دايمًا بإشراف الإدارة — محدش يشارك رقمه مباشرة قبل الموافقة</li>
+            <li>خلي أهلك في الصورة من البداية — الاستخارة والمشورة بركة</li>
+            <li>الصدق في البيانات أهم حاجة — التعارف مبني على الثقة</li>
+            <li>خد وقتك في التعارف، ومتستعجلش قرار بهذا الحجم</li>
+          </ul>
+        </div>
+        <button onclick="dismissMarriageTips()" style="background:transparent;border:none;color:#92400e;font-size:16px;cursor:pointer;flex-shrink:0;">✕</button>
+      </div>
+    </div>`;
+}
+function dismissMarriageTips() {
+  localStorage.setItem('marriage_tips_seen', '1');
+  var box = document.getElementById('marriageTipsBox');
+  if(box) box.innerHTML = '';
+}
+
 function showMarriagePage(filter='all') {
   sessionStorage.setItem('dynState', JSON.stringify({type:'marriage', filter}));
   try{history.pushState({dyn:1},'');}catch(e){}
@@ -5694,6 +6868,8 @@ function showMarriagePage(filter='all') {
       <div style="font-size:12px;opacity:.85;margin-top:4px;">منصة آمنة وموثوقة للتعارف الشرعي</div>
       <div style="font-size:11px;opacity:.7;margin-top:4px;">البيانات سرية — التواصل بموافقة الطرفين فقط</div>
     </div>
+
+    <div id="marriageTipsBox">${localStorage.getItem('marriage_tips_seen') ? '' : renderMarriageTipsCard()}</div>
 
     <!-- تابات الجنس -->
     <div style="display:flex;background:white;border-bottom:2px solid var(--border);">
@@ -5744,9 +6920,8 @@ function showMarriagePage(filter='all') {
           <select id="mFilterReligion" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">
             <option value="">الكل</option>
             <option>ملتزم</option>
-            <option>متوسط</option>
-            <option>منتظم</option>
-            <option>متقطع</option>
+            <option>متوسط الالتزام</option>
+            <option>محافظ</option>
           </select>
         </div>
         <input type="hidden" id="mFilterMarriageType" value="">
@@ -5775,7 +6950,7 @@ function showMarriagePage(filter='all') {
 
 async function loadMarriageProfiles(filter='all') {
   try {
-    let path = `marriage_profiles?select=id,ref_code,gender,age,education,job,social_status,city,religiosity,about,requirements,status,is_verified,card_image,marriage_type,children${isAdmin?',phone,personal_photo':''}&order=created_at.desc`;
+    let path = `marriage_profiles?select=id,ref_code,gender,age,education,job,social_status,city,religiosity,about,requirements,status,is_verified,card_image,marriage_type,children${isAdmin?',phone,whatsapp,personal_photo':''}&order=created_at.desc`;
     if(filter !== 'all') path += `&gender=eq.${filter}`;
     if(!isAdmin) path += '&status=eq.approved';
     const profiles = await sbFetch('GET', path) || [];
@@ -5891,7 +7066,7 @@ async function showMyMarriageProfile() {
     const p = profiles[0];
     const isMale = p.gender === 'male';
     const statusColor = p.status==='pending'?'#f59e0b':p.status==='approved'?'#10b981':'#ef4444';
-    const statusLabel = p.status==='pending'?'⏳ في انتظار المراجعة':p.status==='approved'?'✅ ملفك ظاهر للناس':'❌ تم رفض الملف';
+    const statusLabel = p.status==='pending'?'⏳ جاري مراجعة طلبك من قبل الإدارة':p.status==='approved'?'✅ تم قبول طلبك':'❌ تم رفض الملف';
     const bgColor = isMale ? '#dbeafe' : '#fce7f3';
     const textColor = isMale ? '#1e40af' : '#be185d';
 
@@ -6067,7 +7242,7 @@ async function submitContactRequest(profileId) {
   const phone = document.getElementById('reqPhone').value.trim();
   const message = document.getElementById('reqMsg').value.trim();
   if(!name) { showToast('اكتب اسمك','error'); return; }
-  if(phone.length < 11) { showToast('رقم تليفون صحيح','error'); return; }
+  if(!phone || !/^01[0-9]{9}$/.test(phone)) { showToast('رقم التليفون لازم يبدأ بـ 01 ويتكون من 11 رقم','error'); return; }
   const btn = document.getElementById('reqSubmitBtn');
   btn.disabled = true; btn.textContent = '⏳ جاري الإرسال...';
   try {
@@ -6132,13 +7307,14 @@ function openMarriageDetail(profileId) {
         ${isAdmin?`
           <div style="background:#fff7f0;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid #fed7aa;">
             <div style="font-size:11px;color:#ea580c;font-weight:700;margin-bottom:8px;">🔐 بيانات الإدارة</div>
-            <div style="font-size:15px;font-weight:800;color:#166534;margin-bottom:10px;">📞 ${p.phone||'—'}</div>
+            <div style="font-size:15px;font-weight:800;color:#166534;margin-bottom:10px;">📞 ${p.phone||'—'}${p.whatsapp?' | 💬 '+p.whatsapp:''}</div>
             ${p.card_image?`<div style="margin-bottom:10px;"><div style="font-size:11px;color:#be185d;font-weight:700;margin-bottom:5px;">🖼️ صورة البطاقة</div><img src="${p.card_image}" onclick="openImgFull(this.src)" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;cursor:zoom-in;" onerror="this.parentElement.style.display='none'"></div>`:''}
             ${p.personal_photo?`<div><div style="font-size:11px;color:#be185d;font-weight:700;margin-bottom:5px;">🔒 الصورة الشخصية — للإدارة فقط</div><img src="${p.personal_photo}" onclick="openImgFull(this.src)" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;cursor:zoom-in;" onerror="this.parentElement.style.display='none'"></div>`:''}
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             ${p.status==='pending'?`<button onclick="approveMarriage('${p.id}')" style="flex:1;background:#10b981;color:white;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">✅ موافقة</button>`:''}
-            ${p.status==='approved'?`<button onclick="rejectMarriage('${p.id}')" style="flex:1;background:#fee2e2;color:#dc2626;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">❌ إلغاء موافقة</button>`:''}
+            ${p.status==='approved'?`<button onclick="rejectMarriage('${p.id}')" style="flex:1;background:#fee2e2;color:#dc2626;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">❌ إلغاء موافقة</button>` +
+            `<button onclick="toggleMarriageVerified('${p.id}',${p.is_verified?'false':'true'})" style="flex:1;background:${p.is_verified?'#f3f4f6':'#dcfce7'};color:${p.is_verified?'#64748b':'#166534'};border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${p.is_verified?'↩️ إلغاء التوثيق':'🛡️ توثيق'}</button>`:''}
             <button onclick="deleteMarriage('${p.id}')" style="background:#fee2e2;color:#dc2626;border:none;padding:10px 14px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">🗑️</button>
             ${p.phone?`<a href="https://wa.me/20${p.phone.replace(/^0/,'')}" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#25D366;color:white;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-decoration:none;padding:10px;">📞 واتساب</a>`:''}
           </div>
@@ -6156,7 +7332,7 @@ function openMarriageDetail(profileId) {
 }
 
 async function approveMarriage(id) {
-  await sbFetch('PATCH', `marriage_profiles?id=eq.${id}`, {status:'approved', is_verified:true});
+  await sbFetch('PATCH', `marriage_profiles?id=eq.${id}`, {status:'approved'});
   showToast('✅ تم الموافقة');
   document.getElementById('marriageDetailDrawer')?.remove();
   loadMarriageProfiles();
@@ -6212,7 +7388,7 @@ async function applyMarriageFilters() {
   const mType = document.getElementById('mFilterMarriageType')?.value || '';
 
   // بناء الـ query
-  let path = `marriage_profiles?select=id,ref_code,gender,age,education,job,social_status,city,religiosity,about,requirements,status,is_verified,card_image,marriage_type,children${isAdmin?',phone,personal_photo':''}&status=eq.approved&order=created_at.desc`;
+  let path = `marriage_profiles?select=id,ref_code,gender,age,education,job,social_status,city,religiosity,about,requirements,status,is_verified,card_image,marriage_type,children${isAdmin?',phone,whatsapp,personal_photo':''}&status=eq.approved&order=created_at.desc`;
   if(gender !== 'all') path += `&gender=eq.${gender}`;
   if(city) path += `&city=eq.${encodeURIComponent(city)}`;
   if(social) path += `&social_status=eq.${encodeURIComponent(social)}`;
@@ -6422,7 +7598,7 @@ function submitAdvertiseRequest(packageName, price) {
   const business = document.getElementById('advBusiness')?.value.trim();
   const notes = document.getElementById('advNotes')?.value.trim();
   if(!name) { showToast('اكتب اسمك أو اسم المحل','error'); return; }
-  if(!phone || phone.length < 11) { showToast('رقم تليفون صحيح','error'); return; }
+  if(!phone || !/^01[0-9]{9}$/.test(phone)) { showToast('رقم التليفون لازم يبدأ بـ 01 ويتكون من 11 رقم','error'); return; }
   const msg = `📢 طلب إعلان جديد في دليل الحامول!\n\n🏪 الاسم: ${name}\n📞 الرقم: ${phone}\n💼 النشاط: ${business||'—'}\n💎 الباقة: ${packageName} — ${price}${notes?'\n📝 ملاحظات: '+notes:''}\n\n⏳ في انتظار تواصلك معه`;
   document.getElementById('advertiseFormModal').remove();
   showToast('✅ تم الإرسال! سنتواصل معك قريباً');
@@ -6447,7 +7623,12 @@ function showMarriageForm() {
           <div style="font-size:12px;color:var(--gray);margin-top:4px;">بياناتك سرية — التواصل بإشراف المشرف فقط</div>
         </div>
 
-        <div class="fg"><label>الجنس *</label><select id="mGender"><option value="male">👨 طالب زواج</option><option value="female">👩 طالبة زواج</option></select></div>
+        <div style="background:#f0fdf4;border-radius:10px;padding:10px 12px;margin-bottom:14px;border:1px solid #bbf7d0;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:16px;">🔒</span>
+          <p style="font-size:11px;color:#166534;line-height:1.6;margin:0;font-weight:700;">بياناتك مشفرة تمامًا ولن تظهر لأي مستخدم آخر</p>
+        </div>
+
+        <div class="fg"><label>أنا أبحث عن *</label><select id="mGender"><option value="male">👨 طالب زواج</option><option value="female">👩 طالبة زواج</option></select></div>
         <div class="fg"><label>السن *</label><input type="number" id="mAge" placeholder="مثال: 25" min="18" max="70"></div>
         <div class="fg"><label>البلد / المنطقة *</label><select id="mCity">
           <option value="الحامول">الحامول</option>
@@ -6483,10 +7664,11 @@ function showMarriageForm() {
         </select></div>
         <div class="fg"><label>المؤهل</label><select id="mEducation"><option value="ابتدائي">ابتدائي</option><option value="إعدادي">إعدادي</option><option value="ثانوي">ثانوي / دبلوم</option><option value="جامعي">جامعي</option><option value="فوق الجامعي">فوق الجامعي</option></select></div>
         <div class="fg"><label>المهنة</label><input type="text" id="mJob" placeholder="مدرس، موظف، تاجر..."></div>
-        <div class="fg"><label>الالتزام الديني</label><select id="mReligiosity"><option value="ملتزم">ملتزم / ملتزمة</option><option value="متوسط">متوسط</option><option value="منتظم">منتظم في العبادات</option><option value="متقطع">متقطع</option></select></div>
+        <div class="fg"><label>الالتزام الديني</label><select id="mReligiosity"><option value="ملتزم">ملتزم / ملتزمة</option><option value="متوسط الالتزام">متوسط الالتزام</option><option value="محافظ">محافظ</option></select></div>
         <div class="fg"><label>نبذة عنك</label><textarea id="mAbout" rows="3" placeholder="اكتب نبذة مختصرة..."></textarea></div>
         <div class="fg"><label>المواصفات المطلوبة</label><textarea id="mRequirements" rows="3" placeholder="مواصفات الشريك..."></textarea></div>
         <div class="fg"><label>رقم التليفون (سري — للمشرف فقط) *</label><input type="tel" id="mPhone" placeholder="01xxxxxxxxx" maxlength="11"></div>
+        <div class="fg"><label>رقم الواتساب (سري — للمشرف فقط، اختياري لو نفس رقم التليفون)</label><input type="tel" id="mWhatsapp" placeholder="01xxxxxxxxx" maxlength="11"></div>
 
         <!-- صورة البطاقة - إلزامية -->
         <div class="fg">
@@ -6525,6 +7707,10 @@ function showMarriageForm() {
         <div style="background:#fef9c3;border-radius:10px;padding:12px;margin-bottom:14px;border:1px solid #fde68a;">
           <p style="font-size:12px;color:#92400e;line-height:1.7;">⚠️ رقمك وصورتك الشخصية لن يُشاركا إلا بموافقتك وإشراف الإدارة. ملفك يظهر بعد المراجعة.</p>
         </div>
+        <label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:14px;cursor:pointer;">
+          <input type="checkbox" id="mAgree" style="width:18px;height:18px;margin-top:1px;flex-shrink:0;accent-color:#be185d;">
+          <span style="font-size:12px;color:#374151;line-height:1.6;">أوافق على <strong>سياسة الخصوصية</strong> و<strong>شروط الاستخدام</strong> الخاصة بمنصة دليل الحامول *</span>
+        </label>
         <button onclick="submitMarriageProfile()" style="width:100%;background:#be185d;color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:15px;font-weight:900;cursor:pointer;" id="mSubmit">💍 إرسال للمراجعة</button>
       </div>
     </div>`;
@@ -6568,6 +7754,7 @@ function removeMPersonal() {
 }
 
 async function uploadMarriageImage(file, type='card') {
+  file = await compressImageFile(file);
   const ext = file.name.split('.').pop().toLowerCase();
   const fileName = `marriage/${type}_${Date.now()}_${Math.random().toString(36).substring(2)}.${ext}`;
   const res = await fetch(`${SB_URL}/storage/v1/object/ads-images/${fileName}`, {
@@ -6632,8 +7819,12 @@ function checkMarriageNotifs() {
 async function submitMarriageProfile() {
   const age = parseInt(document.getElementById('mAge').value);
   const phone = document.getElementById('mPhone').value.trim();
+  const whatsapp = document.getElementById('mWhatsapp')?.value.trim() || '';
+  const agree = document.getElementById('mAgree')?.checked;
   if(!age||age<18) { showToast('السن لازم 18+','error'); return; }
-  if(phone.length<11) { showToast('رقم تليفون صحيح','error'); return; }
+  if(!phone || !/^01[0-9]{9}$/.test(phone)) { showToast('رقم التليفون لازم يبدأ بـ 01 ويتكون من 11 رقم','error'); return; }
+  if(whatsapp && !/^01[0-9]{9}$/.test(whatsapp)) { showToast('رقم الواتساب لازم يبدأ بـ 01 ويتكون من 11 رقم','error'); return; }
+  if(!agree) { showToast('لازم توافق على سياسة الخصوصية وشروط الاستخدام أولاً','error'); return; }
 
   const btn = document.getElementById('mSubmit');
   btn.disabled=true;
@@ -6670,7 +7861,7 @@ async function submitMarriageProfile() {
       religiosity: document.getElementById('mReligiosity').value,
       about: document.getElementById('mAbout').value.trim()||null,
       requirements: document.getElementById('mRequirements').value.trim()||null,
-      phone, city: document.getElementById('mCity').value,
+      phone, whatsapp: whatsapp || null, city: document.getElementById('mCity').value,
       marriage_type: document.getElementById('mMarriageType').value,
       children: hasChildren,
       status:'pending', card_image, personal_photo,
@@ -6678,7 +7869,7 @@ async function submitMarriageProfile() {
     });
 
     document.getElementById('addModal').classList.remove('active');
-    showToast('✅ تم الإرسال! سيظهر بعد المراجعة');
+    showMarriageSubmitSuccessModal();
 
     // إشعار داخل التطبيق للأدمن
     addMarriageNotification('new_profile', gender==='male'?'طالب زواج':'طالبة زواج', age);
@@ -6899,7 +8090,7 @@ async function submitAddTrader() {
   if(!sec){ showToast('اختار القسم الأول ☝️', 'error'); document.getElementById('ta_sec').focus(); return; }
   if(!prod){ showToast('اكتب اسم المنتج', 'error'); return; }
   if(!name){ showToast('اكتب اسم التاجر', 'error'); return; }
-  if(!phone){ showToast('اكتب رقم الموبايل', 'error'); return; }
+  if(!phone || !/^01[0-9]{9}$/.test(phone)){ showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
   if(!pass){ showToast('اكتب كلمة سر التاجر', 'error'); return; }
   if(!price || isNaN(parseFloat(price))){ showToast('اكتب السعر', 'error'); return; }
   try {
@@ -7601,6 +8792,9 @@ function showNewsPage() {
 function showCommunityPageGeneric(communityId, title, color1, color2, backFnName) {
   sessionStorage.setItem('dynState', JSON.stringify({type:communityId}));
   try{history.pushState({dyn:1},'');}catch(e){}
+  window._communityFilter2 = 'all';
+  window._communitySearch2 = '';
+  window._communitySort2 = 'recent';
   const page = document.getElementById('dynamicPage');
   page.innerHTML = `
     <div class="dyn-header" style="background:linear-gradient(135deg,${color1},${color2});">
@@ -7623,6 +8817,14 @@ function showCommunityPageGeneric(communityId, title, color1, color2, backFnName
           ${t.icon} ${t.label}
         </button>`).join('')}
       </div>
+      <!-- بحث وفرز -->
+      <div style="display:flex;gap:8px;padding:10px 16px;background:#fafafa;border-bottom:1px solid var(--border);">
+        <input type="text" id="communitySearchInput2" placeholder="🔍 ابحث في الأخبار والمناقشات..." oninput="window._communitySearch2=this.value;loadCommunityPostsGeneric('${communityId}',null,null)" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;box-sizing:border-box;">
+        <select onchange="window._communitySort2=this.value;loadCommunityPostsGeneric('${communityId}',null,null)" style="padding:8px;border:1px solid var(--border);border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;background:white;">
+          <option value="recent">🕐 الأحدث</option>
+          <option value="popular">🔥 الأكثر تفاعلاً</option>
+        </select>
+      </div>
       <div id="communityPosts2" style="padding:12px 16px;">
         <div style="text-align:center;padding:20px;"><div class="spinner"></div></div>
       </div>
@@ -7634,37 +8836,74 @@ function showCommunityPageGeneric(communityId, title, color1, color2, backFnName
 }
 
 async function loadCommunityPostsGeneric(communityId, filter, btn) {
+  if(filter) window._communityFilter2 = filter;
   if(btn) {
     document.querySelectorAll('[id^="ctab2_"]').forEach(b=>{ b.style.color='rgba(255,255,255,.6)'; b.style.borderBottom='2px solid transparent'; });
     btn.style.color='white'; btn.style.borderBottom='2px solid white';
   }
+  const activeFilter = window._communityFilter2 || 'all';
   const cont = document.getElementById('communityPosts2');
   if(!cont) return;
   cont.innerHTML = skeletonCards(3);
   try {
-    let path = `community_posts?select=*&order=created_at.desc&category2=eq.${communityId}`;
-    // استخدم notes field لتخزين community id
-    const all = await sbFetch('GET', `community_posts?select=*&order=created_at.desc`) || [];
-    const posts = all.filter(p => (p.notes||'').startsWith(communityId) && (filter==='all'||p.category===filter));
-    renderCommunityPostsInto(posts, cont, communityId);
+    let path = `community_posts?select=*&notes=eq.${encodeURIComponent(communityId)}&order=created_at.desc`;
+    if(activeFilter !== 'all') path += `&category=eq.${encodeURIComponent(activeFilter)}`;
+    let posts = await sbFetch('GET', path) || [];
+    const q = (window._communitySearch2||'').trim().toLowerCase();
+    if(q) posts = posts.filter(p => (p.title||'').toLowerCase().includes(q) || (p.content||'').toLowerCase().includes(q));
+    posts = sortCommunityPosts(posts, window._communitySort2||'recent');
+    renderCommunityPostsInto(posts, cont, communityId, q);
   } catch(e) {
     cont.innerHTML = `<div style="text-align:center;padding:30px;color:var(--gray);">تعذر التحميل</div>`;
   }
 }
 
-function renderCommunityPostsInto(posts, cont, communityId) {
+function renderCommunityPostsInto(posts, cont, communityId, searchQuery) {
   if(!posts.length) {
+    if(communityId === 'doctors_community' && !searchQuery) {
+      cont.innerHTML = renderDoctorsCommunityEmptyState();
+      return;
+    }
     cont.innerHTML = `
       <div style="text-align:center;padding:60px 20px;color:var(--gray);">
         <div style="font-size:48px;margin-bottom:12px;">💬</div>
-        <p style="font-size:15px;font-weight:700;">لا توجد مواضيع بعد</p>
-        <button onclick="openNewPostModal('${communityId}')" style="margin-top:14px;background:#dc2626;color:white;border:none;padding:10px 20px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">+ ابدأ موضوع</button>
+        <p style="font-size:15px;font-weight:700;">${searchQuery?'مفيش نتائج للبحث ده':'لا توجد مواضيع بعد'}</p>
+        ${!searchQuery?`<button onclick="openNewPostModal('${communityId}')" style="margin-top:14px;background:#dc2626;color:white;border:none;padding:10px 20px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">+ ابدأ موضوع</button>`:''}
       </div>`;
     return;
   }
-  const catColors = {'سؤال':'#dbeafe:#1d4ed8','نقاش':'#dcfce7:#15803d','مشاركة':'#fef3c7:#92400e','طلب مساعدة':'#fee2e2:#dc2626'};
   const deviceId = getDeviceId();
   cont.innerHTML = posts.map(p => renderPostCard(p, deviceId)).join('');
+  checkMyLikes(posts.map(p=>p.id));
+}
+
+// ===== محتوى افتراضي (أسئلة شائعة) لتشجيع المشاركة لما مجتمع الأطباء يكون فاضي =====
+function renderDoctorsCommunityEmptyState() {
+  const faqs = [
+    {icon:'🩺', q:'إزاي أختار دكتور أطفال كويس في الحامول؟', a:'اسأل هنا وهيرد عليك أهالي جربوا قبلك — أو دوّر في قسم "أطباء" على تقييمات ومراجعات.'},
+    {icon:'💊', q:'فيه بديل لدواء معين نفد من الصيدليات؟', a:'اسأل المجتمع، غالبًا حد هيعرف صيدلية عندها البديل أو الدواء نفسه.'},
+    {icon:'🏥', q:'أقرب مستشفى فيه طوارئ 24 ساعة فين؟', a:'شارك تجربتك أو اسأل — المعلومة دي بتفرق وقت الحاجة.'},
+    {icon:'👶', q:'مواعيد التطعيمات وجدول المتابعة الدوري؟', a:'اطرح سؤالك وهيفيدك دكاترة وأمهات في نفس المنطقة.'},
+  ];
+  return `
+    <div style="padding:8px 4px 24px;">
+      <div style="text-align:center;padding:30px 20px 20px;color:var(--gray);">
+        <div style="font-size:44px;margin-bottom:10px;">🩺</div>
+        <p style="font-size:15px;font-weight:900;color:#1e293b;">لسه المجتمع لحد دلوقتي فاضي — كن أول من يسأل!</p>
+        <p style="font-size:12px;margin-top:6px;">دي أمثلة على أسئلة ممكن تفيد أهالي الحامول:</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        ${faqs.map(f => `
+        <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:12px;padding:12px 14px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="font-size:18px;">${f.icon}</span>
+            <span style="font-size:13px;font-weight:800;color:#0f766e;">${f.q}</span>
+          </div>
+          <div style="font-size:12px;color:#64748b;line-height:1.6;padding-right:26px;">${f.a}</div>
+        </div>`).join('')}
+      </div>
+      <button onclick="openNewPostModal('doctors_community')" style="display:block;margin:0 auto;background:#0891b2;color:white;border:none;padding:12px 24px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">+ اطرح سؤالك دلوقتي</button>
+    </div>`;
 }
 
 // CHARITY PAGE
@@ -7739,7 +8978,7 @@ function showCharityOrgs() {
               <div class="ad-desc">${ad.description||''}</div>
               <div style="margin-top:8px;display:flex;gap:6px;">
                 <button class="btn-details" onclick="event.stopPropagation();openAdDetails('${ad.id}')">التفاصيل</button>
-                ${phone?`<a href="https://wa.me/${phone}" target="_blank" class="btn-wa" onclick="event.stopPropagation()">تواصل</a>`:''}
+                ${phone?`<a href="https://wa.me/${phone}" target="_blank" class="btn-wa" onclick="event.stopPropagation()">💬 واتساب</a>`:''}
               </div>
             </div>
           </div>`;
@@ -7882,7 +9121,7 @@ function showCharityPage() {
               <div class="ad-desc">${ad.description||''}</div>
               <div style="margin-top:8px;display:flex;gap:6px;">
                 <button class="btn-details" onclick="openAdDetails('${ad.id}')">التفاصيل</button>
-                ${phone?`<a href="https://wa.me/${phone}" target="_blank" class="btn-wa">تواصل</a>`:''}
+                ${phone?`<a href="https://wa.me/${phone}" target="_blank" class="btn-wa">💬 واتساب</a>`:''}
               </div>
             </div>
           </div>`;
@@ -8012,13 +9251,15 @@ function showTeachersHub() {
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
-  loadCatBanner('teachers_hub', subName);
+  loadCatBanner('teachers_hub', null);
 }
 
 async function showTeacherAds(subName) {
   await loadAds();
-  const filtered = allAds.filter(a => a.status==='approved' && (a.subcategory===subName || a.title?.includes(subName)));
+  window._teacherAdsSubName = subName;
+  window._teacherAdsAll = allAds.filter(a => a.status==='approved' && (a.subcategory===subName || a.title?.includes(subName)));
   const fakeCat = {id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:[]};
+  const isTeacherRequest = subName === 'مطلوب مدرس';
   const page = document.getElementById('dynamicPage');
   page.innerHTML = `
     <div class="dyn-header" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
@@ -8026,12 +9267,34 @@ async function showTeacherAds(subName) {
       <span>👨‍🏫 ${subName}</span>
       <button onclick="openAddModal('teachers_hub','${subName}')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ أضف</button>
     </div>
+    <div style="background:white;padding:10px 16px;border-bottom:1px solid var(--border);">
+      <input type="text" id="teacherAdsSearch" placeholder="🔍 ابحث في ${subName}..." oninput="filterTeacherAds()" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;">
+    </div>
     <div class="dyn-content" style="padding:16px 16px 80px;" id="adsContent">
-      ${renderAdsList(filtered, fakeCat)}
+      ${isTeacherRequest ? `
+      <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:14px;padding:14px;margin-bottom:16px;border:1px solid #fbbf24;display:flex;align-items:flex-start;gap:10px;">
+        <span style="font-size:22px;flex-shrink:0;">💡</span>
+        <div>
+          <div style="font-size:13px;font-weight:900;color:#92400e;margin-bottom:3px;">محتاج مدرس؟</div>
+          <div style="font-size:12px;color:#78350f;line-height:1.6;">اكتب تفاصيل طلبك بدقة (المادة، المرحلة الدراسية، المنطقة، والمواعيد المناسبة) لضمان استجابة المدرسين بسرعة</div>
+        </div>
+      </div>` : ''}
+      ${renderAdsList(window._teacherAdsAll, fakeCat)}
     </div>`;
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
   loadCatBanner('teachers_hub', subName);
+}
+
+function filterTeacherAds() {
+  const q = (document.getElementById('teacherAdsSearch')?.value || '').trim().toLowerCase();
+  const all = window._teacherAdsAll || [];
+  const fakeCat = {id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:[]};
+  const filtered = q ? all.filter(a => (a.title||'').toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q)) : all;
+  const listWrap = document.getElementById('adsContent');
+  if(!listWrap) return;
+  const tipHtml = listWrap.querySelector('div[style*="fef3c7"]');
+  listWrap.innerHTML = (tipHtml ? tipHtml.outerHTML : '') + renderAdsList(filtered, fakeCat);
 }
 
 
@@ -8039,6 +9302,9 @@ async function showTeacherAds(subName) {
 async function showCommunityPage(filter='all') {
   sessionStorage.setItem('dynState', JSON.stringify({type:'community'}));
   try{history.pushState({dyn:1},'');}catch(e){}
+  window._communityFilter = filter;
+  window._communitySearch = '';
+  window._communitySort = 'recent';
   const page = document.getElementById('dynamicPage');
   page.innerHTML = `
     <div class="dyn-header" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
@@ -8060,6 +9326,14 @@ async function showCommunityPage(filter='all') {
           style="flex-shrink:0;padding:10px 12px;border:none;background:transparent;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;color:${i===0?'#7c3aed':'var(--gray)'};border-bottom:${i===0?'2px solid #7c3aed':'2px solid transparent'};">
           ${t.icon} ${t.label}
         </button>`).join('')}
+      </div>
+      <!-- بحث وفرز -->
+      <div style="display:flex;gap:8px;padding:10px 16px;background:#fafafa;border-bottom:1px solid var(--border);">
+        <input type="text" id="communitySearchInput" placeholder="🔍 ابحث في المواضيع..." oninput="window._communitySearch=this.value;loadCommunityPosts(null,null)" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;box-sizing:border-box;">
+        <select onchange="window._communitySort=this.value;loadCommunityPosts(null,null)" style="padding:8px;border:1px solid var(--border);border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;background:white;">
+          <option value="recent">🕐 الأحدث</option>
+          <option value="popular">🔥 الأكثر تفاعلاً</option>
+        </select>
       </div>
       <div id="communityPosts" style="padding:12px 16px;">
         <div style="text-align:center;padding:20px;"><div class="spinner"></div></div>
@@ -8084,14 +9358,29 @@ function renderVideoBlock(url) {
 const WA_ICON_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M17.6 6.3A8.9 8.9 0 0 0 12.04 3.5c-4.9 0-8.9 4-8.9 8.9 0 1.57.41 3.1 1.19 4.45L3 21.5l4.8-1.26a8.9 8.9 0 0 0 4.24 1.08h0c4.9 0 8.9-4 8.9-8.9 0-2.38-.93-4.6-2.6-6.28zM12.04 19.7h0a7.4 7.4 0 0 1-3.77-1.03l-.27-.16-2.8.74.75-2.73-.18-.28a7.4 7.4 0 0 1-1.14-3.94c0-4.1 3.34-7.44 7.45-7.44a7.4 7.4 0 0 1 5.27 2.18 7.4 7.4 0 0 1 2.18 5.27c0 4.1-3.34 7.4-7.5 7.4zm4.08-5.56c-.22-.11-1.32-.65-1.53-.72-.2-.08-.35-.11-.5.11-.15.22-.58.72-.71.87-.13.15-.26.16-.48.05-.22-.11-.94-.35-1.79-1.11-.66-.59-1.11-1.32-1.24-1.54-.13-.22-.01-.34.1-.45.1-.1.22-.26.33-.4.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.4-.05-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.43c-.15 0-.4.05-.6.28-.2.22-.8.78-.8 1.9s.82 2.2.94 2.35c.11.15 1.62 2.48 3.94 3.48.55.24.98.38 1.31.48.55.18 1.05.15 1.45.09.44-.07 1.32-.54 1.51-1.06.19-.52.19-.97.13-1.06-.05-.1-.2-.15-.42-.26z"/></svg>';
 const FB_ICON_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M13.5 21v-7.5h2.5l.4-3H13.5V8.4c0-.87.24-1.46 1.49-1.46H16.5V4.35C16.24 4.32 15.36 4.24 14.33 4.24c-2.14 0-3.6 1.31-3.6 3.71v2.55H8.2v3h2.53V21h2.77z"/></svg>';
 
+// ===== ترتيب المنشورات: الأخبار الرسمية دايمًا فوق، وبعدين حسب الفرز المطلوب =====
+function sortCommunityPosts(posts, sortMode) {
+  const sorted = posts.slice();
+  if(sortMode === 'popular') {
+    sorted.sort((a,b) => ((b.likes_count||0)+(b.comments_count||0)) - ((a.likes_count||0)+(a.comments_count||0)));
+  } else {
+    sorted.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+  const pinned = sorted.filter(p => p.category === 'خبر رسمي');
+  const rest = sorted.filter(p => p.category !== 'خبر رسمي');
+  return pinned.concat(rest);
+}
+
 function renderPostCard(p, deviceId) {
-  const catColors = {'سؤال':'#dbeafe:#1d4ed8','نقاش':'#dcfce7:#15803d','مشاركة':'#fef3c7:#92400e','طلب مساعدة':'#fee2e2:#dc2626'};
+  const catColors = {'سؤال':'#dbeafe:#1d4ed8','نقاش':'#dcfce7:#15803d','مشاركة':'#fef3c7:#92400e','طلب مساعدة':'#fee2e2:#dc2626','خبر رسمي':'#fef3c7:#b45309'};
+  const isPinned = p.category === 'خبر رسمي';
   const [bg,color] = (catColors[p.category]||'#ede9fe:#7c3aed').split(':');
   const timeAgo = getTimeAgo(p.created_at);
   const imgs = p.images && p.images.length ? p.images : [];
   return `
-  <div style="background:white;border-radius:14px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden;cursor:pointer;" onclick="openPostDetail('${p.id}')">
-    <div style="padding:14px 14px 10px;">
+  <div style="background:${isPinned?'linear-gradient(135deg,#fffbeb,#fff)':'white'};border-radius:14px;border:${isPinned?'2px solid #f59e0b':'1px solid var(--border)'};margin-bottom:12px;overflow:hidden;cursor:pointer;position:relative;" onclick="openPostDetail('${p.id}')">
+    ${isPinned?`<div style="position:absolute;top:-1px;right:12px;background:#f59e0b;color:white;padding:3px 12px;border-radius:0 0 8px 8px;font-size:11px;font-weight:900;z-index:1;">📌 خبر رسمي</div>`:''}
+    <div style="padding:14px 14px 10px;${isPinned?'padding-top:22px;':''}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <div style="width:36px;height:36px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">👤</div>
         <div style="flex:1;">
@@ -8109,7 +9398,7 @@ function renderPostCard(p, deviceId) {
       </div>` : ''}
       ${renderVideoBlock(p.video_link)}
     </div>
-    <div style="border-top:1px solid #f3f4f6;padding:10px 14px;display:flex;gap:6px;align-items:center;" onclick="event.stopPropagation()">
+    <div style="border-top:1px solid #f3f4f6;padding:10px 14px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;" onclick="event.stopPropagation()">
       <button onclick="event.stopPropagation();openPostReactionMenu('${p.id}',this)" id="like_${p.id}"
         style="display:flex;align-items:center;gap:4px;background:#f3f4f6;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">
         👍 ${p.likes_count||0}
@@ -8130,6 +9419,10 @@ function renderPostCard(p, deviceId) {
         style="display:flex;align-items:center;gap:4px;background:#f3f4f6;color:#374151;border:none;padding:7px 12px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;" title="انسخ الرابط والصقه في فيسبوك يدويًا عشان تطلع الصورة صح">
         📋
       </button>
+      ${!isAdmin && !isOwnerOf(p) ? `
+      <button onclick="event.stopPropagation();reportPost('${p.id}','${p.title.replace(/['\"]/g,'')}')" style="display:flex;align-items:center;gap:4px;background:#f3f4f6;color:#94a3b8;border:none;padding:7px 10px;border-radius:20px;font-size:12px;cursor:pointer;" title="تبليغ عن المنشور">
+        🚩
+      </button>` : ''}
       ${isAdmin||isOwnerOf(p) ? `
       <button onclick="event.stopPropagation();openEditPostModal('${p.id}')" style="margin-right:auto;background:#eff6ff;color:#2563eb;border:none;padding:7px 10px;border-radius:20px;font-size:12px;cursor:pointer;">✏️</button>
       <button onclick="event.stopPropagation();deletePost('${p.id}')" style="background:#fee2e2;color:#dc2626;border:none;padding:7px 10px;border-radius:20px;font-size:12px;cursor:pointer;">🗑️</button>` : ''}
@@ -8138,29 +9431,32 @@ function renderPostCard(p, deviceId) {
 }
 
 async function loadCommunityPosts(filter, btn) {
+  if(filter) window._communityFilter = filter;
   if(btn) {
     document.querySelectorAll('[id^="ctab_"]').forEach(b=>{ b.style.color='var(--gray)'; b.style.borderBottom='2px solid transparent'; });
     btn.style.color='#7c3aed'; btn.style.borderBottom='2px solid #7c3aed';
   }
+  const activeFilter = window._communityFilter || 'all';
   const cont = document.getElementById('communityPosts');
   if(!cont) return;
   cont.innerHTML = skeletonCards(3);
   try {
-    const all = await sbFetch('GET', `community_posts?select=*&order=created_at.desc`) || [];
-    const posts = filter === 'all'
-      ? all.filter(p => !p.notes || p.notes === 'teachers_community')
-      : all.filter(p => (!p.notes || p.notes === 'teachers_community') && p.category === filter);
+    let path = `community_posts?select=*&or=(notes.is.null,notes.eq.teachers_community)&order=created_at.desc`;
+    if(activeFilter !== 'all') path += `&category=eq.${encodeURIComponent(activeFilter)}`;
+    let posts = await sbFetch('GET', path) || [];
+    const q = (window._communitySearch||'').trim().toLowerCase();
+    if(q) posts = posts.filter(p => (p.title||'').toLowerCase().includes(q) || (p.content||'').toLowerCase().includes(q));
+    posts = sortCommunityPosts(posts, window._communitySort||'recent');
     if(!posts.length) {
       cont.innerHTML = `
         <div style="text-align:center;padding:60px 20px;color:var(--gray);">
           <div style="font-size:48px;margin-bottom:12px;">💬</div>
-          <p style="font-size:15px;font-weight:700;">لا توجد مواضيع بعد</p>
-          <p style="font-size:13px;margin-top:6px;">كن أول من يبدأ نقاشاً!</p>
-          <button onclick="openNewPostModal()" style="margin-top:14px;background:#7c3aed;color:white;border:none;padding:10px 20px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">+ ابدأ موضوع جديد</button>
+          <p style="font-size:15px;font-weight:700;">${q?'مفيش نتائج للبحث ده':'لا توجد مواضيع بعد'}</p>
+          <p style="font-size:13px;margin-top:6px;">${q?'':'كن أول من يبدأ نقاشاً!'}</p>
+          ${!q?'<button onclick="openNewPostModal()" style="margin-top:14px;background:#7c3aed;color:white;border:none;padding:10px 20px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">+ ابدأ موضوع جديد</button>':''}
         </div>`;
       return;
     }
-    const catColors = {'سؤال':'#dbeafe:#1d4ed8','نقاش':'#dcfce7:#15803d','مشاركة':'#fef3c7:#92400e','طلب مساعدة':'#fee2e2:#dc2626'};
     const deviceId = getDeviceId();
     cont.innerHTML = posts.map(p => renderPostCard(p, deviceId)).join('');
     // تحقق من الـ likes
@@ -8333,7 +9629,8 @@ async function loadPostDetail(postId) {
     window._currentPostComments = comments;
     const timeAgo = getTimeAgo(p.created_at);
     cont.innerHTML = `
-      <div style="background:#f8f5ff;border-radius:14px;padding:16px;margin-bottom:16px;border:1px solid #ede9fe;">
+      <div style="background:${p.category==='خبر رسمي'?'linear-gradient(135deg,#fffbeb,#fff)':'#f8f5ff'};border-radius:14px;padding:16px;margin-bottom:16px;border:${p.category==='خبر رسمي'?'2px solid #f59e0b':'1px solid #ede9fe'};">
+        ${p.category==='خبر رسمي'?`<div style="background:#f59e0b;color:white;display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:900;margin-bottom:10px;">📌 خبر رسمي</div>`:''}
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <div style="width:38px;height:38px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:18px;">👨‍🏫</div>
           <div>
@@ -8357,6 +9654,7 @@ async function loadPostDetail(postId) {
           <button onclick="sharePostWA('${p.id}','${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="margin-right:auto;display:flex;align-items:center;gap:6px;background:#25D366;color:white;border:none;padding:6px 14px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">${WA_ICON_SVG} واتساب</button>
           <button onclick="sharePostFB('${p.id}','${(p.title||'').replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,'')}','${(p.images&&p.images[0])||''}')" style="display:flex;align-items:center;gap:6px;background:#1877F2;color:white;border:none;padding:6px 14px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">${FB_ICON_SVG} فيسبوك</button>
           <button onclick="copyPostLink('${p.id}')" style="display:flex;align-items:center;gap:6px;background:#f3f4f6;color:#374151;border:none;padding:6px 14px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">📋 نسخ الرابط</button>
+          ${!isAdmin && !isOwnerOf(p) ? `<button onclick="reportPost('${p.id}','${(p.title||'').replace(/['\"]/g,'')}')" style="display:flex;align-items:center;gap:6px;background:#f3f4f6;color:#94a3b8;border:none;padding:6px 14px;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🚩 تبليغ</button>` : ''}
         </div>
       </div>
       <div style="font-size:13px;font-weight:700;color:var(--gray);margin-bottom:10px;">التعليقات (${comments.length})</div>
@@ -8483,12 +9781,13 @@ function openNewPostModalForm(communityId='teachers_community') {
       <div style="margin-bottom:10px;">
         <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">نوع الموضوع</label>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          ${[['سؤال','❓','#dbeafe','#1d4ed8'],['نقاش','💬','#dcfce7','#15803d'],['مشاركة','📢','#fef3c7','#92400e'],['طلب مساعدة','🤝','#fee2e2','#dc2626']].map(([v,icon,bg,c])=>`
+          ${(isAdmin ? [['خبر رسمي','📌','#fef3c7','#b45309']] : []).concat([['سؤال','❓','#dbeafe','#1d4ed8'],['نقاش','💬','#dcfce7','#15803d'],['مشاركة','📢','#fef3c7','#92400e'],['طلب مساعدة','🤝','#fee2e2','#dc2626']]).map(([v,icon,bg,c])=>`
           <button onclick="document.querySelectorAll('.cat-btn').forEach(b=>{b.style.background='#f3f4f6';b.style.color='#374151'});this.style.background='${bg}';this.style.color='${c}';document.getElementById('postCat').value='${v}'"
             class="cat-btn" style="padding:7px 14px;border:none;border-radius:20px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:#f3f4f6;color:#374151;">${icon} ${v}</button>`).join('')}
         </div>
         <input type="hidden" id="postCommunityId" value="${communityId}">
         <input type="hidden" id="postCat" value="نقاش">
+        ${isAdmin ? `<div style="font-size:10px;color:#b45309;margin-top:6px;">📌 "خبر رسمي" بيثبّت المنشور فوق القايمة — استخدمه للإعلانات المهمة بس</div>` : ''}
       </div>
       <div style="margin-bottom:10px;">
         <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">عنوان الموضوع *</label>
@@ -8496,7 +9795,8 @@ function openNewPostModalForm(communityId='teachers_community') {
       </div>
       <div style="margin-bottom:14px;">
         <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">تفاصيل الموضوع *</label>
-        <textarea id="postContent" rows="4" placeholder="اكتب موضوعك هنا..." style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;resize:none;"></textarea>
+        <textarea id="postContent" rows="4" placeholder="مثال: عنوان الدرس، المرحلة الدراسية، والمنطقة — أو أي تفاصيل تساعد زملاءك يفهموا موضوعك بسرعة" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;resize:none;"></textarea>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;padding-right:4px;">💡 كل ما كانت التفاصيل أدق، كل ما كان الرد أسرع من زملائك</div>
       </div>
       <div style="margin-bottom:14px;">
         <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">📸 صور (اختياري — حتى 10 صور)</label>
@@ -8587,6 +9887,7 @@ async function submitNewPost() {
 
 async function uploadToStorage(file, path) {
   try {
+    file = await compressImageFile(file);
     const res = await fetch(`${SB_URL}/storage/v1/object/ads-images/${path}`, {
       method: 'POST',
       headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': file.type },
@@ -8773,6 +10074,20 @@ function sharePostFB(id, title, imgUrl) {
 
 function sharePost(id, title) { sharePostWA(id, title); }
 
+// ===== تبليغ عن منشور =====
+function reportPost(id, title) {
+  if(!confirm('تبليغ عن المنشور ده للمشرف؟')) return;
+  const url = `${SHARE_FN_BASE}/post/${encodeURIComponent(id)}`;
+  const msg = encodeURIComponent(`🚩 تبليغ عن منشور في دليل الحامول\n\nالعنوان: ${title}\nالرابط: ${url}\n\nياريت تراجعه.`);
+  const a = document.createElement('a');
+  a.href = `https://wa.me/${ADMIN_WA}?text=${msg}`;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>document.body.removeChild(a), 500);
+  showToast('✅ اتبعت للمشرف، شكرًا لتنبيهك');
+}
+
 function copyPostLink(id) {
   const url = `${SHARE_FN_BASE}/post/${encodeURIComponent(id)}`;
   const doToast = () => showToast('✅ اتنسخ الرابط! الصقه بنفسك في فيسبوك عشان تطلع الصورة صح');
@@ -8915,6 +10230,7 @@ function getBannerCategorySelect(fieldId, selectedVal, onchangeCall) {
     {v:'crafts', n:'🔧 صيانة وحرفيين'},
     {v:'building', n:'🏗️ بناء وتشطيب'},
     {v:'online', n:'🛍️ البيع أونلاين'},
+    {v:'cars_market', n:'🚙 سوق السيارات والتكاتك'},
     {v:'transport', n:'🚗 مواصلات'},
     {v:'market', n:'📦 سوق'},
     {v:'teachers_hub', n:'📚 مدرسين'},
@@ -9534,7 +10850,7 @@ function renderAdminAdsList(cont, ads, tab) {
       })() : '') +
       (tab==='pending' ? (
         '<button data-id="'+ad.id+'" onclick="approveAd(this.dataset.id)" style="flex:1;background:var(--green);color:white;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✅ موافقة</button>' +
-        '<button data-id="'+ad.id+'" onclick="rejectAd(this.dataset.id)" style="flex:1;background:#ef4444;color:white;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">❌ رفض</button>'
+        '<button data-id="'+ad.id+'" onclick="openRejectReasonModal(this.dataset.id)" style="flex:1;background:#ef4444;color:white;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">❌ رفض</button>'
       ) : '') +
       (tab==='rejected' ? '<button data-id="'+ad.id+'" onclick="approveAd(this.dataset.id)" style="flex:1;background:var(--green);color:white;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✅ موافقة</button>' : '') +
       '<button data-id="'+ad.id+'" onclick="deleteAdAdmin(this.dataset.id)" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 12px;border-radius:8px;font-size:14px;cursor:pointer;">🗑️</button>' +
