@@ -1085,7 +1085,7 @@ function filterSubs(catId) {
 // ======= ADS PAGE =======
 async function showAdsPage(cat, sub) {
   // أقسام المعارض (البيع أونلاين + سوق السيارات + الملابس) → روح لصفحة المعارض
-  if((cat.id === 'online' || cat.id === 'cars_market' || cat.id === 'fashion') && sub) {
+  if((cat.id === 'online' || cat.id === 'cars_market' || cat.id === 'fashion' || cat.id === 'shoes') && sub) {
     showShopsPage(sub, cat.id);
     return;
   }
@@ -1134,8 +1134,8 @@ async function showAdsPage(cat, sub) {
       </div>
       <button onclick="openAddModal('lost','${sub||''}')" style="background:#ea580c;color:white;border:none;padding:8px 14px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;flex-shrink:0;">+ أضف</button>
     </div>` : ''}
-    <div class="dyn-content" id="adsContent" style="padding:${['online','used_market','shoes'].includes(cat.id)?'12px':'0 0 16px'};">
-      ${['online','used_market','shoes'].includes(cat.id) ? renderShopGrid(ads, cat) : renderAdsList(ads, cat)}
+    <div class="dyn-content" id="adsContent" style="padding:${['online','used_market'].includes(cat.id)?'12px':'0 0 16px'};">
+      ${['online','used_market'].includes(cat.id) ? renderShopGrid(ads, cat) : renderAdsList(ads, cat, sub||'')}
     </div>
     <button class="fab-add" onclick="openAddModal('${cat.id}','${sub||''}')">+</button>
   `;
@@ -1152,6 +1152,8 @@ function getShopCatId(subcategory) {
   if(carsCat && carsCat.subs && carsCat.subs.indexOf(subcategory) !== -1) return 'cars_market';
   const fashionCat = CATEGORIES.find(c => c.id === 'fashion');
   if(fashionCat && fashionCat.subs && fashionCat.subs.indexOf(subcategory) !== -1) return 'fashion';
+  const shoesCat = CATEGORIES.find(c => c.id === 'shoes');
+  if(shoesCat && shoesCat.subs && shoesCat.subs.indexOf(subcategory) !== -1) return 'shoes';
   return 'online';
 }
 
@@ -1206,10 +1208,12 @@ async function showShopsPage(subcategory, catId) {
     return;
   }
 
-  // رتّب: المثبّت أولاً (الأعلى pin_order)، وبعده الأقدم فالأحدث
+  // رتّب: المثبّت أولاً (الأعلى pin_order)، وبعده الترتيب اليدوي (sort_order)، وبعده الأقدم فالأحدث
   traders.sort(function(a,b){
     var pa = a.pin_order || 0, pb = b.pin_order || 0;
     if(pa !== pb) return pb - pa; // المثبّت أولاً
+    var sa = a.sort_order || 0, sb = b.sort_order || 0;
+    if(sa !== sb) return sb - sa; // الترتيب اليدوي
     return new Date(a.created_at) - new Date(b.created_at); // الأقدم فوق
   });
 
@@ -1218,11 +1222,15 @@ async function showShopsPage(subcategory, catId) {
   // عرض كروت المعارض
   content.innerHTML =
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
-    traders.map(function(t) {
+    traders.map(function(t, idx) {
       var pinned = t.pin_order && t.pin_order > 0;
       return '<div style="background:white;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden;position:relative;' + (pinned?'border:2px solid #f59e0b;':'') + '">' +
         (pinned ? '<div style="position:absolute;top:6px;right:6px;background:#f59e0b;color:white;font-size:10px;font-weight:900;padding:2px 8px;border-radius:20px;z-index:2;">📌 مثبّت</div>' : '') +
         (_isShopAdmin ? '<button onclick="event.stopPropagation();togglePinShop(\''+t.id+'\','+(pinned?0:1)+',\''+subcategory.replace(/'/g,"")+'\',\''+catId+'\')" style="position:absolute;top:6px;left:6px;background:'+(pinned?'#dc2626':'#7c3aed')+';color:white;border:none;font-size:11px;padding:3px 8px;border-radius:20px;cursor:pointer;z-index:3;">'+(pinned?'إلغاء التثبيت':'📌 ثبّت')+'</button>' : '') +
+        (_isShopAdmin ? '<div style="position:absolute;bottom:6px;left:6px;display:flex;gap:4px;z-index:3;">' +
+          (idx > 0 ? '<button onclick="event.stopPropagation();moveShopOrder(\''+t.id+'\',\'up\',\''+subcategory.replace(/'/g,"")+'\',\''+catId+'\')" style="background:#334155;color:white;border:none;width:24px;height:24px;border-radius:8px;cursor:pointer;font-size:12px;">⬆️</button>' : '') +
+          (idx < traders.length - 1 ? '<button onclick="event.stopPropagation();moveShopOrder(\''+t.id+'\',\'down\',\''+subcategory.replace(/'/g,"")+'\',\''+catId+'\')" style="background:#334155;color:white;border:none;width:24px;height:24px;border-radius:8px;cursor:pointer;font-size:12px;">⬇️</button>' : '') +
+        '</div>' : '') +
         '<div onclick="openShop(\'' + t.id + '\')" style="cursor:pointer;">' +
         (t.logo_url ?
           '<img src="' + t.logo_url + '" loading="lazy" style="width:100%;height:100px;object-fit:cover;" onerror="this.style.display=\'none\'">' :
@@ -1263,6 +1271,70 @@ async function togglePinShop(traderId, pinVal, subcategory, catId) {
   }
 }
 
+// نقل معرض مكان لأعلى/لأسفل بين باقي المعارض (للأدمن)
+async function moveShopOrder(traderId, direction, subcategory, catId) {
+  try {
+    let traders = await sbFetch('GET', 'shop_traders?subcategory=eq.'+encodeURIComponent(subcategory)+'&status=eq.approved&order=created_at.asc') || [];
+    traders.sort(function(a,b){
+      var pa = a.pin_order || 0, pb = b.pin_order || 0;
+      if(pa !== pb) return pb - pa;
+      var sa = a.sort_order || 0, sb = b.sort_order || 0;
+      if(sa !== sb) return sb - sa;
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+    var idx = traders.findIndex(function(t){ return t.id === traderId; });
+    if(idx === -1) return;
+    var swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if(swapIdx < 0 || swapIdx >= traders.length) return;
+    var tmp = traders[idx]; traders[idx] = traders[swapIdx]; traders[swapIdx] = tmp;
+    var n = traders.length;
+    await Promise.all(traders.map(function(t, i){
+      return sbFetch('PATCH', 'shop_traders?id=eq.'+t.id, { sort_order: n - i });
+    }));
+    showToast('✅ تم تغيير ترتيب المعرض');
+    showShopsPage(subcategory, catId);
+  } catch(e) {
+    showToast('⚠️ حصل خطأ — تأكد إنك شغّلت SQL عمود sort_order', 'error');
+    console.error('move shop order error:', e);
+  }
+}
+
+// نقل إعلان مكان لأعلى/لأسفل بين إعلانات نفس القسم (للأدمن) — شغال في كل أقسام الموقع
+async function moveAdOrder(adId, direction, catId, sub) {
+  try {
+    await loadAds();
+    let list = allAds.filter(function(a){
+      if(a.status !== 'approved' && !isAdmin) return false;
+      if(a.category !== catId) return false;
+      if(!isAdmin && isAdExpired(a)) return false;
+      if(sub && a.subcategory !== sub) return false;
+      return true;
+    });
+    list.sort(function(a,b){
+      if((b.is_sponsored?1:0) !== (a.is_sponsored?1:0)) return (b.is_sponsored?1:0)-(a.is_sponsored?1:0);
+      if((b.is_offer?1:0) !== (a.is_offer?1:0)) return (b.is_offer?1:0)-(a.is_offer?1:0);
+      var so = (b.sponsored_order||0) - (a.sponsored_order||0);
+      if(so !== 0) return so;
+      return (b.sort_order||0) - (a.sort_order||0);
+    });
+    var idx = list.findIndex(function(a){ return a.id === adId; });
+    if(idx === -1) return;
+    var swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if(swapIdx < 0 || swapIdx >= list.length) return;
+    var tmp = list[idx]; list[idx] = list[swapIdx]; list[swapIdx] = tmp;
+    var n = list.length;
+    await Promise.all(list.map(function(a, i){
+      return sbFetch('PATCH', 'ads?id=eq.'+a.id, { sort_order: n - i });
+    }));
+    showToast('✅ تم تغيير الترتيب');
+    await loadAds();
+    filterAds(catId, sub);
+  } catch(e) {
+    showToast('⚠️ حصل خطأ — تأكد إنك شغّلت SQL عمود sort_order في جدول ads', 'error');
+    console.error('move ad order error:', e);
+  }
+}
+
 async function openShop(traderId) {
   const page = document.getElementById('dynamicPage');
   page.innerHTML = '<div style="text-align:center;padding:60px;color:var(--gray);">⏳ جاري تحميل المعرض...</div>';
@@ -1286,9 +1358,8 @@ async function openShop(traderId) {
       '<span>🏪 ' + escapeHtml(trader.shop_name) + '</span>' +
       (isOwner ? '<button onclick="openShopOwnerPanel(\'' + traderId + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:5px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⚙️ إدارة</button>' : '<span></span>') +
     '</div>' +
-    (trader.logo_url ? '<div style="width:100%;background:#000;cursor:pointer;" onclick="zoomShopImage(\''+trader.logo_url+'\')"><img src="'+trader.logo_url+'" style="width:100%;max-height:280px;object-fit:contain;display:block;"></div>' : '') +
     '<div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:16px;color:white;display:flex;align-items:center;gap:12px;">' +
-      (trader.logo_url ? '<img src="'+trader.logo_url+'" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;">' : '<div style="width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🏪</div>') +
+      (trader.logo_url ? '<img src="'+trader.logo_url+'" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;cursor:pointer;" onclick="zoomShopImage(\''+trader.logo_url+'\')">' : '<div style="width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🏪</div>') +
       '<div style="flex:1;">' +
         '<div style="font-size:17px;font-weight:900;">' + escapeHtml(trader.shop_name) + '</div>' +
         (trader.description ? '<div style="font-size:12px;opacity:.85;margin-top:3px;">' + escapeHtml(trader.description) + '</div>' : '') +
@@ -2396,13 +2467,15 @@ function renderShopGrid(ads, cat) {
     }).join('') + '</div>';
 }
 
-function renderAdsList(ads, cat) {
+function renderAdsList(ads, cat, sub) {
   if(!ads.length) return '<div style="text-align:center;padding:60px 20px;color:var(--gray);"><div style="font-size:48px;margin-bottom:12px;">' + cat.icon + '</div><p style="font-size:15px;font-weight:700;">مفيش إعلانات هنا دلوقتي</p><p style="font-size:13px;margin-top:6px;">كن أول من يضيف إعلان!</p></div>';
 
   const sorted = [...ads].sort((a,b) => {
     if(b.is_sponsored !== a.is_sponsored) return (b.is_sponsored?1:0) - (a.is_sponsored?1:0);
     if(b.is_offer !== a.is_offer) return (b.is_offer?1:0) - (a.is_offer?1:0);
-    return (b.sponsored_order||0) - (a.sponsored_order||0);
+    const so = (b.sponsored_order||0) - (a.sponsored_order||0);
+    if(so !== 0) return so;
+    return (b.sort_order||0) - (a.sort_order||0);
   });
 
   return sorted.map((ad, adIdx) => {
@@ -2428,7 +2501,12 @@ function renderAdsList(ads, cat) {
     const deathDateHtml = ad.death_date ? '<div style="font-size:12px;color:#64748b;margin-bottom:6px;">📅 ' + formatDeathDate(ad.death_date) + '</div>' : '';
     const foodInfoHtml = (ad.opening_hours || ad.delivery) ? '<div style="font-size:12px;color:#854d0e;margin-bottom:6px;">' + (ad.opening_hours?'🕐 '+ad.opening_hours:'') + (ad.opening_hours&&ad.delivery?' · ':'') + (ad.delivery==='متاح'?'🛵 توصيل متاح':ad.delivery==='غير متاح'?'🚫 بدون توصيل':'') + '</div>' : '';
 
-    const actionBtns = '<button onclick="toggleFav(\'' + ad.id + '\')" style="background:' + favBg + ';color:' + favColor + ';border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;" id="fav_' + ad.id + '">❤️</button>' +
+    const moveBtns = isAdmin ? '<div style="display:flex;gap:3px;">' +
+        (adIdx > 0 ? '<button onclick="moveAdOrder(\''+ad.id+'\',\'up\',\''+cat.id+'\',\''+(sub||'').replace(/'/g,"")+'\')" style="background:#334155;color:white;border:none;width:26px;height:26px;border-radius:50%;font-size:12px;cursor:pointer;">⬆️</button>' : '') +
+        (adIdx < sorted.length - 1 ? '<button onclick="moveAdOrder(\''+ad.id+'\',\'down\',\''+cat.id+'\',\''+(sub||'').replace(/'/g,"")+'\')" style="background:#334155;color:white;border:none;width:26px;height:26px;border-radius:50%;font-size:12px;cursor:pointer;">⬇️</button>' : '') +
+      '</div>' : '';
+
+    const actionBtns = moveBtns + '<button onclick="toggleFav(\'' + ad.id + '\')" style="background:' + favBg + ';color:' + favColor + ';border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;" id="fav_' + ad.id + '">❤️</button>' +
       '<a href="https://wa.me/?text=' + shareMsg + '" target="_blank" style="background:#dcfce7;color:#166534;border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;">🔗</a>' +
       adminBtn +
       '<button class="btn-details" onclick="openAdDetails(\'' + ad.id + '\')">التفاصيل</button>' +
@@ -2493,7 +2571,7 @@ function filterAds(catId, sub) {
     if(q && !(a.title||'').toLowerCase().includes(q) && !(a.description||'').toLowerCase().includes(q)) return false;
     return true;
   });
-  document.getElementById('adsContent').innerHTML = renderAdsList(ads, cat);
+  document.getElementById('adsContent').innerHTML = renderAdsList(ads, cat, sub||'');
 }
 
 // SHARE FUNCTIONS
