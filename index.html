@@ -758,7 +758,7 @@ const CATEGORIES = [
   ]},
   { id:'home',       name:'طلبات المنزل',        icon:'🛒', color:'#dcfce7', subs:['ماركت','عطارة','خضار وفاكهة','مقلة وتسالي','حلويات','مخبوزات','شوايات سمك','فراخ وطيور','لحوم','فسيخ ورنجة','مستحضرات تجميل'] },
   { id:'furniture',  name:'أدوات منزلية',        icon:'🛋️', color:'#dbeafe', subs:['أثاث','مطابخ ألوميتال','تكييفات','أدوات منزلية','ستائر ومفروشات','أنتيكات ونجف','سجاد','فلاتر مياه','قطع غيار أدوات كهربائية'] },
-  { id:'fashion',    name:'ملابس',               icon:'👗', color:'#fce7f3', subs:['سنتر متكامل','حريمي','رجالي وشبابي','أطفال','ملابس داخلية'] },
+  { id:'fashion',    name:'ملابس',               icon:'👗', color:'#fce7f3', subs:['سنتر متكامل','حريمي','رجالي وشبابي','أطفال','ملابس داخلية','ملابس رياضية'] },
   { id:'shoes',      name:'أحذية وأكسسوارات',   icon:'👟', color:'#fce7f3', subs:['أحذية','أكسسوارات وهدايا'] },
   { id:'cars',       name:'سيارات وتكاتك',       icon:'🚗', color:'#f1f5f9', subs:['إيجار سيارات','مغسلة سيارات','صيانة وزيت','تروسيكل','🛺 اطلب توكتوك','نقل عفش','دليفري','سواقين'] },
   { id:'cars_market', name:'سوق السيارات والتكاتك', icon:'🚙', color:'#e0f2fe', subs:['معارض بيع سيارات','معارض بيع تكاتك','قطع غيار سيارات','قطع غيار تكاتك'] },
@@ -1085,7 +1085,7 @@ function filterSubs(catId) {
 // ======= ADS PAGE =======
 async function showAdsPage(cat, sub) {
   // أقسام المعارض (البيع أونلاين + سوق السيارات + الملابس) → روح لصفحة المعارض
-  if((cat.id === 'online' || cat.id === 'cars_market' || cat.id === 'fashion' || cat.id === 'shoes') && sub) {
+  if((cat.id === 'online' || cat.id === 'cars_market' || cat.id === 'fashion' || cat.id === 'shoes' || cat.id === 'furniture' || cat.id === 'home' || cat.id === 'tech' || cat.id === 'agri' || cat.id === 'events' || cat.id === 'ads') && sub) {
     showShopsPage(sub, cat.id);
     return;
   }
@@ -1154,6 +1154,18 @@ function getShopCatId(subcategory) {
   if(fashionCat && fashionCat.subs && fashionCat.subs.indexOf(subcategory) !== -1) return 'fashion';
   const shoesCat = CATEGORIES.find(c => c.id === 'shoes');
   if(shoesCat && shoesCat.subs && shoesCat.subs.indexOf(subcategory) !== -1) return 'shoes';
+  const furnitureCat = CATEGORIES.find(c => c.id === 'furniture');
+  if(furnitureCat && furnitureCat.subs && furnitureCat.subs.indexOf(subcategory) !== -1) return 'furniture';
+  const homeCat = CATEGORIES.find(c => c.id === 'home');
+  if(homeCat && homeCat.subs && homeCat.subs.indexOf(subcategory) !== -1) return 'home';
+  const techCat = CATEGORIES.find(c => c.id === 'tech');
+  if(techCat && techCat.subs && techCat.subs.indexOf(subcategory) !== -1) return 'tech';
+  const agriCat = CATEGORIES.find(c => c.id === 'agri');
+  if(agriCat && agriCat.subs && agriCat.subs.indexOf(subcategory) !== -1) return 'agri';
+  const eventsCat = CATEGORIES.find(c => c.id === 'events');
+  if(eventsCat && eventsCat.subs && eventsCat.subs.indexOf(subcategory) !== -1) return 'events';
+  const adsCat = CATEGORIES.find(c => c.id === 'ads');
+  if(adsCat && adsCat.subs && adsCat.subs.indexOf(subcategory) !== -1) return 'ads';
   return 'online';
 }
 
@@ -1253,10 +1265,12 @@ async function showShopsPage(subcategory, catId) {
 // تكبير صورة المعرض
 function zoomShopImage(src) {
   var m = document.createElement('div');
+  m.id = 'shopZoomOverlay';
   m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10010;display:flex;align-items:center;justify-content:center;padding:16px;cursor:pointer;';
-  m.onclick = function(){ m.remove(); };
+  m.onclick = function(){ history.back(); };
   m.innerHTML = '<img src="'+src+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;">';
   document.body.appendChild(m);
+  try{ history.pushState({zoomImg:1},''); }catch(e){}
 }
 
 // تثبيت / إلغاء تثبيت معرض (للأدمن)
@@ -1384,6 +1398,16 @@ async function openShop(traderId) {
           var col = l.type==='facebook'?'#1877f2':l.type==='youtube'?'#dc2626':'#334155';
           return '<a href="'+escapeHtml(l.url)+'" target="_blank" style="background:'+bg+';color:'+col+';padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;">'+ic+'</a>';
         }).join('') +
+      '</div>'
+    : '') +
+    (trader.gallery_images && trader.gallery_images.length ?
+      '<div style="background:white;padding:12px 16px;border-bottom:1px solid var(--border);">' +
+        '<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px;">📷 صور من المعرض</div>' +
+        '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">' +
+          trader.gallery_images.map(function(img){
+            return '<img src="'+img+'" loading="lazy" style="width:90px;height:90px;object-fit:cover;border-radius:10px;flex-shrink:0;cursor:pointer;" onclick="zoomShopImage(\''+img+'\')">';
+          }).join('') +
+        '</div>' +
       '</div>'
     : '') +
     '<div class="dyn-content" id="shopContent" style="padding:12px 12px 80px;">' +
@@ -1658,6 +1682,11 @@ function showShopRegister(subcategory, catId) {
         '<input type="file" id="sr_logo" accept="image/*" style="display:none;" onchange="previewShopLogo(this)">' +
       '</label>' +
       '<div id="sr_logo_preview" style="margin-bottom:10px;"></div>' +
+      '<label style="display:flex;align-items:center;justify-content:center;gap:8px;background:#eff6ff;color:#2563eb;padding:11px;border-radius:10px;cursor:pointer;border:1.5px dashed #2563eb;font-weight:700;font-size:13px;margin-bottom:6px;">' +
+        '📷 صور توضيحية للمعرض (حتى 10 صور — تظهر حتى لو ماحطتش منتجات)' +
+        '<input type="file" id="sr_gallery" accept="image/*" multiple style="display:none;" onchange="previewShopGallery(this)">' +
+      '</label>' +
+      '<div id="sr_gallery_preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>' +
       '<div style="display:flex;gap:8px;">' +
         '<button onclick="submitShopRegister(\'' + subcategory + '\',\'' + (catId || '') + '\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ سجّل معرضي</button>' +
         '<button onclick="document.getElementById(\'shopRegOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
@@ -1678,6 +1707,52 @@ async function updateShopLogo(input, traderId, subcategory) {
   sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
 }
 
+async function addShopGalleryImages(input, traderId) {
+  if(!input.files.length) return;
+  try {
+    var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1') || [];
+    var trader = rows[0];
+    if(!trader) return;
+    var current = trader.gallery_images || [];
+    var remaining = 10 - current.length;
+    if(remaining <= 0) { showToast('وصلت للحد الأقصى (10 صور)', 'error'); return; }
+    var files = Array.from(input.files).slice(0, remaining);
+    showToast('⏳ جاري رفع الصور...');
+    var newUrls = [];
+    for(var i=0; i<files.length; i++) {
+      var url = await uploadImage(files[i]);
+      if(url) newUrls.push(url);
+    }
+    var updated = current.concat(newUrls);
+    await sbFetch('PATCH', 'shop_traders?id=eq.'+traderId, { gallery_images: updated });
+    showToast('✅ تم إضافة الصور');
+    var overlay = document.getElementById('shopDashOverlay');
+    if(overlay) overlay.remove();
+    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows2){ if(rows2&&rows2[0]) showShopDashboard(rows2[0]); });
+  } catch(e) {
+    showToast('⚠️ حصل خطأ — تأكد إنك شغّلت SQL عمود gallery_images', 'error');
+    console.error('gallery add error:', e);
+  }
+}
+
+async function removeShopGalleryImage(traderId, index) {
+  try {
+    var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1') || [];
+    var trader = rows[0];
+    if(!trader) return;
+    var current = trader.gallery_images || [];
+    current.splice(index, 1);
+    await sbFetch('PATCH', 'shop_traders?id=eq.'+traderId, { gallery_images: current });
+    showToast('✅ تم حذف الصورة');
+    var overlay = document.getElementById('shopDashOverlay');
+    if(overlay) overlay.remove();
+    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows2){ if(rows2&&rows2[0]) showShopDashboard(rows2[0]); });
+  } catch(e) {
+    showToast('⚠️ حصل خطأ في حذف الصورة', 'error');
+    console.error('gallery remove error:', e);
+  }
+}
+
 function previewShopLogo(input) {
   var preview = document.getElementById('sr_logo_preview');
   if(!preview || !input.files[0]) return;
@@ -1686,6 +1761,24 @@ function previewShopLogo(input) {
     preview.innerHTML = '<img src="'+e.target.result+'" style="width:100%;height:120px;object-fit:cover;border-radius:10px;border:2px solid #7c3aed;">';
   };
   reader.readAsDataURL(input.files[0]);
+}
+
+function previewShopGallery(input) {
+  var preview = document.getElementById('sr_gallery_preview');
+  if(!preview) return;
+  var files = Array.from(input.files).slice(0, 10);
+  preview.innerHTML = '';
+  files.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText = 'width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid #2563eb;';
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+  if(input.files.length > 10) showToast('هيتم رفع أول 10 صور بس', 'error');
 }
 
 async function submitShopRegister(subcategory, catId) {
@@ -1729,6 +1822,19 @@ async function submitShopRegister(subcategory, catId) {
       logoUrl = null;
     }
   }
+  var galleryFiles = document.getElementById('sr_gallery') ? Array.from(document.getElementById('sr_gallery').files).slice(0, 10) : [];
+  var galleryUrls = [];
+  if(galleryFiles.length) {
+    showToast('⏳ جاري رفع الصور التوضيحية...');
+    for(var g=0; g<galleryFiles.length; g++) {
+      try {
+        var gUrl = await uploadImage(galleryFiles[g]);
+        if(gUrl) galleryUrls.push(gUrl);
+      } catch(gErr) {
+        console.warn('gallery image upload failed:', gErr);
+      }
+    }
+  }
   var passHash = await hashPass(pass);
   var shopData = {
     subcategory: subcategory,
@@ -1739,6 +1845,7 @@ async function submitShopRegister(subcategory, catId) {
     address: address || null,
     map_url: mapurl || null,
     logo_url: logoUrl || null,
+    gallery_images: galleryUrls.length ? galleryUrls : null,
     social_links: socialLinks.length ? socialLinks : null,
     status: 'pending'
   };
@@ -1879,6 +1986,24 @@ async function showShopDashboard(trader) {
       '<label style="position:absolute;bottom:8px;left:8px;background:rgba(124,58,237,.9);color:white;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🖼️ تغيير صورة الغلاف<input type="file" accept="image/*" style="display:none;" onchange="updateShopLogo(this,\''+trader.id+'\',\''+trader.subcategory+'\')"></label>' +
     '</div>' +
     '<div style="padding:14px 12px 80px;" id="dashContent">' +
+      // صور توضيحية للمعرض
+      '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">' +
+        '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">📷 صور توضيحية للمعرض (' + ((trader.gallery_images||[]).length) + '/10)</div>' +
+        '<div style="font-size:11px;color:#94a3b8;margin-bottom:10px;">بتظهر لزبائنك حتى لو لسه مضفتش منتجات</div>' +
+        '<div id="dashGalleryList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">' +
+          (trader.gallery_images||[]).map(function(img, gi){
+            return '<div style="position:relative;">' +
+              '<img src="'+img+'" style="width:64px;height:64px;object-fit:cover;border-radius:8px;">' +
+              '<button onclick="removeShopGalleryImage(\''+trader.id+'\','+gi+')" style="position:absolute;top:-6px;left:-6px;background:#dc2626;color:white;border:none;width:20px;height:20px;border-radius:50%;font-size:11px;cursor:pointer;line-height:1;">×</button>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+        ((trader.gallery_images||[]).length < 10 ?
+          '<label style="display:flex;align-items:center;justify-content:center;gap:8px;background:#eff6ff;color:#2563eb;padding:10px;border-radius:10px;cursor:pointer;border:1.5px dashed #2563eb;font-weight:700;font-size:12px;">' +
+            '+ أضف صور (حتى ' + (10 - (trader.gallery_images||[]).length) + ' كمان)' +
+            '<input type="file" accept="image/*" multiple style="display:none;" onchange="addShopGalleryImages(this,\''+trader.id+'\')">' +
+          '</label>' : '') +
+      '</div>' +
       // إحصائيات سريعة
       '<div style="display:flex;gap:10px;margin-bottom:12px;">' +
         '<div style="flex:1;background:#f5f3ff;border-radius:12px;padding:12px;text-align:center;border:1px solid #ddd6fe;">' +
@@ -2961,15 +3086,17 @@ function detCurrentImgUrl() {
 function zoomImg(url) {
   if(!url) return;
   const overlay = document.createElement('div');
+  overlay.id = 'adZoomOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
   overlay.innerHTML = `
     <img src="${url}" style="max-width:95vw;max-height:95vh;object-fit:contain;">
     <div style="position:absolute;top:12px;right:12px;display:flex;gap:8px;">
       <a href="${url}" download target="_blank" style="background:rgba(255,255,255,.2);color:white;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:18px;" onclick="event.stopPropagation()">⬇️</a>
-      <button onclick="this.parentElement.parentElement.remove()" style="background:rgba(255,255,255,.2);color:white;border:none;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;">✕</button>
+      <button onclick="event.stopPropagation();history.back()" style="background:rgba(255,255,255,.2);color:white;border:none;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;">✕</button>
     </div>`;
-  overlay.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', () => history.back());
   document.body.appendChild(overlay);
+  try{ history.pushState({zoomImg:1},''); }catch(e){}
 }
 
 function closeDetails() { document.getElementById('detailsModal').classList.remove('active'); }
@@ -11228,6 +11355,8 @@ function renderAdminAdsList(cont, ads, tab) {
 buildCatsGrid();
 // ===== ربط زرار الرجوع (أندرويد/متصفح) بالتنقل الداخلي =====
 window.addEventListener('popstate', function() {
+  var zoomOverlay = document.getElementById('shopZoomOverlay') || document.getElementById('adZoomOverlay');
+  if(zoomOverlay) { zoomOverlay.remove(); return; }
   var page = document.getElementById('dynamicPage');
   if(!page || !page.classList.contains('active')) return; // مفيش صفحة داخلية — خروج طبيعي
   if(window._adDetailOpen) {
