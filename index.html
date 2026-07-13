@@ -980,7 +980,15 @@ function showSubsPageV2(parent, child) {
   loadCatBanner(parent.id, null);
 }
 
+// الفئات المتفرعة (children) اللي بتتوجه لنظام المعارض
+var NESTED_SHOP_CHILDREN = ['food_rest', 'food_cafe', 'crafts_maintenance', 'crafts_cleaning'];
+
 function showAdsPageV2(parentId, childId, subName) {
+  // فئات متفرعة معينة (مطاعم/كافيهات/صيانة وحرفيين/تنظيف) → نظام المعارض
+  if(NESTED_SHOP_CHILDREN.indexOf(childId) !== -1 && subName && !subName.startsWith('عام —')) {
+    showShopsPage(subName, childId);
+    return;
+  }
   const parent = CATEGORIES.find(c => c.id === parentId);
   const child = parent?.children?.find(c => c.id === childId);
   if(!parent) return;
@@ -1082,10 +1090,13 @@ function filterSubs(catId) {
   `).join('');
 }
 
+// أقسام سوق المستعمل اللي بقت فيها محلات ثابتة (مش بيع قطعة واحدة) — بتتوجه لنظام المعارض
+var USED_MARKET_SHOP_SUBS = ['أثاث وديكور', 'أجهزة كهربائية', 'عفش كامل'];
+
 // ======= ADS PAGE =======
 async function showAdsPage(cat, sub) {
-  // أقسام المعارض (البيع أونلاين + سوق السيارات + الملابس) → روح لصفحة المعارض
-  if((cat.id === 'online' || cat.id === 'cars_market' || cat.id === 'fashion' || cat.id === 'shoes' || cat.id === 'furniture' || cat.id === 'home' || cat.id === 'tech' || cat.id === 'agri' || cat.id === 'events' || cat.id === 'ads') && sub) {
+  // أقسام المعارض (البيع أونلاين + سوق السيارات + الملابس + ...) → روح لصفحة المعارض
+  if((cat.id === 'online' || cat.id === 'cars_market' || cat.id === 'fashion' || cat.id === 'shoes' || cat.id === 'furniture' || cat.id === 'home' || cat.id === 'tech' || cat.id === 'agri' || cat.id === 'events' || cat.id === 'ads' || cat.id === 'medservices' || cat.id === 'sports' || cat.id === 'salon' || cat.id === 'gold' || cat.id === 'building' || (cat.id === 'used_market' && USED_MARKET_SHOP_SUBS.indexOf(sub) !== -1)) && sub) {
     showShopsPage(sub, cat.id);
     return;
   }
@@ -1166,12 +1177,35 @@ function getShopCatId(subcategory) {
   if(eventsCat && eventsCat.subs && eventsCat.subs.indexOf(subcategory) !== -1) return 'events';
   const adsCat = CATEGORIES.find(c => c.id === 'ads');
   if(adsCat && adsCat.subs && adsCat.subs.indexOf(subcategory) !== -1) return 'ads';
+  const medCat = CATEGORIES.find(c => c.id === 'medservices');
+  if(medCat && medCat.subs && medCat.subs.indexOf(subcategory) !== -1) return 'medservices';
+  if(typeof USED_MARKET_SHOP_SUBS !== 'undefined' && USED_MARKET_SHOP_SUBS.indexOf(subcategory) !== -1) return 'used_market';
+  if(typeof NESTED_SHOP_CHILDREN !== 'undefined') {
+    for(var nci=0; nci<NESTED_SHOP_CHILDREN.length; nci++) {
+      var ncId = NESTED_SHOP_CHILDREN[nci];
+      var ncParent = CATEGORIES.find(function(c){ return (c.children||[]).some(function(ch){ return ch.id === ncId; }); });
+      var ncChild = ncParent ? (ncParent.children||[]).find(function(ch){ return ch.id === ncId; }) : null;
+      if(ncChild && ncChild.subs && ncChild.subs.some(function(s){ return s.name === subcategory; })) return ncId;
+    }
+  }
+  const sportsCat = CATEGORIES.find(c => c.id === 'sports');
+  if(sportsCat && sportsCat.subs && sportsCat.subs.indexOf(subcategory) !== -1) return 'sports';
+  const salonCat = CATEGORIES.find(c => c.id === 'salon');
+  if(salonCat && salonCat.subs && salonCat.subs.indexOf(subcategory) !== -1) return 'salon';
+  const goldCat = CATEGORIES.find(c => c.id === 'gold');
+  if(goldCat && goldCat.subs && goldCat.subs.indexOf(subcategory) !== -1) return 'gold';
+  const buildingCat = CATEGORIES.find(c => c.id === 'building');
+  if(buildingCat && buildingCat.subs && buildingCat.subs.indexOf(subcategory) !== -1) return 'building';
   return 'online';
 }
 
 async function showShopsPage(subcategory, catId) {
   catId = catId || 'online';
-  const shopCat = CATEGORIES.find(c=>c.id===catId) || {icon:'🛍️', color:'#ede9fe', name:''};
+  const isNestedChild = (typeof NESTED_SHOP_CHILDREN !== 'undefined' && NESTED_SHOP_CHILDREN.indexOf(catId) !== -1);
+  const nestedParentId = isNestedChild ? CATEGORIES.find(c => (c.children||[]).some(ch => ch.id === catId))?.id : null;
+  const shopCat = isNestedChild
+    ? ((CATEGORIES.find(c=>c.id===nestedParentId)||{}).children||[]).find(c=>c.id===catId) || {icon:'🔧', color:'#ffedd5', name:''}
+    : (CATEGORIES.find(c=>c.id===catId) || {icon:'🛍️', color:'#ede9fe', name:''});
   sessionStorage.setItem('dynState', JSON.stringify({type:'shops', sub:subcategory, catId:catId}));
   try{history.pushState({dyn:1},'');}catch(e){}
   const page = document.getElementById('dynamicPage');
@@ -1179,7 +1213,7 @@ async function showShopsPage(subcategory, catId) {
 
   page.innerHTML =
     '<div class="dyn-header">' +
-      '<button class="dyn-back" onclick="showSubsPage(CATEGORIES.find(c=>c.id===\'' + catId + '\'))">←</button>' +
+      '<button class="dyn-back" onclick="' + (isNestedChild ? 'showSubsPageV2(CATEGORIES.find(c=>c.id===\''+nestedParentId+'\'),CATEGORIES.find(c=>c.id===\''+nestedParentId+'\')?.children?.find(c=>c.id===\''+catId+'\'))' : 'showSubsPage(CATEGORIES.find(c=>c.id===\'' + catId + '\'))') + '">←</button>' +
       '<span>' + shopCat.icon + ' ' + subcategory + '</span>' +
       '<span></span>' +
     '</div>' +
@@ -1187,7 +1221,7 @@ async function showShopsPage(subcategory, catId) {
     '<div class="dyn-content" id="shopsContent" style="padding:14px 12px 80px;">' +
       '<div style="text-align:center;padding:40px;color:var(--gray);">⏳ جاري التحميل...</div>' +
     '</div>' +
-    '<button onclick="showShopRegister(\'' + subcategory + '\',\'' + catId + '\')" style="position:fixed;bottom:20px;left:20px;background:#7c3aed;color:white;border:none;padding:14px 20px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.4);z-index:100;">🏪 افتح معرضك</button>';
+    '<button onclick="showShopRegister(\'' + subcategory + '\',\'' + catId + '\')" style="position:fixed;bottom:20px;left:20px;background:#7c3aed;color:white;border:none;padding:14px 20px;border-radius:14px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.4);z-index:100;">🏪 سجّل نشاطك</button>';
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
@@ -1359,19 +1393,75 @@ async function openShop(traderId) {
     sbFetch('GET', 'shop_products?trader_id=eq.'+traderId+'&order=created_at.desc') || [],
   ]);
   const trader = traderArr && traderArr[0];
-  if(!trader) return;
+  if(!trader || trader.status === 'deleted') {
+    page.innerHTML = '<div class="dyn-header"><button class="dyn-back" onclick="hideDynPage()">←</button><span>🏪 المعرض</span><span></span></div>' +
+      '<div style="text-align:center;padding:60px 20px;color:var(--gray);"><div style="font-size:44px;margin-bottom:12px;">🚫</div><p style="font-size:14px;font-weight:700;">المعرض ده مش موجود دلوقتي</p></div>';
+    return;
+  }
   const visibleProducts = products.filter(function(p){ return p.is_active !== false; });
 
   // هل الزائر هو صاحب المعرض؟ (بيتحقق من localStorage)
   var myShopPhone = localStorage.getItem('my_shop_phone_'+traderId);
   var isOwner = !!myShopPhone;
 
-  page.innerHTML =
-    '<div class="dyn-header">' +
-      '<button class="dyn-back" onclick="showShopsPage(\'' + trader.subcategory + '\',\'' + getShopCatId(trader.subcategory) + '\')">←</button>' +
-      '<span>🏪 ' + escapeHtml(trader.shop_name) + '</span>' +
-      (isOwner ? '<button onclick="openShopOwnerPanel(\'' + traderId + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:5px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⚙️ إدارة</button>' : '<span></span>') +
+  // التصميم الاحترافي بقى معيار موحّد لكل أقسام المعارض
+  var useProDesign = true;
+  var waLink = 'https://wa.me/20'+(trader.phone.charAt(0)==='0'?trader.phone.slice(1):trader.phone)+'?text='+encodeURIComponent('مرحباً، أنا من دليل الحامول وعايز أعرف أكتر عن اللي عندكم في '+trader.subcategory);
+
+  var socialAndGalleryHtml =
+    (trader.social_links && trader.social_links.length ?
+      '<div style="background:white;padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap;' + (useProDesign ? '' : 'border-bottom:1px solid var(--border);') + '">' +
+        trader.social_links.map(function(l){
+          var ic = l.type==='facebook'?'📘 فيسبوك':l.type==='youtube'?'▶️ يوتيوب':l.type==='tiktok'?'🎵 تيك توك':'🔗 رابط';
+          var bg = l.type==='facebook'?'#e8f0fb':l.type==='youtube'?'#fee2e2':'#f1f5f9';
+          var col = l.type==='facebook'?'#1877f2':l.type==='youtube'?'#dc2626':'#334155';
+          return '<a href="'+escapeHtml(l.url)+'" target="_blank" style="background:'+bg+';color:'+col+';padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;">'+ic+'</a>';
+        }).join('') +
+      '</div>'
+    : '') +
+    (trader.gallery_images && trader.gallery_images.length ?
+      '<div style="background:white;padding:12px 16px;' + (useProDesign ? '' : 'border-bottom:1px solid var(--border);') + '">' +
+        '<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px;">' + ((getShopCatId(trader.subcategory) === 'food_rest' || getShopCatId(trader.subcategory) === 'food_cafe') ? '📷 المنيو والصور' : getShopCatId(trader.subcategory) === 'gold' ? '📷 صور توضيحية للمشغولات' : '📷 صور من المعرض') + '</div>' +
+        '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">' +
+          trader.gallery_images.map(function(img){
+            return '<img src="'+img+'" loading="lazy" style="width:90px;height:90px;object-fit:cover;border-radius:10px;flex-shrink:0;cursor:pointer;" onclick="zoomShopImage(\''+img+'\')">';
+          }).join('') +
+        '</div>' +
+      '</div>'
+    : '');
+
+  var proHeaderHtml =
+    '<div style="background:linear-gradient(135deg,#1e293b,#334155);height:70px;"></div>' +
+    '<div style="background:white;margin:-40px 14px 0;border-radius:18px;box-shadow:0 6px 22px rgba(0,0,0,.12);padding:16px;position:relative;">' +
+      '<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">' +
+        (trader.logo_url ?
+          '<img src="'+trader.logo_url+'" style="width:72px;height:72px;border-radius:16px;object-fit:cover;flex-shrink:0;cursor:pointer;border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,.15);" onclick="zoomShopImage(\''+trader.logo_url+'\')">' :
+          '<div style="width:72px;height:72px;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,.15);">🏪</div>') +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:19px;font-weight:900;color:#0f172a;line-height:1.3;">' + escapeHtml(trader.shop_name) + '</div>' +
+          '<div style="display:inline-block;background:#f5f3ff;color:#7c3aed;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-top:6px;">📦 ' + escapeHtml(trader.subcategory) + '</div>' +
+        '</div>' +
+      '</div>' +
+      (trader.description ?
+        '<div style="font-size:13.5px;color:#334155;line-height:1.8;background:#f8fafc;border-radius:12px;padding:12px 14px;margin-bottom:12px;">' + escapeHtml(trader.description) + '</div>'
+      : '') +
+      (trader.address || trader.phone ?
+        '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">' +
+          (trader.phone ? '<a href="tel:'+trader.phone+'" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:#1e293b;font-size:13px;font-weight:700;"><span style="font-size:16px;">📞</span><span dir="ltr">'+trader.phone+'</span></a>' : '') +
+          (trader.address ? '<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#1e293b;"><span style="font-size:16px;">📍</span><span style="flex:1;">'+escapeHtml(trader.address)+(trader.map_url ? ' — <a href="'+escapeHtml(trader.map_url)+'" target="_blank" style="color:#0369a1;">🗺️ الخريطة</a>' : '')+'</span></div>' : '') +
+          (trader.opening_hours ? '<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#1e293b;"><span style="font-size:16px;">🕐</span>'+escapeHtml(trader.opening_hours)+'</div>' : '') +
+          (trader.delivery_available ? '<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:'+(trader.delivery_available==='متاح'?'#16a34a':'#dc2626')+';"><span style="font-size:16px;">🛵</span>التوصيل: '+escapeHtml(trader.delivery_available)+'</div>' : '') +
+        '</div>'
+      : '') +
+      '<div style="display:flex;gap:8px;">' +
+        '<a href="'+waLink+'" target="_blank" style="flex:1;background:#25D366;color:white;padding:12px;border-radius:12px;text-decoration:none;font-size:13.5px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;">💬 تواصل واتساب</a>' +
+        (isOwner ? '<button onclick="openShopOwnerPanel(\'' + traderId + '\')" style="background:#f1f5f9;color:#334155;border:none;padding:12px 16px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;font-weight:800;cursor:pointer;">⚙️</button>' : '') +
+      '</div>' +
     '</div>' +
+    '<div style="height:12px;"></div>' +
+    socialAndGalleryHtml;
+
+  var classicHeaderHtml =
     '<div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:16px;color:white;display:flex;align-items:center;gap:12px;">' +
       (trader.logo_url ? '<img src="'+trader.logo_url+'" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;cursor:pointer;" onclick="zoomShopImage(\''+trader.logo_url+'\')">' : '<div style="width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🏪</div>') +
       '<div style="flex:1;">' +
@@ -1379,7 +1469,7 @@ async function openShop(traderId) {
         (trader.description ? '<div style="font-size:12px;opacity:.85;margin-top:3px;">' + escapeHtml(trader.description) + '</div>' : '') +
         '<div style="font-size:11px;opacity:.7;margin-top:2px;">📦 ' + trader.subcategory + '</div>' +
       '</div>' +
-      '<a href="https://wa.me/20'+(trader.phone.charAt(0)==='0'?trader.phone.slice(1):trader.phone)+'?text='+encodeURIComponent('مرحباً، أنا من دليل الحامول وعايز أعرف أكتر عن منتجاتكم في '+trader.subcategory)+'" target="_blank" style="background:#25D366;color:white;padding:8px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">💬</a>' +
+      '<a href="'+waLink+'" target="_blank" style="background:#25D366;color:white;padding:8px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">💬</a>' +
     '</div>' +
     (trader.address || trader.map_url ?
       '<div style="background:white;margin:0;padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">' +
@@ -1390,28 +1480,24 @@ async function openShop(traderId) {
         '</div>' +
       '</div>'
     : '') +
-    (trader.social_links && trader.social_links.length ?
-      '<div style="background:white;padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">' +
-        trader.social_links.map(function(l){
-          var ic = l.type==='facebook'?'📘 فيسبوك':l.type==='youtube'?'▶️ يوتيوب':l.type==='tiktok'?'🎵 تيك توك':'🔗 رابط';
-          var bg = l.type==='facebook'?'#e8f0fb':l.type==='youtube'?'#fee2e2':'#f1f5f9';
-          var col = l.type==='facebook'?'#1877f2':l.type==='youtube'?'#dc2626':'#334155';
-          return '<a href="'+escapeHtml(l.url)+'" target="_blank" style="background:'+bg+';color:'+col+';padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;">'+ic+'</a>';
-        }).join('') +
+    (trader.opening_hours || trader.delivery_available ?
+      '<div style="background:white;margin:0;padding:10px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;">' +
+        (trader.opening_hours ? '<div style="display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:#1e293b;"><span style="font-size:16px;">🕐</span>' + escapeHtml(trader.opening_hours) + '</div>' : '') +
+        (trader.delivery_available ? '<div style="display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:'+(trader.delivery_available==='متاح'?'#16a34a':'#dc2626')+';"><span style="font-size:16px;">🛵</span>التوصيل: ' + escapeHtml(trader.delivery_available) + '</div>' : '') +
       '</div>'
     : '') +
-    (trader.gallery_images && trader.gallery_images.length ?
-      '<div style="background:white;padding:12px 16px;border-bottom:1px solid var(--border);">' +
-        '<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px;">📷 صور من المعرض</div>' +
-        '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">' +
-          trader.gallery_images.map(function(img){
-            return '<img src="'+img+'" loading="lazy" style="width:90px;height:90px;object-fit:cover;border-radius:10px;flex-shrink:0;cursor:pointer;" onclick="zoomShopImage(\''+img+'\')">';
-          }).join('') +
-        '</div>' +
-      '</div>'
-    : '') +
-    '<div class="dyn-content" id="shopContent" style="padding:12px 12px 80px;">' +
-      renderShopProductsBySection(sections, visibleProducts, trader) +
+    socialAndGalleryHtml;
+
+  page.innerHTML =
+    '<div class="dyn-header">' +
+      '<button class="dyn-back" onclick="showShopsPage(\'' + trader.subcategory + '\',\'' + getShopCatId(trader.subcategory) + '\')">←</button>' +
+      '<span>🏪 ' + escapeHtml(trader.shop_name) + '</span>' +
+      (isOwner && !useProDesign ? '<button onclick="openShopOwnerPanel(\'' + traderId + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:5px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">⚙️ إدارة</button>' : '<button onclick="shareShop(\'' + traderId + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;">🔗</button>') +
+    '</div>' +
+    '<div class="dyn-content" id="shopContent" style="padding:0 0 80px;">' +
+      (useProDesign ? proHeaderHtml : classicHeaderHtml) +
+      '<div style="padding:12px 12px 0;">' +
+      renderShopProductsBySection(sections, visibleProducts, trader, useProDesign) +
       '<div id="shopCommentsSection" style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
           '<div style="font-size:15px;font-weight:900;color:#1e293b;">💬 آراء وتقييمات</div>' +
@@ -1419,7 +1505,7 @@ async function openShop(traderId) {
         '</div>' +
         '<div id="shopCommentsList"><div style="text-align:center;color:var(--gray);font-size:13px;padding:10px;">⏳ جاري التحميل...</div></div>' +
         '<div style="background:#f8fafc;border-radius:12px;padding:12px;margin-top:12px;">' +
-          '<div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:6px;">قيّم المحل:</div>' +
+          '<div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:6px;">قيّم تجربتك:</div>' +
           '<div id="shopStarPicker" style="display:flex;gap:4px;margin-bottom:10px;direction:ltr;justify-content:flex-end;">' +
             [1,2,3,4,5].map(function(n){ return '<span onclick="setShopStar('+n+')" data-star="'+n+'" style="font-size:28px;cursor:pointer;color:#d1d5db;transition:.15s;">★</span>'; }).join('') +
           '</div>' +
@@ -1429,6 +1515,7 @@ async function openShop(traderId) {
             '<button onclick="submitShopComment(\'' + traderId + '\')" style="background:#7c3aed;color:white;border:none;padding:10px 16px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">إرسال</button>' +
           '</div>' +
         '</div>' +
+      '</div>' +
       '</div>' +
     '</div>' +
     // زرار "إدارة معرضي" لو ما كانش مسجل دخول بعد
@@ -1519,18 +1606,25 @@ async function submitShopComment(traderId) {
   input.disabled = false;
 }
 
-function renderShopProductsBySection(sections, products, trader) {
+function renderShopProductsBySection(sections, products, trader, compactEmptyState) {
   if(!products.length) {
     // مفيش منتجات — الصفحة تفضل دليل مفيد للزبون (معلومات المحل فوق ظاهرة)
+    if(compactEmptyState) {
+      // التصميم الاحترافي أصلاً بيعرض اسم المحل ووصفه وزرار واتساب فوق — ملهوش داعي نكررهم هنا
+      return '<div style="text-align:center;padding:24px 16px;color:#94a3b8;">' +
+        '<div style="font-size:32px;margin-bottom:8px;">📦</div>' +
+        '<p style="font-size:13px;font-weight:700;">لسه مفيش حاجة مضافة</p>' +
+        '</div>';
+    }
     var waLink = '';
     if(trader && trader.phone) {
       var waPhone = '20'+(trader.phone.charAt(0)==='0'?trader.phone.slice(1):trader.phone);
-      waLink = '<a href="https://wa.me/'+waPhone+'?text='+encodeURIComponent('مرحباً، شفت محلكم في دليل الحامول وعايز أستفسر')+'" target="_blank" style="display:block;background:#25D366;color:white;padding:13px;border-radius:12px;text-align:center;text-decoration:none;font-size:14px;font-weight:900;margin-top:14px;">💬 تواصل واتساب مع المحل</a>';
+      waLink = '<a href="https://wa.me/'+waPhone+'?text='+encodeURIComponent('مرحباً، شفت نشاطكم في دليل الحامول وعايز أستفسر')+'" target="_blank" style="display:block;background:#25D366;color:white;padding:13px;border-radius:12px;text-align:center;text-decoration:none;font-size:14px;font-weight:900;margin-top:14px;">💬 تواصل واتساب</a>';
     }
     return '<div style="text-align:center;padding:30px 16px;">' +
       '<div style="font-size:44px;margin-bottom:10px;">🏪</div>' +
       '<p style="font-size:15px;font-weight:900;color:#1e293b;margin-bottom:6px;">' + (trader ? escapeHtml(trader.shop_name) : 'المحل') + '</p>' +
-      '<p style="font-size:13px;color:#64748b;line-height:1.7;">للتواصل والاستفسار عن المنتجات والأسعار، كلّم المحل مباشرة على واتساب 👇</p>' +
+      '<p style="font-size:13px;color:#64748b;line-height:1.7;">للتواصل والاستفسار، كلّمهم مباشرة على واتساب 👇</p>' +
       waLink +
       '</div>';
   }
@@ -1592,7 +1686,7 @@ function renderProductsGrid(products) {
         imgHtml +
         '<div style="padding:8px;">' +
           '<div style="font-size:13px;font-weight:700;line-height:1.4;">' + escapeHtml(p.title) + '</div>' +
-          (p.price ? '<div style="font-size:14px;font-weight:900;color:#7c3aed;margin-top:3px;">' + parseFloat(p.price).toLocaleString() + ' ج</div>' : '') +
+          (p.price ? '<div style="font-size:14px;font-weight:900;color:#7c3aed;margin-top:3px;">' + parseFloat(p.price).toLocaleString() + ' ج</div>' : '<div style="font-size:11px;font-weight:700;color:#16a34a;margin-top:3px;">💬 السعر عند التواصل</div>') +
           (p.description ? '<div style="font-size:11px;color:#64748b;margin-top:2px;line-height:1.4;">' + escapeHtml(p.description.substring(0,40)) + (p.description.length>40?'...':'') + '</div>' : '') +
           ((p.stock === 0 || p.stock === '0') ? '<div style="font-size:10px;color:#dc2626;font-weight:700;margin-top:3px;">🔴 نفدت الكمية</div>' : (p.stock ? '<div style="font-size:10px;color:#94a3b8;margin-top:3px;">📦 متاح: ' + p.stock + '</div>' : '')) +
           linksHtml +
@@ -1624,7 +1718,7 @@ function showShopLoginForId(traderId, subcategory) {
   overlay.innerHTML =
     '<div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:340px;text-align:center;">' +
       '<div style="font-size:32px;margin-bottom:8px;">🔑</div>' +
-      '<div style="font-size:15px;font-weight:900;margin-bottom:14px;">دخول لإدارة معرضك</div>' +
+      '<div style="font-size:15px;font-weight:900;margin-bottom:14px;">دخول لإدارة نشاطك</div>' +
       '<input id="sl_phone" type="tel" placeholder="رقم موبايلك" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:8px;text-align:center;">' +
       '<input id="sl_pass" type="password" placeholder="كلمة السر" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:14px;text-align:center;">' +
       '<div style="display:flex;gap:8px;">' +
@@ -1663,14 +1757,25 @@ function showShopRegister(subcategory, catId) {
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
   overlay.innerHTML =
     '<div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">' +
-      '<div style="font-size:16px;font-weight:900;margin-bottom:4px;text-align:center;">🏪 افتح معرضك في ' + subcategory + '</div>' +
-      '<div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:16px;">معرضك بيتراجع من الأدمن قبل ما يظهر للناس</div>' +
-      '<input id="sr_name" type="text" placeholder="اسم المعرض / المحل" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<div style="font-size:16px;font-weight:900;margin-bottom:4px;text-align:center;">🏪 سجّل نشاطك في ' + subcategory + '</div>' +
+      '<div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:16px;">بياناتك بتترّاجع من الأدمن قبل ما تظهر للناس</div>' +
+      '<input id="sr_name" type="text" placeholder="اسم النشاط أو الجهة" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="sr_phone" type="tel" placeholder="رقم موبايلك" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
-      '<input id="sr_pass" type="password" placeholder="كلمة سر للدخول لمعرضك" autocomplete="new-password" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
-      '<textarea id="sr_desc" placeholder="وصف مختصر للمعرض (اختياري)" rows="2" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;"></textarea>' +
+      '<input id="sr_pass" type="password" placeholder="كلمة سر للدخول لصفحتك" autocomplete="new-password" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<textarea id="sr_desc" placeholder="وصف مختصر عن نشاطك (اختياري)" rows="2" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;"></textarea>' +
       '<input id="sr_address" type="text" placeholder="العنوان (مثال: شارع الشهداء، الحامول)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="sr_mapurl" type="url" placeholder="رابط الخريطة من Google Maps (اختياري)" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      (catId === 'food_rest' || catId === 'food_cafe' ?
+        '<div style="background:#fef9c3;border-radius:10px;padding:10px;margin-bottom:8px;">' +
+          '<div style="font-size:11px;color:#713f12;font-weight:700;margin-bottom:6px;">🍽️ بيانات المطعم</div>' +
+          '<input id="sr_hours" type="text" placeholder="مواعيد العمل (مثال: يوميًا من 12 ظهرًا لـ 2 فجرًا)" style="width:100%;padding:9px;border:1.5px solid #fde047;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;margin-bottom:6px;background:white;">' +
+          '<select id="sr_delivery" style="width:100%;padding:9px;border:1.5px solid #fde047;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;background:white;">' +
+            '<option value="">-- التوصيل متاح؟ --</option>' +
+            '<option value="متاح">🛵 متاح</option>' +
+            '<option value="غير متاح">🚫 غير متاح — استلام بس</option>' +
+          '</select>' +
+        '</div>'
+      : '') +
       '<div style="background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:8px;">' +
         '<div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:6px;">🔗 روابط السوشيال (اختياري)</div>' +
         '<input id="sr_facebook" type="url" placeholder="رابط صفحة فيسبوك" dir="ltr" style="width:100%;padding:9px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;margin-bottom:6px;">' +
@@ -1683,7 +1788,11 @@ function showShopRegister(subcategory, catId) {
       '</label>' +
       '<div id="sr_logo_preview" style="margin-bottom:10px;"></div>' +
       '<label style="display:flex;align-items:center;justify-content:center;gap:8px;background:#eff6ff;color:#2563eb;padding:11px;border-radius:10px;cursor:pointer;border:1.5px dashed #2563eb;font-weight:700;font-size:13px;margin-bottom:6px;">' +
-        '📷 صور توضيحية للمعرض (حتى 10 صور — تظهر حتى لو ماحطتش منتجات)' +
+        ((catId === 'food_rest' || catId === 'food_cafe') ?
+          '📷 صور المنيو والأكل (حتى 10 صور — ارفع صور المنيو أو أطباقك هنا لو مش عايز تضيف كل صنف منتج لوحده)' :
+        catId === 'gold' ?
+          '📷 صور توضيحية للمشغولات (حتى 10 صور — تظهر حتى لو ماحطتش منتجات)' :
+          '📷 صور توضيحية للمعرض (حتى 10 صور — تظهر حتى لو ماحطتش منتجات)') +
         '<input type="file" id="sr_gallery" accept="image/*" multiple style="display:none;" onchange="previewShopGallery(this)">' +
       '</label>' +
       '<div id="sr_gallery_preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>' +
@@ -1753,6 +1862,107 @@ async function removeShopGalleryImage(traderId, index) {
   }
 }
 
+// ===== تعديل بيانات المحل (لصاحب المعرض) =====
+async function showShopEditForm(traderId) {
+  var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1') || [];
+  var trader = rows[0];
+  if(!trader) return;
+  var fb = (trader.social_links||[]).find(function(l){return l.type==='facebook';});
+  var yt = (trader.social_links||[]).find(function(l){return l.type==='youtube';});
+  var tt = (trader.social_links||[]).find(function(l){return l.type==='tiktok';});
+  var overlay = document.createElement('div');
+  overlay.id = 'shopEditOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:10020;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">' +
+      '<div style="font-size:16px;font-weight:900;margin-bottom:14px;text-align:center;">✏️ تعديل بيانات المحل</div>' +
+      '<input id="se_name" type="text" value="'+escapeHtml(trader.shop_name||'')+'" placeholder="اسم النشاط أو الجهة" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="se_phone" type="tel" value="'+escapeHtml(trader.phone||'')+'" dir="ltr" placeholder="رقم موبايلك" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<textarea id="se_desc" placeholder="وصف مختصر عن نشاطك" rows="2" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;">'+escapeHtml(trader.description||'')+'</textarea>' +
+      '<input id="se_address" type="text" value="'+escapeHtml(trader.address||'')+'" placeholder="العنوان" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="se_mapurl" type="url" value="'+escapeHtml(trader.map_url||'')+'" dir="ltr" placeholder="رابط الخريطة من Google Maps" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      (getShopCatId(trader.subcategory) === 'food_rest' || getShopCatId(trader.subcategory) === 'food_cafe' ?
+        '<div style="background:#fef9c3;border-radius:10px;padding:10px;margin-bottom:8px;">' +
+          '<div style="font-size:11px;color:#713f12;font-weight:700;margin-bottom:6px;">🍽️ بيانات المطعم</div>' +
+          '<input id="se_hours" type="text" value="'+escapeHtml(trader.opening_hours||'')+'" placeholder="مواعيد العمل" style="width:100%;padding:9px;border:1.5px solid #fde047;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;margin-bottom:6px;background:white;">' +
+          '<select id="se_delivery" style="width:100%;padding:9px;border:1.5px solid #fde047;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;background:white;">' +
+            '<option value="" '+(!trader.delivery_available?'selected':'')+'>-- التوصيل متاح؟ --</option>' +
+            '<option value="متاح" '+(trader.delivery_available==='متاح'?'selected':'')+'>🛵 متاح</option>' +
+            '<option value="غير متاح" '+(trader.delivery_available==='غير متاح'?'selected':'')+'>🚫 غير متاح — استلام بس</option>' +
+          '</select>' +
+        '</div>'
+      : '') +
+      '<div style="background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:12px;">' +
+        '<div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:6px;">🔗 روابط السوشيال</div>' +
+        '<input id="se_facebook" type="url" value="'+escapeHtml(fb?fb.url:'')+'" dir="ltr" placeholder="رابط صفحة فيسبوك" style="width:100%;padding:9px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;margin-bottom:6px;">' +
+        '<input id="se_youtube" type="url" value="'+escapeHtml(yt?yt.url:'')+'" dir="ltr" placeholder="رابط قناة يوتيوب" style="width:100%;padding:9px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;margin-bottom:6px;">' +
+        '<input id="se_tiktok" type="url" value="'+escapeHtml(tt?tt.url:'')+'" dir="ltr" placeholder="رابط تيك توك" style="width:100%;padding:9px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;">' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="submitShopEdit(\''+traderId+'\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ حفظ التعديلات</button>' +
+        '<button onclick="document.getElementById(\'shopEditOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function submitShopEdit(traderId) {
+  var name = document.getElementById('se_name').value.trim();
+  var phone = document.getElementById('se_phone').value.trim();
+  var desc = document.getElementById('se_desc').value.trim();
+  var address = document.getElementById('se_address').value.trim();
+  var mapurl = document.getElementById('se_mapurl').value.trim();
+  var openingHours = document.getElementById('se_hours') ? document.getElementById('se_hours').value.trim() : null;
+  var deliveryAvailable = document.getElementById('se_delivery') ? document.getElementById('se_delivery').value.trim() : null;
+  if(!name){ showToast('اكتب اسم النشاط', 'error'); return; }
+  if(!phone || !/^01[0-9]{9}$/.test(phone)){ showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
+  var fbLink = document.getElementById('se_facebook').value.trim();
+  var ytLink = document.getElementById('se_youtube').value.trim();
+  var ttLink = document.getElementById('se_tiktok').value.trim();
+  var socialLinks = [];
+  if(fbLink) socialLinks.push({type:'facebook', url:fbLink});
+  if(ytLink) socialLinks.push({type:'youtube', url:ytLink});
+  if(ttLink) socialLinks.push({type:'tiktok', url:ttLink});
+  try {
+    await sbFetch('PATCH', 'shop_traders?id=eq.'+traderId, {
+      shop_name: name,
+      phone: phone,
+      description: desc || null,
+      address: address || null,
+      map_url: mapurl || null,
+      opening_hours: openingHours || null,
+      delivery_available: deliveryAvailable || null,
+      social_links: socialLinks.length ? socialLinks : null
+    });
+    showToast('✅ تم حفظ التعديلات');
+    var editOverlay = document.getElementById('shopEditOverlay');
+    if(editOverlay) editOverlay.remove();
+    var dashOverlay = document.getElementById('shopDashOverlay');
+    if(dashOverlay) dashOverlay.remove();
+    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+  } catch(e) {
+    showToast('⚠️ حصل خطأ في الحفظ — جرب تاني', 'error');
+    console.error('shop edit error:', e);
+  }
+}
+
+// حذف المعرض نهائيًا (من طرف صاحب المعرض)
+async function deleteMyShop(traderId) {
+  if(!confirm('متأكد إنك عايز تحذف المعرض نهائيًا؟ الخطوة دي مش هترجع.')) return;
+  if(!confirm('تأكيد أخير: هيتم حذف المعرض وكل منتجاته من دليل الحامول نهائيًا.')) return;
+  try {
+    await sbFetch('PATCH', 'shop_traders?id=eq.'+traderId, {status: 'deleted'});
+    localStorage.removeItem('my_shop_phone_'+traderId);
+    showToast('✅ تم حذف المعرض');
+    var dashOverlay = document.getElementById('shopDashOverlay');
+    if(dashOverlay) dashOverlay.remove();
+    hideDynPage();
+  } catch(e) {
+    showToast('⚠️ حصل خطأ في الحذف — جرب تاني', 'error');
+    console.error('delete my shop error:', e);
+  }
+}
+
 function previewShopLogo(input) {
   var preview = document.getElementById('sr_logo_preview');
   if(!preview || !input.files[0]) return;
@@ -1786,7 +1996,7 @@ async function submitShopRegister(subcategory, catId) {
   var phone = document.getElementById('sr_phone').value.trim();
   var pass = document.getElementById('sr_pass').value.trim();
   var desc = document.getElementById('sr_desc').value.trim();
-  if(!name){ showToast('اكتب اسم المعرض', 'error'); return; }
+  if(!name){ showToast('اكتب اسم النشاط', 'error'); return; }
   if(!phone || !/^01[0-9]{9}$/.test(phone)){ showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
   if(!pass || pass.length < 4){ showToast('كلمة السر لازم تكون 4 أحرف على الأقل', 'error'); return; }
 
@@ -1794,7 +2004,7 @@ async function submitShopRegister(subcategory, catId) {
   var existing = await sbFetch('GET', 'shop_traders?phone=eq.'+encodeURIComponent(phone)+'&subcategory=eq.'+encodeURIComponent(subcategory)+'&limit=1') || [];
   if(existing.length){
     var exTrader = existing[0];
-    if(confirm('الرقم ده عنده معرض بالفعل في "' + subcategory + '" (' + (exTrader.shop_name||'') + ').\n\n' + (exTrader.status==='pending' ? 'المعرض لسه تحت المراجعة من الأدمن.' : 'المعرض معتمد وظاهر.') + '\n\nتحب تدخل على معرضك؟')) {
+    if(confirm('الرقم ده عنده نشاط مسجل بالفعل في "' + subcategory + '" (' + (exTrader.shop_name||'') + ').\n\n' + (exTrader.status==='pending' ? 'النشاط لسه تحت المراجعة من الأدمن.' : 'النشاط معتمد وظاهر.') + '\n\nتحب تدخل على صفحتك؟')) {
       document.getElementById('shopRegOverlay').remove();
       openShop(exTrader.id);
     }
@@ -1803,6 +2013,8 @@ async function submitShopRegister(subcategory, catId) {
 
   var address = document.getElementById('sr_address').value.trim();
   var mapurl = document.getElementById('sr_mapurl').value.trim();
+  var openingHours = document.getElementById('sr_hours') ? document.getElementById('sr_hours').value.trim() : '';
+  var deliveryAvailable = document.getElementById('sr_delivery') ? document.getElementById('sr_delivery').value.trim() : '';
   var fbLink = document.getElementById('sr_facebook') ? document.getElementById('sr_facebook').value.trim() : '';
   var ytLink = document.getElementById('sr_youtube') ? document.getElementById('sr_youtube').value.trim() : '';
   var ttLink = document.getElementById('sr_tiktok') ? document.getElementById('sr_tiktok').value.trim() : '';
@@ -1844,6 +2056,8 @@ async function submitShopRegister(subcategory, catId) {
     description: desc,
     address: address || null,
     map_url: mapurl || null,
+    opening_hours: openingHours || null,
+    delivery_available: deliveryAvailable || null,
     logo_url: logoUrl || null,
     gallery_images: galleryUrls.length ? galleryUrls : null,
     social_links: socialLinks.length ? socialLinks : null,
@@ -1922,7 +2136,7 @@ function showShopRegSuccessModal() {
   modal.innerHTML = `
     <div style="background:white;border-radius:20px;max-width:380px;width:100%;padding:26px 22px;text-align:center;">
       <div style="font-size:52px;margin-bottom:12px;">✅</div>
-      <div style="font-size:16px;font-weight:900;color:#7c3aed;margin-bottom:8px;">تم استلام تسجيل معرضك!</div>
+      <div style="font-size:16px;font-weight:900;color:#7c3aed;margin-bottom:8px;">تم استلام تسجيلك!</div>
       <div style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:18px;">هيراجعه المشرف إسلام عنتر وعادةً بيظهر خلال ساعة تقريبًا في أوقات النهار.</div>
       <button onclick="document.getElementById('submitSuccessModal').remove()" style="width:100%;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">تمام 👍</button>
     </div>`;
@@ -1936,7 +2150,7 @@ function showShopLogin(subcategory) {
   overlay.innerHTML =
     '<div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:340px;text-align:center;">' +
       '<div style="font-size:32px;margin-bottom:8px;">🏪</div>' +
-      '<div style="font-size:16px;font-weight:900;margin-bottom:14px;">دخول لمعرضك في ' + subcategory + '</div>' +
+      '<div style="font-size:16px;font-weight:900;margin-bottom:14px;">دخول لنشاطك في ' + subcategory + '</div>' +
       '<input id="sl_phone" type="tel" placeholder="رقم موبايلك" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:8px;text-align:center;">' +
       '<input id="sl_pass" type="password" placeholder="كلمة السر" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:14px;text-align:center;">' +
       '<div style="display:flex;gap:8px;">' +
@@ -1956,7 +2170,7 @@ async function doShopLogin(subcategory) {
   if(!rows.length){ showToast('الموبايل أو كلمة السر غلط ❌', 'error'); return; }
   var trader = rows[0];
   document.getElementById('shopLoginOverlay').remove();
-  if(trader.status === 'pending'){ showToast('⏳ معرضك لسه تحت المراجعة', 'error'); return; }
+  if(trader.status === 'pending'){ showToast('⏳ نشاطك لسه تحت المراجعة', 'error'); return; }
   showShopDashboard(trader);
 }
 
@@ -1986,10 +2200,18 @@ async function showShopDashboard(trader) {
       '<label style="position:absolute;bottom:8px;left:8px;background:rgba(124,58,237,.9);color:white;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🖼️ تغيير صورة الغلاف<input type="file" accept="image/*" style="display:none;" onchange="updateShopLogo(this,\''+trader.id+'\',\''+trader.subcategory+'\')"></label>' +
     '</div>' +
     '<div style="padding:14px 12px 80px;" id="dashContent">' +
+      // بيانات المحل: تعديل وحذف
+      '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">' +
+        '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">⚙️ بيانات المحل</div>' +
+        '<div style="display:flex;gap:8px;">' +
+          '<button onclick="showShopEditForm(\''+trader.id+'\')" style="flex:1;background:#eff6ff;color:#2563eb;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;font-weight:800;cursor:pointer;">✏️ تعديل البيانات</button>' +
+          '<button onclick="deleteMyShop(\''+trader.id+'\')" style="flex:1;background:#fee2e2;color:#dc2626;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🗑️ حذف المعرض نهائيًا</button>' +
+        '</div>' +
+      '</div>' +
       // صور توضيحية للمعرض
       '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">' +
-        '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">📷 صور توضيحية للمعرض (' + ((trader.gallery_images||[]).length) + '/10)</div>' +
-        '<div style="font-size:11px;color:#94a3b8;margin-bottom:10px;">بتظهر لزبائنك حتى لو لسه مضفتش منتجات</div>' +
+        '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">' + ((getShopCatId(trader.subcategory) === 'food_rest' || getShopCatId(trader.subcategory) === 'food_cafe') ? '📷 صور المنيو والأكل' : getShopCatId(trader.subcategory) === 'gold' ? '📷 صور توضيحية للمشغولات' : '📷 صور توضيحية للمعرض') + ' (' + ((trader.gallery_images||[]).length) + '/10)</div>' +
+        '<div style="font-size:11px;color:#94a3b8;margin-bottom:10px;">' + ((getShopCatId(trader.subcategory) === 'food_rest' || getShopCatId(trader.subcategory) === 'food_cafe') ? 'ارفع صور المنيو أو أطباقك هنا — بديل سريع لو مش عايز تضيف كل صنف منتج لوحده' : getShopCatId(trader.subcategory) === 'gold' ? 'ارفع صور توضيحية للمشغولات والتصميمات المتاحة عندك' : 'بتظهر لزبائنك حتى لو لسه مضفتش منتجات') + '</div>' +
         '<div id="dashGalleryList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">' +
           (trader.gallery_images||[]).map(function(img, gi){
             return '<div style="position:relative;">' +
@@ -2018,7 +2240,7 @@ async function showShopDashboard(trader) {
       // أقسام المعرض
       '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
-          '<div style="font-size:14px;font-weight:900;">📁 أقسام معرضك</div>' +
+          '<div style="font-size:14px;font-weight:900;">📁 أقسام نشاطك</div>' +
           '<button onclick="showAddSection(\'' + trader.id + '\')" style="background:#7c3aed;color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ قسم</button>' +
         '</div>' +
         (sections.length ?
@@ -2038,7 +2260,9 @@ async function showShopDashboard(trader) {
         '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">➕ أضف منتج جديد</div>' +
         (sections.length ? '<select id="dp_section" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;"><option value="">— بدون قسم —</option>' + sections.map(function(s){ return '<option value="'+s.id+'">'+escapeHtml(s.name)+'</option>'; }).join('') + '</select>' : '') +
         '<input id="dp_title" type="text" placeholder="اسم المنتج" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
-        '<input id="dp_price" type="number" min="0" step="0.01" placeholder="السعر (جنيه)" oninput="if(this.value<0)this.value=0;" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+        (getShopCatId(trader.subcategory) === 'gold' ?
+          '<div style="background:#fef9c3;border-radius:10px;padding:10px;margin-bottom:8px;font-size:11.5px;color:#713f12;line-height:1.7;">💡 <b>سعر الدهب بيتغيّر يوميًا</b> — سيب خانة السعر فاضية والزبون هيكلّمك واتساب يسأل عن السعر بوزن اليوم. لو حبيت تحط سعر، اكتب في اسم المنتج أو الوصف "السعر حسب وزن اليوم" بدل رقم ثابت.</div>' : '') +
+        '<input id="dp_price" type="number" min="0" step="0.01" placeholder="' + (getShopCatId(trader.subcategory) === 'gold' ? 'السعر (اختياري — سيبه فاضي لو بيتغيّر يوميًا)' : 'السعر (جنيه)') + '" oninput="if(this.value<0)this.value=0;" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
         '<input id="dp_stock" type="number" min="0" step="1" placeholder="الكمية المتاحة" oninput="if(this.value<0)this.value=0;" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
         '<div style="margin-bottom:8px;">' +
           '<label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">حالة المنتج</label>' +
@@ -2429,6 +2653,36 @@ async function openShopSection(sectionId, sectionName) {
     '</div>';
 
   document.body.appendChild(overlay);
+}
+
+async function shareShop(traderId) {
+  var traderArr = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&limit=1') || [];
+  var trader = traderArr && traderArr[0];
+  if(!trader) { showToast('حصل خطأ، حاول تاني', 'error'); return; }
+
+  var link = 'https://eslamantar142-source.github.io/hamouljop/?shop=' + encodeURIComponent(traderId);
+  var txt = '🏪 ' + trader.shop_name +
+            (trader.description ? '\n' + trader.description : '') +
+            '\n📦 ' + trader.subcategory +
+            '\nعلى دليل الحامول\n\n🔗 ' + link;
+
+  var modal = document.getElementById('shareShopModal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'shareShopModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10005;display:flex;align-items:flex-end;justify-content:center;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML =
+    '<div style="background:white;border-radius:18px 18px 0 0;max-width:480px;width:100%;padding:18px;">' +
+      '<div style="font-size:15px;font-weight:900;margin-bottom:14px;">🔗 شارك ' + escapeHtml(trader.shop_name) + '</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+        '<a href="https://wa.me/?text=' + encodeURIComponent(txt) + '" target="_blank" onclick="document.getElementById(\'shareShopModal\').remove()" style="flex:1;background:#e8f5ee;color:#1a7a4a;padding:12px;border-radius:10px;text-align:center;text-decoration:none;font-size:13px;font-weight:700;">💬 واتساب</a>' +
+        '<a href="https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(link) + '" target="_blank" onclick="document.getElementById(\'shareShopModal\').remove()" style="flex:1;background:#e8f0fb;color:#1877f2;padding:12px;border-radius:10px;text-align:center;text-decoration:none;font-size:13px;font-weight:700;">📘 فيسبوك</a>' +
+        '<button onclick="navigator.clipboard.writeText(\'' + link + '\').then(function(){showToast(\'✅ اتنسخ اللينك\');});document.getElementById(\'shareShopModal\').remove();" style="flex:1;background:#f3f4f6;color:#374151;border:none;padding:12px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🔗 نسخ</button>' +
+      '</div>' +
+      '<button onclick="document.getElementById(\'shareShopModal\').remove()" style="width:100%;background:#f3f4f6;color:#666;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+    '</div>';
 }
 
 async function shareShopProduct(productId) {
@@ -4996,12 +5250,16 @@ async function rejectShopTrader(id) {
 }
 
 async function deleteShopTraderAdmin(id) {
-  if(!confirm('مسح المعرض وكل منتجاته نهائياً؟')) return;
-  await sbFetch('DELETE', 'shop_products?trader_id=eq.'+id, null);
-  await sbFetch('DELETE', 'shop_sections?trader_id=eq.'+id, null);
-  await sbFetch('DELETE', 'shop_traders?id=eq.'+id, null);
-  showToast('تم الحذف');
-  showAdminPanel('shops');
+  if(!confirm('مسح المعرض نهائياً؟ (منتجاته هتتخفي معاه)')) return;
+  try {
+    // نستخدم PATCH بدل DELETE عشان يشتغل على الموبايل (زي حذف الإعلانات بالظبط)
+    await sbFetch('PATCH', 'shop_traders?id=eq.'+id, {status: 'deleted'});
+    showToast('تم الحذف');
+    showAdminPanel('shops');
+  } catch(e) {
+    showToast('⚠️ حصل خطأ في الحذف — جرب تاني', 'error');
+    console.error('delete shop trader error:', e);
+  }
 }
 
 function loadAdminBackup(cont) {
@@ -11448,12 +11706,13 @@ function showGoldPrices() {
   alert('💛 أسعار الذهب اليوم (للجرام)\n\nعيار 24: ' + p.k24.toLocaleString() + ' جنيه\nعيار 21: ' + p.k21.toLocaleString() + ' جنيه\nعيار 18: ' + p.k18.toLocaleString() + ' جنيه\n\n* الأسعار تقريبية وتتحدث كل 5 دقائق');
 }
 
-// لو حد فتح رابط مشاركة موضوع (?post=ID) أو إعلان (?ad=ID)، افتحله مباشرة
+// لو حد فتح رابط مشاركة موضوع (?post=ID) أو إعلان (?ad=ID) أو معرض (?shop=ID)، افتحله مباشرة
 (function(){
   try {
     const params = new URLSearchParams(window.location.search);
     const sharedPostId = params.get('post');
     const sharedAdId = params.get('ad');
+    const sharedShopId = params.get('shop');
     if(sharedPostId) {
       window.addEventListener('load', function(){
         setTimeout(function(){ openPostDetail(sharedPostId); }, 300);
@@ -11461,6 +11720,14 @@ function showGoldPrices() {
     } else if(sharedAdId) {
       window.addEventListener('load', function(){
         setTimeout(function(){ openAdDetails(sharedAdId); }, 300);
+      });
+    } else if(sharedShopId) {
+      window.addEventListener('load', function(){
+        setTimeout(function(){
+          document.getElementById('dynamicPage').classList.add('active');
+          document.body.style.overflow = 'hidden';
+          openShop(sharedShopId);
+        }, 300);
       });
     }
   } catch(e) {}
