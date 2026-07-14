@@ -421,6 +421,10 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
 const SB_URL = 'https://jzipkujsmlrckzbpjwys.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6aXBrdWpzbWxyY2t6YnBqd3lzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDY3MTIsImV4cCI6MjA5NzAyMjcxMn0.rSWJinsJelhRYUtC9E7uMHMqgdFvSFVlI7UeqWT0qOQ';
 const ADMIN_PASS_HASH = 'd99c76b0d56a2a1f48ad86ed7db001e4f6b142a54bfe36def517e9fa7af8159c';
+const ADMIN_EMAIL = 'eslam.antar142@gmail.com'; // إيميل حساب الأدمن الحقيقي في Supabase Auth
+let adminAccessToken = null;  // التوكن الحقيقي بعد تسجيل دخول الأدمن — ده اللي بيثبت هويته للسيرفر
+let adminRefreshToken = null;
+
 
 function escapeHtml(str) {
   if(str === null || str === undefined) return '';
@@ -824,7 +828,9 @@ async function sbFetch(method, path, body=null) {
     headers: {
       'Content-Type':'application/json',
       'apikey':SB_KEY,
-      'Authorization':'Bearer '+SB_KEY,
+      // لو الأدمن مسجّل دخول بحساب حقيقي، ابعت توكنه (مش مفتاح anon العام)
+      // عشان السيرفر يقدر يتأكد فعلاً إنه هو، مش أي حد بس فتح الكونسول
+      'Authorization':'Bearer '+(adminAccessToken || SB_KEY),
       'Cache-Control':'no-cache'
     }
   };
@@ -5096,16 +5102,6 @@ async function uploadImage(file) {
 // ADMIN
 function openAdmin() {
   if(isAdmin) { showAdminPanel('pending'); return; }
-  // تحقق من الـ localStorage أول
-  const saved = localStorage.getItem('hamoul_admin_auth');
-  if(saved === ADMIN_PASS_HASH) {
-    isAdmin = true;
-    showToast('✅ أهلاً يا مشرف إسلام!');
-    loadAds().then(() => showAdminPanel('pending'));
-    return;
-  }
-  const pass = prompt('كلمة مرور المشرف:');
-  if(!pass) return;
 
   // حماية من محاولات التخمين المتكررة
   const lockUntil = parseInt(localStorage.getItem('admin_lock_until') || '0');
@@ -5115,10 +5111,11 @@ function openAdmin() {
     return;
   }
 
-  hashPass(pass).then(function(passHash) {
-    if(passHash === ADMIN_PASS_HASH) {
-      isAdmin = true;
-      localStorage.setItem('hamoul_admin_auth', passHash);
+  const pass = prompt('كلمة مرور المشرف:');
+  if(!pass) return;
+
+  adminSignIn(pass).then(function(ok) {
+    if(ok) {
       localStorage.removeItem('admin_fail_count');
       localStorage.removeItem('admin_lock_until');
       showToast('✅ أهلاً يا مشرف إسلام!');
@@ -5136,6 +5133,53 @@ function openAdmin() {
       }
     }
   });
+}
+
+// تسجيل دخول الأدمن الحقيقي عن طريق Supabase Auth (مش فحص محلي بس)
+// كده السيرفر نفسه بيتأكد من هويته، مش بس المتصفح
+async function adminSignIn(password) {
+  try {
+    const res = await fetch(SB_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'apikey': SB_KEY },
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: password })
+    });
+    if(!res.ok) return false;
+    const data = await res.json();
+    if(!data.access_token) return false;
+    adminAccessToken = data.access_token;
+    adminRefreshToken = data.refresh_token;
+    localStorage.setItem('hamoul_admin_refresh', data.refresh_token);
+    isAdmin = true;
+    return true;
+  } catch(e) {
+    console.error('admin sign in error:', e);
+    return false;
+  }
+}
+
+// محاولة استرجاع جلسة الأدمن تلقائيًا (لو كان مسجّل دخول قبل كده) بدل ما يدخل الباسورد كل مرة
+async function tryRestoreAdminSession() {
+  const savedRefresh = localStorage.getItem('hamoul_admin_refresh');
+  if(!savedRefresh) return false;
+  try {
+    const res = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'apikey': SB_KEY },
+      body: JSON.stringify({ refresh_token: savedRefresh })
+    });
+    if(!res.ok) { localStorage.removeItem('hamoul_admin_refresh'); return false; }
+    const data = await res.json();
+    if(!data.access_token) return false;
+    adminAccessToken = data.access_token;
+    adminRefreshToken = data.refresh_token;
+    localStorage.setItem('hamoul_admin_refresh', data.refresh_token);
+    isAdmin = true;
+    return true;
+  } catch(e) {
+    console.error('admin session restore error:', e);
+    return false;
+  }
 }
 
 async function showAdminPanel(tab='pending') {
@@ -6267,7 +6311,10 @@ async function loadAdminStatsPage(page, tab='stats') {
 
 function adminLogout() {
   isAdmin = false;
+  adminAccessToken = null;
+  adminRefreshToken = null;
   localStorage.removeItem('hamoul_admin_auth');
+  localStorage.removeItem('hamoul_admin_refresh');
   hideDynPage();
   showToast('تم الخروج من وضع المشرف');
   loadAds();
@@ -11626,12 +11673,11 @@ window.addEventListener('popstate', function() {
 });
 
 try { buildSlider(); } catch(e) { console.warn('slider err:', e); }
-loadAds().then(function() {
+loadAds().then(async function() {
   try { checkNewAds(); } catch(e) {}
-  // تحقق من الـ admin session المحفوظة
+  // تحقق من الـ admin session المحفوظة (جلسة حقيقية عبر Supabase Auth)
   try {
-    const savedAuth = localStorage.getItem('hamoul_admin_auth');
-    if(savedAuth === ADMIN_PASS_HASH) { isAdmin = true; }
+    await tryRestoreAdminSession();
   } catch(e) {}
   try { loadHomeBanners(); } catch(e) {}
   try { loadGoldPrices(); } catch(e) {}
