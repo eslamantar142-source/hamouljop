@@ -2660,7 +2660,7 @@ async function shareShop(traderId) {
   var trader = traderArr && traderArr[0];
   if(!trader) { showToast('حصل خطأ، حاول تاني', 'error'); return; }
 
-  var link = 'https://eslamantar142-source.github.io/hamouljop/?shop=' + encodeURIComponent(traderId);
+  var link = SHARE_FN_BASE + '/shop/' + encodeURIComponent(traderId);
   var txt = '🏪 ' + trader.shop_name +
             (trader.description ? '\n' + trader.description : '') +
             '\n📦 ' + trader.subcategory +
@@ -11713,6 +11713,7 @@ function showGoldPrices() {
     const sharedPostId = params.get('post');
     const sharedAdId = params.get('ad');
     const sharedShopId = params.get('shop');
+    const sharedProductId = params.get('product');
     if(sharedPostId) {
       window.addEventListener('load', function(){
         setTimeout(function(){ openPostDetail(sharedPostId); }, 300);
@@ -11728,6 +11729,10 @@ function showGoldPrices() {
           document.body.style.overflow = 'hidden';
           openShop(sharedShopId);
         }, 300);
+      });
+    } else if(sharedProductId) {
+      window.addEventListener('load', function(){
+        setTimeout(function(){ openShopProduct(sharedProductId); }, 300);
       });
     }
   } catch(e) {}
