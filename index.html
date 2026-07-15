@@ -571,7 +571,7 @@ async function submitLogin() {
   btn.disabled = true; btn.textContent = 'جاري الدخول...';
   try {
     const hash = await hashPass(pass);
-    const rows = await const rows = await sbRPC('auth_login', {p_phone:phone, p_hash:hash});, in_phone:phone, in_hash:hash});
+    const rows = await sbRPC('auth_login', {p_phone:phone, p_hash:hash});
     const r = (rows && rows[0]) || {};
     if(r.out_status !== 'ok') { showToast('❌ رقم الموبايل أو كلمة المرور غلط', 'error'); btn.disabled=false; btn.textContent='دخول'; return; }
     finishAuth({id:r.out_user_id, name:r.out_name, phone, token:r.out_token});
@@ -592,7 +592,7 @@ async function submitRegister() {
   btn.disabled = true; btn.textContent = 'جاري التسجيل...';
   try {
     const hash = await hashPass(pass);
-    const rows = await const rows = await sbRPC('auth_register', {p_name:name, p_phone:phone, p_hash:hash});, in_name:name, in_phone:phone, in_hash:hash});
+    const rows = await sbRPC('auth_register', {p_name:name, p_phone:phone, p_hash:hash});
     const r = (rows && rows[0]) || {};
     if(r.out_status !== 'ok') {
       if((r.out_message||'') === 'PHONE_EXISTS') showToast('❌ الرقم ده مسجل قبل كده — جرب تسجيل الدخول', 'error');
