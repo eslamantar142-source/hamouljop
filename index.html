@@ -10363,7 +10363,8 @@ async function applyPostReaction(postId, reactionKey) {
       await sbFetch('POST', 'community_likes', {post_id:postId, device_id:deviceId, reaction:reactionKey});
       count = count + 1;
     }
-    await sbFetch('PATCH', `community_posts?id=eq.${postId}`, {likes_count: count});
+    try { await sbRPC('set_post_likes_count', {p_post_id: postId, p_count: count}); }
+    catch(cntErr) { console.error('likes_count update failed:', cntErr.message||cntErr); }
     btns.forEach(function(btn){
       btn.style.opacity = '1';
       if(nowReacted) {
@@ -10551,7 +10552,10 @@ async function submitComment(postId, parentId) {
     await sbFetch('POST', 'community_comments', body);
     // تحديث عدد التعليقات
     const posts = await sbFetch('GET', `community_posts?id=eq.${postId}&select=comments_count`) || [];
-    if(posts[0]) await sbFetch('PATCH', `community_posts?id=eq.${postId}`, {comments_count:(posts[0].comments_count||0)+1});
+    if(posts[0]) {
+      try { await sbRPC('set_post_comments_count', {p_post_id: postId, p_count: (posts[0].comments_count||0)+1}); }
+      catch(cntErr) { console.error('comments_count update failed:', cntErr.message||cntErr); }
+    }
     if(document.getElementById(inputId)) document.getElementById(inputId).value = '';
     showToast(parentId ? '✅ تم إرسال ردك' : '✅ تم إرسال تعليقك');
     await loadPostDetail(postId);
@@ -10828,7 +10832,12 @@ async function submitEditPost(postId) {
       }
     }
     const finalImages = (window._editPostKeptImages || []).concat(newUrls);
-    await sbFetch('PATCH', `community_posts?id=eq.${postId}`, {images: finalImages, video_link: videoLink});
+    try {
+      await sbRPC('secure_update_post_media', {p_token: curUser.token, p_post_id: postId, p_images: finalImages, p_video_link: videoLink});
+    } catch(mediaErr) {
+      console.error('post media update failed:', mediaErr.message||mediaErr);
+      showToast('⚠️ العنوان اتحفظ بس الصور/الفيديو مش اتحفظوا: ' + (mediaErr.message||'').slice(0,60), 'error');
+    }
 
     document.getElementById('editPostModal')?.remove();
     showToast('✅ تم التعديل بنجاح!');
