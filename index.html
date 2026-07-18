@@ -3620,10 +3620,12 @@ async function submitEditAd(adId) {
     
     // لو في صور جديدة
     let newImages = null;
+    let imgUploadFailed = false;
     if(addSelectedFiles.length > 0) {
       const urls = [];
       for(const file of addSelectedFiles) {
-        try { const url = await uploadImage(file); urls.push(url); } catch(e) {}
+        try { const url = await uploadImage(file); urls.push(url); }
+        catch(e) { imgUploadFailed = true; console.error('upload image failed:', e.message||e); showToast('⚠️ فشل رفع صورة: ' + (e.message||'').slice(0,60), 'error'); }
       }
       if(urls.length > 0) newImages = urls;
     }
@@ -3650,11 +3652,16 @@ async function submitEditAd(adId) {
         // تحديث الصورة الرئيسية في جدول الإعلانات
         await sbFetch('PATCH', `ads?id=eq.${adId}`, {image_url: newImages[0]});
         // تحديث جدول الصور المتعددة: امسح القديمة وضيف الجديدة
-        try { await sbFetch('DELETE', `ad_images?ad_id=eq.${adId}`); } catch(e){}
+        try { await sbFetch('DELETE', `ad_images?ad_id=eq.${adId}`); } catch(delErr) { console.error('delete old ad_images failed:', delErr.message||delErr); }
         for(const u of newImages) {
-          try { await sbFetch('POST', 'ad_images', {ad_id: adId, image_url: u}); } catch(e){}
+          try { await sbFetch('POST', 'ad_images', {ad_id: adId, image_url: u}); }
+          catch(insErr) { console.error('insert ad_images failed:', insErr.message||insErr); showToast('⚠️ فشل حفظ صورة: ' + (insErr.message||'').slice(0,60), 'error'); }
         }
-      } catch(e){}
+        showToast('✅ تم تحديث الصور');
+      } catch(imgSaveErr) {
+        console.error('image save to ads failed:', imgSaveErr.message||imgSaveErr);
+        showToast('⚠️ فشل حفظ الصورة الرئيسية: ' + (imgSaveErr.message||'').slice(0,60), 'error');
+      }
     }
 
     // تحديث روابط الفيديو
