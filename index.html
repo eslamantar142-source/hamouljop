@@ -10305,9 +10305,28 @@ const POST_REACTIONS = [
 ];
 
 function openPostReactionMenu(postId, btn) {
-  const old = document.getElementById('postReactMenu');
-  if(old) { old.remove(); if(old.dataset.forPost === postId) return; }
+  const oldMenu = document.getElementById('postReactMenu');
+  const oldBackdrop = document.getElementById('postReactBackdrop');
+  if(oldMenu) {
+    const wasForSamePost = oldMenu.dataset.forPost === postId;
+    oldMenu.remove();
+    if(oldBackdrop) oldBackdrop.remove();
+    if(wasForSamePost) return; // ضغط على نفس الزرار تاني — اقفل القايمة (toggle)
+  }
   window._reactTargetBtn = btn;
+
+  // خلفية شفافة بتغطي الشاشة كلها وبتقفل القايمة لو المستخدم ضغط برّاها —
+  // أضمن بكتير من مراقبة أحداث الكليك على مستوى الصفحة كلها (خصوصًا على الموبايل)
+  const backdrop = document.createElement('div');
+  backdrop.id = 'postReactBackdrop';
+  backdrop.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;';
+  backdrop.addEventListener('click', function() {
+    const m = document.getElementById('postReactMenu');
+    if(m) m.remove();
+    backdrop.remove();
+  });
+  document.body.appendChild(backdrop);
+
   const menu = document.createElement('div');
   menu.id = 'postReactMenu';
   menu.dataset.forPost = postId;
@@ -10326,17 +10345,11 @@ function openPostReactionMenu(postId, btn) {
   menu.style.left = left + 'px';
   menu.style.top = top + 'px';
   menu.style.visibility = 'visible';
-  setTimeout(function(){
-    document.addEventListener('click', function closeOnce(e){
-      const m = document.getElementById('postReactMenu');
-      if(m && !m.contains(e.target)) { m.remove(); }
-      document.removeEventListener('click', closeOnce);
-    }, {once:true});
-  }, 0);
 }
 
 async function applyPostReaction(postId, reactionKey) {
   document.getElementById('postReactMenu')?.remove();
+  document.getElementById('postReactBackdrop')?.remove();
   const curUser = getCurrentUser();
   if(!curUser) { requireLogin().then(function(){ applyPostReaction(postId, reactionKey); }); return; }
   const deviceId = getDeviceId();
