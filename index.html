@@ -11674,6 +11674,65 @@ function renderAdminAdsList(cont, ads, tab) {
 }
 
 
+// ===== إعادة فتح آخر صفحة كانت مفتوحة بعد عمل Refresh للصفحة =====
+function restoreOnRefresh() {
+  try {
+    const raw = sessionStorage.getItem('dynState');
+    if(!raw) return;
+    const state = JSON.parse(raw);
+    if(!state || !state.type) return;
+    switch(state.type) {
+      case 'ads': {
+        const cat = CATEGORIES.find(c => c.id === state.catId);
+        if(cat) showAdsPage(cat, state.sub || null);
+        break;
+      }
+      case 'subs': {
+        const cat = CATEGORIES.find(c => c.id === state.catId);
+        if(cat) showSubsPage(cat);
+        break;
+      }
+      case 'children': {
+        const cat = CATEGORIES.find(c => c.id === state.catId);
+        if(cat) showChildrenPage(cat);
+        break;
+      }
+      case 'subs2': {
+        const parent = CATEGORIES.find(c => c.id === state.catId);
+        const child = parent && parent.children ? parent.children.find(c => c.id === state.childId) : null;
+        if(parent && child) showSubsPageV2(parent, child);
+        break;
+      }
+      case 'ads2':
+        if(state.catId && state.childId && state.subName) showAdsPageV2(state.catId, state.childId, state.subName);
+        break;
+      case 'shops':
+        if(state.sub) showShopsPage(state.sub, state.catId || getShopCatId(state.sub));
+        break;
+      case 'community': showCommunityPage('all'); break;
+      case 'teachers_hub': showTeachersHub(); break;
+      case 'doctors': showDoctorsHub(); break;
+      case 'doctors_community': showDoctorsCommunity(); break;
+      case 'news': showNewsPage(); break;
+      case 'charity': showCharityPage(); break;
+      case 'marriage': showMarriagePage(state.filter || 'all'); break;
+      case 'favorites': showFavorites(); break;
+      case 'deals': showDeals(); break;
+      case 'search': showSearchPage(); break;
+      case 'transport_news': showTransportPage(); break;
+      case 'market_prices': showMarketPrices(); break;
+      case 'prayer': showPrayerTimes(); break;
+      case 'emergency': showEmergencyPage(); break;
+      case 'daily_tips': showTipsPage(); break;
+      case 'more': showMore(); break;
+      default:
+        // صفحات مؤقتة زي الإضافة/التعديل/لوحة الأدمن — أأمن إننا نرجّع للرئيسية بدل ما نفتحها بحالة ناقصة
+        sessionStorage.removeItem('dynState');
+        break;
+    }
+  } catch(e) { console.warn('restoreOnRefresh failed:', e); }
+}
+
 // ===== INIT =====
 buildCatsGrid();
 // ===== ربط زرار الرجوع (أندرويد/متصفح) بالتنقل الداخلي =====
@@ -11697,6 +11756,7 @@ loadAds().then(async function() {
   try {
     await tryRestoreAdminSession();
   } catch(e) {}
+  try { restoreOnRefresh(); } catch(e) { console.warn('restoreOnRefresh err:', e); }
   try { loadHomeBanners(); } catch(e) {}
   try { loadGoldPrices(); } catch(e) {}
   try { loadPrayerTimes(); } catch(e) {}
