@@ -2072,7 +2072,7 @@ async function submitShopRegister(subcategory, catId) {
 
   // دالة تسجيل بترجّع الصف المحفوظ فعليًا (return=representation)
   async function insertTrader(payload) {
-    var res = await fetch(SB_URL + '/rest/v1/shop_traders', {
+    var res = await fetch(SB_URL + '/rest/v1/shop_traders?select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
