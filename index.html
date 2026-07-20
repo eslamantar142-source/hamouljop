@@ -1819,7 +1819,11 @@ async function updateShopLogo(input, traderId, subcategory) {
   showToast('⏳ جاري رفع البوستر...');
   var url = await uploadImage(input.files[0]);
   if(!url) { showToast('فشل رفع الصورة', 'error'); return; }
-  await sbFetch('PATCH', 'shop_traders?id=eq.'+traderId, { logo_url: url });
+  var phone = localStorage.getItem('my_shop_phone_'+traderId);
+  var passHash = localStorage.getItem('my_shop_pass_'+traderId);
+  try {
+    await sbRPC('secure_update_shop_logo', {p_phone: phone, p_password_hash: passHash, p_trader_id: traderId, p_logo_url: url});
+  } catch(e) { showToast('❌ حصل خطأ في حفظ الصورة', 'error'); return; }
   showToast('✅ تم تحديث بوستر المعرض!');
   var overlay = document.getElementById('shopDashOverlay');
   if(overlay) overlay.remove();
@@ -1843,7 +1847,9 @@ async function addShopGalleryImages(input, traderId) {
       if(url) newUrls.push(url);
     }
     var updated = current.concat(newUrls);
-    await sbFetch('PATCH', 'shop_traders?id=eq.'+traderId, { gallery_images: updated });
+    var ownerPhone = localStorage.getItem('my_shop_phone_'+traderId);
+    var ownerPassHash = localStorage.getItem('my_shop_pass_'+traderId);
+    await sbRPC('secure_update_shop_gallery', {p_phone: ownerPhone, p_password_hash: ownerPassHash, p_trader_id: traderId, p_gallery_images: updated});
     showToast('✅ تم إضافة الصور');
     var overlay = document.getElementById('shopDashOverlay');
     if(overlay) overlay.remove();
@@ -1861,7 +1867,9 @@ async function removeShopGalleryImage(traderId, index) {
     if(!trader) return;
     var current = trader.gallery_images || [];
     current.splice(index, 1);
-    await sbFetch('PATCH', 'shop_traders?id=eq.'+traderId, { gallery_images: current });
+    var ownerPhone2 = localStorage.getItem('my_shop_phone_'+traderId);
+    var ownerPassHash2 = localStorage.getItem('my_shop_pass_'+traderId);
+    await sbRPC('secure_update_shop_gallery', {p_phone: ownerPhone2, p_password_hash: ownerPassHash2, p_trader_id: traderId, p_gallery_images: current});
     showToast('✅ تم حذف الصورة');
     var overlay = document.getElementById('shopDashOverlay');
     if(overlay) overlay.remove();
@@ -1934,15 +1942,18 @@ async function submitShopEdit(traderId) {
   if(ytLink) socialLinks.push({type:'youtube', url:ytLink});
   if(ttLink) socialLinks.push({type:'tiktok', url:ttLink});
   try {
-    await sbFetch('PATCH', 'shop_traders?id=eq.'+traderId, {
-      shop_name: name,
-      phone: phone,
-      description: desc || null,
-      address: address || null,
-      map_url: mapurl || null,
-      opening_hours: openingHours || null,
-      delivery_available: deliveryAvailable || null,
-      social_links: socialLinks.length ? socialLinks : null
+    var ownerPhone3 = localStorage.getItem('my_shop_phone_'+traderId);
+    var ownerPassHash3 = localStorage.getItem('my_shop_pass_'+traderId);
+    await sbRPC('secure_update_shop_info', {
+      p_phone: ownerPhone3, p_password_hash: ownerPassHash3, p_trader_id: traderId,
+      p_shop_name: name,
+      p_phone_new: phone,
+      p_description: desc || null,
+      p_address: address || null,
+      p_map_url: mapurl || null,
+      p_opening_hours: openingHours || null,
+      p_delivery_available: deliveryAvailable || null,
+      p_social_links: socialLinks.length ? socialLinks : null
     });
     showToast('✅ تم حفظ التعديلات');
     var editOverlay = document.getElementById('shopEditOverlay');
@@ -1961,7 +1972,9 @@ async function deleteMyShop(traderId) {
   if(!confirm('متأكد إنك عايز تحذف المعرض نهائيًا؟ الخطوة دي مش هترجع.')) return;
   if(!confirm('تأكيد أخير: هيتم حذف المعرض وكل منتجاته من دليل الحامول نهائيًا.')) return;
   try {
-    await sbFetch('PATCH', 'shop_traders?id=eq.'+traderId, {status: 'deleted'});
+    var ownerPhone4 = localStorage.getItem('my_shop_phone_'+traderId);
+    var ownerPassHash4 = localStorage.getItem('my_shop_pass_'+traderId);
+    await sbRPC('secure_delete_shop_trader', {p_phone: ownerPhone4, p_password_hash: ownerPassHash4, p_trader_id: traderId});
     localStorage.removeItem('my_shop_phone_'+traderId);
     showToast('✅ تم حذف المعرض');
     var dashOverlay = document.getElementById('shopDashOverlay');
