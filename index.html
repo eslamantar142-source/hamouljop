@@ -10592,7 +10592,7 @@ async function reactToComment(commentId, emoji, postId) {
     const c = comments.find(x => x.id === commentId);
     const reactions = Object.assign({}, c ? c.reactions : {});
     reactions[emoji] = (reactions[emoji] || 0) + 1;
-    await sbFetch('PATCH', `community_comments?id=eq.${commentId}`, {reactions});
+    await sbRPC('set_comment_reactions', {p_comment_id: commentId, p_reactions: reactions});
     await loadPostDetail(postId);
   } catch(e) { showToast('خطأ، جرب تاني','error'); }
 }
