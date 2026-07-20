@@ -1390,6 +1390,8 @@ async function moveAdOrder(adId, direction, catId, sub) {
 }
 
 async function openShop(traderId) {
+  sessionStorage.setItem('dynState', JSON.stringify({type:'shop_detail', traderId}));
+  try{history.pushState({dyn:1},'');}catch(e){}
   const page = document.getElementById('dynamicPage');
   page.innerHTML = '<div style="text-align:center;padding:60px;color:var(--gray);">⏳ جاري تحميل المعرض...</div>';
 
@@ -3119,6 +3121,7 @@ async function openAdDetails(adId) {
   }
   window._restoringFromDetail = false;
   window._adDetailOpen = true;
+  sessionStorage.setItem('dynState', JSON.stringify({type:'ad_detail', adId}));
   try{history.pushState({dyn:1,detail:1},'');}catch(e){}
 
   // جلب الإحصائيات
@@ -11723,6 +11726,12 @@ function restoreOnRefresh() {
         break;
       case 'shops':
         if(state.sub) showShopsPage(state.sub, state.catId || getShopCatId(state.sub));
+        break;
+      case 'shop_detail':
+        if(state.traderId) openShop(state.traderId);
+        break;
+      case 'ad_detail':
+        if(state.adId) openAdDetails(state.adId);
         break;
       case 'community': showCommunityPage('all'); break;
       case 'teachers_hub': showTeachersHub(); break;
