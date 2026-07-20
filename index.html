@@ -2197,7 +2197,7 @@ async function showShopDashboard(trader) {
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;overflow-y:auto;';
   overlay.innerHTML =
     '<div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:14px 16px;display:flex;align-items:center;gap:10px;color:white;">' +
-      '<button onclick="document.getElementById(\'shopDashOverlay\').remove()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">✕ خروج</button>' +
+      '<button onclick="document.getElementById(\'shopDashOverlay\').remove();openShop(\''+trader.id+'\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">✕ خروج</button>' +
       '<div style="flex:1;text-align:center;font-size:15px;font-weight:900;">لوحة تحكم ' + escapeHtml(trader.shop_name) + '</div>' +
       '<button onclick="showShopsPage(\'' + trader.subcategory + '\',\'' + getShopCatId(trader.subcategory) + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">👁️ شوف</button>' +
     '</div>' +
