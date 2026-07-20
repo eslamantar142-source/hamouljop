@@ -1528,6 +1528,8 @@ async function openShop(traderId) {
     '</div>' +
     // زرار "إدارة معرضي" لو ما كانش مسجل دخول بعد
     (!isOwner ? '<button onclick="showShopLoginForId(\'' + traderId + '\',\'' + trader.subcategory + '\')" style="position:fixed;bottom:20px;left:20px;background:#7c3aed;color:white;border:none;padding:12px 16px;border-radius:12px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.4);z-index:100;">🔑 إدارة معرضي</button>' : '');
+  page.classList.add('active');
+  document.body.style.overflow = 'hidden';
   loadShopComments(traderId);
 }
 
