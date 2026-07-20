@@ -2326,19 +2326,26 @@ async function showShopDashboard(trader) {
 function showAddSection(traderId) {
   var name = prompt('اسم القسم الجديد (مثال: هدوم شتوي):');
   if(!name || !name.trim()) return;
-  sbFetch('POST', 'shop_sections', { trader_id: traderId, name: name.trim() }).then(function() {
+  var phone = localStorage.getItem('my_shop_phone_'+traderId);
+  var passHash = localStorage.getItem('my_shop_pass_'+traderId);
+  sbRPC('secure_insert_shop_section', {p_phone: phone, p_password_hash: passHash, p_trader_id: traderId, p_name: name.trim()}).then(function() {
     showToast('✅ تم إضافة القسم');
     // refresh dashboard
     var overlay = document.getElementById('shopDashOverlay');
     if(overlay) overlay.remove();
     sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+  }).catch(function(e) {
+    showToast('❌ حصل خطأ في إضافة القسم', 'error');
   });
 }
 
 async function deleteShopSection(sectionId, traderId) {
   if(!confirm('مسح القسم ده وكل منتجاته؟')) return;
-  await sbFetch('DELETE', 'shop_products?section_id=eq.'+sectionId, null);
-  await sbFetch('DELETE', 'shop_sections?id=eq.'+sectionId, null);
+  var phone = localStorage.getItem('my_shop_phone_'+traderId);
+  var passHash = localStorage.getItem('my_shop_pass_'+traderId);
+  try {
+    await sbRPC('secure_delete_shop_section', {p_phone: phone, p_password_hash: passHash, p_section_id: sectionId});
+  } catch(e) { showToast('❌ حصل خطأ في حذف القسم', 'error'); return; }
   showToast('تم حذف القسم');
   var overlay = document.getElementById('shopDashOverlay');
   if(overlay) overlay.remove();
@@ -2442,18 +2449,24 @@ async function submitShopProduct(traderId) {
     }
   }
 
-  await sbFetch('POST', 'shop_products', {
-    trader_id: traderId,
-    section_id: sectionId || null,
-    title: title,
-    price: price ? parseFloat(price) : null,
-    stock: stock ? parseInt(stock) : null,
-    is_active: isActive,
-    description: desc || null,
-    image_url: imageUrls[0] || null,  // الصورة الأولى كصورة رئيسية
-    images: imageUrls,
-    links: links
-  });
+  var myPhone = localStorage.getItem('my_shop_phone_'+traderId);
+  var myPassHash = localStorage.getItem('my_shop_pass_'+traderId);
+  try {
+    await sbRPC('secure_insert_shop_product', {
+      p_phone: myPhone, p_password_hash: myPassHash, p_trader_id: traderId, p_section_id: sectionId || null,
+      p_title: title,
+      p_price: price ? parseFloat(price) : null,
+      p_stock: stock ? parseInt(stock) : null,
+      p_is_active: isActive,
+      p_description: desc || null,
+      p_image_url: imageUrls[0] || null,  // الصورة الأولى كصورة رئيسية
+      p_images: imageUrls,
+      p_links: links
+    });
+  } catch(e) {
+    showToast('❌ حصل خطأ في إضافة المنتج', 'error');
+    return;
+  }
 
   showToast('✅ تم إضافة المنتج!');
   var overlay = document.getElementById('shopDashOverlay');
@@ -2463,7 +2476,11 @@ async function submitShopProduct(traderId) {
 
 async function deleteShopProduct(productId, traderId) {
   if(!confirm('مسح المنتج ده؟')) return;
-  await sbFetch('DELETE', 'shop_products?id=eq.'+productId, null);
+  var phone = localStorage.getItem('my_shop_phone_'+traderId);
+  var passHash = localStorage.getItem('my_shop_pass_'+traderId);
+  try {
+    await sbRPC('secure_delete_shop_product', {p_phone: phone, p_password_hash: passHash, p_product_id: productId});
+  } catch(e) { showToast('❌ حصل خطأ في حذف المنتج', 'error'); return; }
   showToast('تم حذف المنتج');
   var overlay = document.getElementById('shopDashOverlay');
   if(overlay) overlay.remove();
@@ -2550,15 +2567,18 @@ async function saveEditedProduct(productId, traderId) {
     }
   }
 
+  var ownerPhone = localStorage.getItem('my_shop_phone_'+traderId);
+  var ownerPassHash = localStorage.getItem('my_shop_pass_'+traderId);
   try {
-    await sbFetch('PATCH', 'shop_products?id=eq.'+productId, {
-      title: title,
-      price: price !== '' ? parseFloat(price) : null,
-      stock: stock !== '' ? parseInt(stock) : null,
-      is_active: active,
-      description: desc || null,
-      images: keptImgs.length ? keptImgs : null,
-      image_url: keptImgs.length ? keptImgs[0] : null
+    await sbRPC('secure_update_shop_product', {
+      p_phone: ownerPhone, p_password_hash: ownerPassHash, p_product_id: productId,
+      p_title: title,
+      p_price: price !== '' ? parseFloat(price) : null,
+      p_stock: stock !== '' ? parseInt(stock) : null,
+      p_is_active: active,
+      p_description: desc || null,
+      p_image_url: keptImgs.length ? keptImgs[0] : null,
+      p_images: keptImgs.length ? keptImgs : null
     });
   } catch(e) { showToast('حصل خطأ في الحفظ', 'error'); return; }
   showToast('✅ تم حفظ التعديلات!');
@@ -2593,8 +2613,10 @@ async function toggleProductActive(checkbox, traderId) {
   var pid = checkbox.dataset.pid;
   var newState = checkbox.checked;
   checkbox.disabled = true;
+  var phone = localStorage.getItem('my_shop_phone_'+traderId);
+  var passHash = localStorage.getItem('my_shop_pass_'+traderId);
   try {
-    await sbFetch('PATCH', 'shop_products?id=eq.'+pid, {is_active: newState});
+    await sbRPC('secure_toggle_shop_product_active', {p_phone: phone, p_password_hash: passHash, p_product_id: pid, p_is_active: newState});
     showToast(newState ? '✅ المنتج رجع معروض للبيع' : '🔴 تم تعليم المنتج كـ"تم البيع"');
   } catch(e) {
     showToast('حصل خطأ، حاول تاني', 'error');
@@ -2632,9 +2654,11 @@ async function secDrop(e, traderId) {
   var list = document.getElementById('sectionsList');
   if(!list) return;
   var rows = list.querySelectorAll('.sec-drag-row');
+  var phone = localStorage.getItem('my_shop_phone_'+traderId);
+  var passHash = localStorage.getItem('my_shop_pass_'+traderId);
   var updates = [];
   rows.forEach(function(row, idx){
-    updates.push(sbFetch('PATCH', 'shop_sections?id=eq.'+row.dataset.sid, {sort_order: idx}));
+    updates.push(sbRPC('secure_reorder_shop_section', {p_phone: phone, p_password_hash: passHash, p_section_id: row.dataset.sid, p_sort_order: idx}));
   });
   try { await Promise.all(updates); showToast('✅ اتغير ترتيب الأقسام'); } catch(err) { showToast('حصل خطأ في الترتيب', 'error'); }
 }
