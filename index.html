@@ -9019,15 +9019,21 @@ function showTraderUpdateDialog() {
 
 async function submitTraderPrices() {
   var inputs = document.querySelectorAll('.price-upd-inp');
-  var now = new Date().toISOString();
   var errors = 0;
+  var phone = localStorage.getItem('trader_phone');
+  var passHash = localStorage.getItem('trader_pass');
+  if(!phone || !passHash) {
+    document.getElementById('traderUpdateOverlay').remove();
+    showToast('لازم تسجل دخول تاني ⚠️', 'error');
+    return;
+  }
   for(var i=0; i<inputs.length; i++){
     var inp = inputs[i];
     var id = inp.getAttribute('data-id');
     var price = parseFloat(inp.value);
     if(!price||price<=0) continue;
     try {
-      await sbFetch('PATCH', 'market_traders?id=eq.'+id, {price: price, updated_at: now});
+      await sbRPC('secure_update_market_price', {p_phone: phone, p_password_hash: passHash, p_trader_row_id: id, p_price: price});
     } catch(e) { errors++; }
   }
   document.getElementById('traderUpdateOverlay').remove();
