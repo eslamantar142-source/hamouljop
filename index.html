@@ -8815,8 +8815,9 @@ async function refreshMarketContent(filter) {
         '<button onclick="showTraderUpdateDialog()" style="background:#16a34a;color:white;border:none;padding:7px 14px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">✏️ حدّث أسعارك</button>' +
       '</div>';
     } else {
-      wrap.innerHTML = '<div style="padding:8px 16px;background:#fef9c3;border-bottom:1px solid #fde047;text-align:center;">' +
+      wrap.innerHTML = '<div style="padding:8px 16px;background:#fef9c3;border-bottom:1px solid #fde047;text-align:center;display:flex;gap:8px;justify-content:center;">' +
         '<button onclick="showTraderLoginDialog()" style="background:#92400e;color:white;border:none;padding:7px 18px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">🏪 أنا تاجر — دخول</button>' +
+        '<button onclick="showTraderRegisterDialog()" style="background:#1a7a4a;color:white;border:none;padding:7px 18px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:900;cursor:pointer;">➕ سجّل نفسك كتاجر</button>' +
       '</div>';
     }
   }
@@ -8983,6 +8984,60 @@ async function doTraderLogin() {
     showToast('أهلاً يا '+rows[0].trader_name+' 👋');
     await refreshMarketContent('all');
   } catch(e) { showToast('خطأ في الدخول', 'error'); }
+}
+
+// ===== تسجيل تاجر جديد بنفسه (بدون موافقة أدمن) =====
+function showTraderRegisterDialog() {
+  var secs = MARKET_SECTIONS.map(function(s){ return '<option value="'+s.id+'">'+s.icon+' '+s.id+'</option>'; }).join('');
+  var overlay = document.createElement('div');
+  overlay.id = 'traderRegisterOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;">' +
+      '<div style="font-size:16px;font-weight:900;margin-bottom:14px;text-align:center;">🏪 سجّل نفسك كتاجر</div>' +
+      '<select id="tr_sec" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;"><option value="">— اختار القسم —</option>' + secs + '</select>' +
+      '<input id="tr_prod" type="text" placeholder="اسم المنتج (مثال: فراخ بلدي، بلطي، طماطم...)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="tr_name" type="text" placeholder="اسمك" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="tr_phone" type="tel" placeholder="رقم موبايلك" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;" dir="ltr">' +
+      '<input id="tr_pass" type="password" placeholder="اختار كلمة سر (هتستخدمها بعدين تدخل بيها)" autocomplete="new-password" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="tr_addr" type="text" placeholder="العنوان / الموقع" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="tr_price" type="number" placeholder="السعر الحالي للكيلو (جنيه)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:14px;">' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="submitTraderRegister()" style="flex:1;background:#1a7a4a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ سجّل</button>' +
+        '<button onclick="var o=document.getElementById(\'traderRegisterOverlay\');if(o)o.remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function submitTraderRegister() {
+  var sec   = document.getElementById('tr_sec').value;
+  var prod  = document.getElementById('tr_prod').value.trim();
+  var name  = document.getElementById('tr_name').value.trim();
+  var phone = document.getElementById('tr_phone').value.trim();
+  var pass  = document.getElementById('tr_pass').value.trim();
+  var addr  = document.getElementById('tr_addr').value.trim();
+  var price = document.getElementById('tr_price').value.trim();
+  if(!sec){ showToast('اختار القسم الأول ☝️', 'error'); document.getElementById('tr_sec').focus(); return; }
+  if(!prod){ showToast('اكتب اسم المنتج', 'error'); return; }
+  if(!name){ showToast('اكتب اسمك', 'error'); return; }
+  if(!phone || !/^01[0-9]{9}$/.test(phone)){ showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
+  if(!pass || pass.length < 4){ showToast('كلمة السر لازم تكون 4 حروف/أرقام على الأقل', 'error'); return; }
+  if(!price || isNaN(parseFloat(price))){ showToast('اكتب السعر', 'error'); return; }
+  try {
+    const passHash = await hashPass(pass);
+    await sbFetch('POST', 'market_traders', {
+      section: sec, product_name: prod, trader_name: name,
+      phone: phone, password_hash: passHash, address: addr,
+      price: parseFloat(price), updated_at: new Date().toISOString()
+    });
+    localStorage.setItem('trader_phone', phone);
+    localStorage.setItem('trader_pass', passHash);
+    localStorage.setItem('trader_name', name);
+    document.getElementById('traderRegisterOverlay').remove();
+    showToast('✅ أهلاً بيك يا ' + name + '، سعرك ظاهر دلوقتي');
+    await refreshMarketContent('all');
+  } catch(e) { showToast('حصل خطأ في التسجيل، جرب تاني', 'error'); }
 }
 
 function showTraderUpdateDialog() {
