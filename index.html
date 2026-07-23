@@ -8749,10 +8749,20 @@ function formatLastUpdate(date, isToday) {
   return '🟠 آخر تحديث: منذ ' + diff + ' أيام — قد تكون قديمة';
 }
 
-// جيب كل أسعار التجار (مش مرتبطة بيوم — كل تاجر عنده آخر سعر بتاعه)
+// جيب كل أسعار التجار (مش مرتبطة بيوم — كل تاجر عنده منتجات كتير، كل منتج له آخر سعر بتاعه)
 async function loadMarketPricesData() {
   try {
-    const rows = await sbFetch('GET', 'market_traders?select=id,section,product_name,trader_name,phone,address,price,updated_at&order=updated_at.desc&limit=500') || [];
+    const raw = await sbFetch('GET', 'market_products?select=id,section,product_name,price,updated_at,trader_id,trader:market_traders(name,phone,address,photo_url)&order=updated_at.desc&limit=500') || [];
+    const rows = raw.map(function(r){
+      return {
+        id: r.id, section: r.section, product_name: r.product_name, price: r.price, updated_at: r.updated_at,
+        trader_id: r.trader_id,
+        trader_name: r.trader ? r.trader.name : 'تاجر',
+        phone: r.trader ? r.trader.phone : '',
+        address: r.trader ? r.trader.address : '',
+        photo_url: r.trader ? r.trader.photo_url : ''
+      };
+    });
     const lastUpdate = rows.length ? new Date(rows[0].updated_at) : null;
     const todayStr = new Date().toISOString().split('T')[0];
     const isToday = lastUpdate ? lastUpdate.toISOString().startsWith(todayStr) : false;
@@ -8862,7 +8872,10 @@ function renderTraderMarket(rows, filter) {
           traders.map(function(t, idx) {
             var isBest = parseFloat(t.price) === minPrice && idx === 0;
             var updTime = t.updated_at ? new Date(t.updated_at).toLocaleDateString('ar-EG',{day:'numeric',month:'short'}) : '';
+            var waNum = t.phone ? '20' + t.phone.replace(/^0/,'') : '';
+            var avatar = t.photo_url ? '<img src="'+escapeHtml(t.photo_url)+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">' : '';
             return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #f1f5f9;background:' + (isBest?'#f0fdf4':'white') + ';">' +
+              avatar +
               '<div style="flex:1;">' +
                 '<div style="font-size:13px;font-weight:900;color:#1e293b;">' + (isBest?'🏆 ':'') + escapeHtml(t.trader_name||'تاجر') + '</div>' +
                 '<div style="font-size:11px;color:#64748b;margin-top:2px;">📍 ' + escapeHtml(t.address||'') + (t.address&&t.phone?' • ':'') + (t.phone?'📞 '+escapeHtml(t.phone):'') + '</div>' +
@@ -8873,7 +8886,8 @@ function renderTraderMarket(rows, filter) {
                 '<div style="font-size:10px;color:#94a3b8;">للكيلو</div>' +
               '</div>' +
               (t.phone ? '<a href="tel:' + escapeHtml(t.phone) + '" style="background:#dcfce7;color:#16a34a;border:none;padding:8px 10px;border-radius:8px;font-size:16px;text-decoration:none;flex-shrink:0;">📞</a>' : '') +
-              (isAdmin ? '<button data-tid="'+t.id+'" onclick="deleteTrader(this.dataset.tid)" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">🗑️</button>' : '') +
+              (waNum ? '<a href="https://wa.me/' + waNum + '" target="_blank" style="background:#dcfce7;color:#16a34a;border:none;padding:8px 10px;border-radius:8px;font-size:16px;text-decoration:none;flex-shrink:0;">💬</a>' : '') +
+              (isAdmin ? '<button data-tid="'+t.id+'" onclick="deleteMarketProduct(this.dataset.tid)" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">🗑️</button>' : '') +
             '</div>';
           }).join('') +
         '</div>';
@@ -8939,11 +8953,8 @@ async function submitAddTrader() {
   if(!price || isNaN(parseFloat(price))){ showToast('اكتب السعر', 'error'); return; }
   try {
     const passHash = await hashPass(pass);
-    await sbFetch('POST', 'market_traders', {
-      section: sec, product_name: prod, trader_name: name,
-      phone: phone, password_hash: passHash, address: addr,
-      price: parseFloat(price), updated_at: new Date().toISOString()
-    });
+    const traderId = await sbRPC('secure_register_market_trader', {p_name: name, p_phone: phone, p_password_hash: passHash, p_address: addr});
+    await sbRPC('secure_add_market_product', {p_phone: phone, p_password_hash: passHash, p_trader_id: traderId, p_section: sec, p_product_name: prod, p_price: parseFloat(price)});
     document.getElementById('traderAddOverlay').remove();
     showToast('✅ تم إضافة التاجر ' + name);
     await refreshMarketContent('all');
@@ -8977,11 +8988,12 @@ async function doTraderLogin() {
     var passHash = await hashPass(pass);
     var rows = await sbRPC('market_trader_login', {p_phone: phone, p_password_hash: passHash}) || [];
     if(!rows.length){ showToast('رقم الموبايل أو كلمة السر غلط ❌', 'error'); return; }
+    localStorage.setItem('trader_id', rows[0].id);
     localStorage.setItem('trader_phone', phone);
     localStorage.setItem('trader_pass', passHash);
-    localStorage.setItem('trader_name', rows[0].trader_name);
+    localStorage.setItem('trader_name', rows[0].name);
     document.getElementById('traderLoginOverlay').remove();
-    showToast('أهلاً يا '+rows[0].trader_name+' 👋');
+    showToast('أهلاً يا '+rows[0].name+' 👋');
     await refreshMarketContent('all');
   } catch(e) { showToast('خطأ في الدخول', 'error'); }
 }
@@ -9026,11 +9038,9 @@ async function submitTraderRegister() {
   if(!price || isNaN(parseFloat(price))){ showToast('اكتب السعر', 'error'); return; }
   try {
     const passHash = await hashPass(pass);
-    await sbFetch('POST', 'market_traders', {
-      section: sec, product_name: prod, trader_name: name,
-      phone: phone, password_hash: passHash, address: addr,
-      price: parseFloat(price), updated_at: new Date().toISOString()
-    });
+    const traderId = await sbRPC('secure_register_market_trader', {p_name: name, p_phone: phone, p_password_hash: passHash, p_address: addr});
+    await sbRPC('secure_add_market_product', {p_phone: phone, p_password_hash: passHash, p_trader_id: traderId, p_section: sec, p_product_name: prod, p_price: parseFloat(price)});
+    localStorage.setItem('trader_id', traderId);
     localStorage.setItem('trader_phone', phone);
     localStorage.setItem('trader_pass', passHash);
     localStorage.setItem('trader_name', name);
@@ -9040,36 +9050,66 @@ async function submitTraderRegister() {
   } catch(e) { showToast('حصل خطأ في التسجيل، جرب تاني', 'error'); }
 }
 
-function showTraderUpdateDialog() {
+// ===== لوحة التاجر — تعديل الأسعار، إضافة منتج، تعديل البيانات =====
+async function showTraderUpdateDialog() {
+  var traderId = localStorage.getItem('trader_id');
   var phone = localStorage.getItem('trader_phone');
   var pass  = localStorage.getItem('trader_pass');
   var name  = localStorage.getItem('trader_name');
-  var myRows = (window._marketRows||[]).filter(function(r){ return r.phone===phone; });
-  if(!myRows.length){ showToast('مفيش منتجات مسجلة باسمك', 'error'); return; }
+  if(!traderId || !phone || !pass){ showToast('لازم تسجل دخول تاني ⚠️', 'error'); return; }
 
-  var items = myRows.map(function(r){
+  var myProducts = [];
+  try { myProducts = await sbFetch('GET', 'market_products?trader_id=eq.'+traderId+'&order=updated_at.desc') || []; } catch(e) {}
+
+  var secs = MARKET_SECTIONS.map(function(s){ return '<option value="'+s.id+'">'+s.icon+' '+s.id+'</option>'; }).join('');
+
+  var items = myProducts.length ? myProducts.map(function(r){
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9;">' +
-      '<div style="flex:1;font-size:13px;font-weight:700;">' + r.product_name + '<span style="font-size:11px;color:#94a3b8;margin-right:4px;">(' + r.section + ')</span></div>' +
-      '<input type="number" value="'+r.price+'" data-id="'+r.id+'" class="price-upd-inp" style="width:80px;padding:6px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-align:center;">' +
+      '<div style="flex:1;font-size:13px;font-weight:700;">' + escapeHtml(r.product_name) + '<span style="font-size:11px;color:#94a3b8;margin-right:4px;">(' + escapeHtml(r.section) + ')</span></div>' +
+      '<input type="number" value="'+r.price+'" data-id="'+r.id+'" class="price-upd-inp" style="width:70px;padding:6px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-align:center;">' +
       '<span style="font-size:11px;color:#64748b;">ج/كيلو</span>' +
+      '<button data-pid="'+r.id+'" onclick="deleteMyProduct(this.dataset.pid)" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 8px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️</button>' +
     '</div>';
-  }).join('');
+  }).join('') : '<div style="text-align:center;color:#94a3b8;font-size:12px;padding:10px 0;">مفيش أصناف مسجلة لسه</div>';
 
   var overlay = document.createElement('div');
   overlay.id = 'traderUpdateOverlay';
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
   overlay.innerHTML =
-    '<div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;">' +
-      '<div style="font-size:15px;font-weight:900;margin-bottom:4px;text-align:center;">✏️ تحديث أسعارك</div>' +
-      '<div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:14px;">يا '+name+'</div>' +
-      items +
-      '<div style="display:flex;gap:8px;margin-top:14px;">' +
-        '<button onclick="submitTraderPrices()" style="flex:1;background:#1a7a4a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💾 حفظ الأسعار</button>' +
-        '<button onclick="var o=document.getElementById(\'traderUpdateOverlay\');if(o)o.remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+    '<div style="background:white;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;">' +
+      '<div style="font-size:15px;font-weight:900;margin-bottom:4px;text-align:center;">✏️ لوحة التاجر</div>' +
+      '<div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:14px;">يا '+escapeHtml(name)+'</div>' +
+
+      '<div style="font-size:13px;font-weight:900;margin-bottom:6px;">أصنافك</div>' +
+      '<div id="myProductsList">' + items + '</div>' +
+      '<button onclick="submitTraderPrices()" id="submitTraderPricesBtn" style="width:100%;margin-top:10px;background:#1a7a4a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💾 حفظ الأسعار</button>' +
+
+      '<div style="border-top:1px solid #f1f5f9;margin:16px 0;padding-top:14px;">' +
+        '<div style="font-size:13px;font-weight:900;margin-bottom:8px;">➕ إضافة صنف جديد</div>' +
+        '<select id="np_sec" style="width:100%;padding:9px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:6px;"><option value="">— اختار القسم —</option>' + secs + '</select>' +
+        '<input id="np_name" type="text" placeholder="اسم المنتج" style="width:100%;padding:9px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:6px;">' +
+        '<input id="np_price" type="number" placeholder="السعر" style="width:100%;padding:9px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+        '<button onclick="submitAddMyProduct()" style="width:100%;background:#0369a1;color:white;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;">إضافة الصنف</button>' +
       '</div>' +
+
+      '<div style="border-top:1px solid #f1f5f9;margin:16px 0;padding-top:14px;">' +
+        '<div style="font-size:13px;font-weight:900;margin-bottom:8px;">👤 بياناتك</div>' +
+        '<input id="tp_name" type="text" value="'+escapeHtml(name)+'" placeholder="اسمك" style="width:100%;padding:9px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:6px;">' +
+        '<input id="tp_addr" type="text" placeholder="العنوان" style="width:100%;padding:9px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:6px;">' +
+        '<input id="tp_photo" type="file" accept="image/*" style="width:100%;margin-bottom:8px;font-size:12px;">' +
+        '<button onclick="submitTraderProfileEdit()" style="width:100%;background:#0369a1;color:white;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:900;cursor:pointer;">حفظ بياناتي</button>' +
+      '</div>' +
+
+      '<button onclick="var o=document.getElementById(\'traderUpdateOverlay\');if(o)o.remove()" style="width:100%;margin-top:10px;background:#f3f4f6;color:#666;border:none;padding:10px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إغلاق</button>' +
       '<button onclick="traderLogout()" style="width:100%;margin-top:8px;background:#fee2e2;color:#dc2626;border:none;padding:8px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">خروج من حساب التاجر</button>' +
     '</div>';
   document.body.appendChild(overlay);
+
+  // نجيب عنوان التاجر الحالي (مش محفوظ في localStorage) ونحطه في الحقل
+  try {
+    var meRows = await sbFetch('GET', 'market_traders?id=eq.'+traderId+'&select=address&limit=1') || [];
+    if(meRows[0] && meRows[0].address) document.getElementById('tp_addr').value = meRows[0].address;
+  } catch(e) {}
 }
 
 async function submitTraderPrices() {
@@ -9091,13 +9131,69 @@ async function submitTraderPrices() {
       await sbRPC('secure_update_market_price', {p_phone: phone, p_password_hash: passHash, p_trader_row_id: id, p_price: price});
     } catch(e) { errors++; }
   }
-  document.getElementById('traderUpdateOverlay').remove();
+  var o = document.getElementById('traderUpdateOverlay');
+  if(o) o.remove();
   if(errors) showToast('بعض الأسعار مش اتحفظت ⚠️', 'error');
   else showToast('✅ تم تحديث الأسعار!');
   await refreshMarketContent('all');
 }
 
+async function submitAddMyProduct() {
+  var sec = document.getElementById('np_sec').value;
+  var prod = document.getElementById('np_name').value.trim();
+  var price = document.getElementById('np_price').value.trim();
+  var traderId = localStorage.getItem('trader_id');
+  var phone = localStorage.getItem('trader_phone');
+  var passHash = localStorage.getItem('trader_pass');
+  if(!sec){ showToast('اختار القسم الأول ☝️', 'error'); return; }
+  if(!prod){ showToast('اكتب اسم المنتج', 'error'); return; }
+  if(!price || isNaN(parseFloat(price))){ showToast('اكتب السعر', 'error'); return; }
+  try {
+    await sbRPC('secure_add_market_product', {p_phone: phone, p_password_hash: passHash, p_trader_id: traderId, p_section: sec, p_product_name: prod, p_price: parseFloat(price)});
+    showToast('✅ تم إضافة الصنف');
+    var o = document.getElementById('traderUpdateOverlay');
+    if(o) o.remove();
+    await refreshMarketContent('all');
+    await showTraderUpdateDialog();
+  } catch(e) { showToast('حصل خطأ في الإضافة', 'error'); }
+}
+
+async function deleteMyProduct(productId) {
+  if(!confirm('تمسح الصنف ده؟')) return;
+  var phone = localStorage.getItem('trader_phone');
+  var passHash = localStorage.getItem('trader_pass');
+  try {
+    await sbRPC('secure_delete_market_product', {p_phone: phone, p_password_hash: passHash, p_product_id: productId});
+    showToast('تم الحذف');
+    var o = document.getElementById('traderUpdateOverlay');
+    if(o) o.remove();
+    await refreshMarketContent('all');
+    await showTraderUpdateDialog();
+  } catch(e) { showToast('حصل خطأ في الحذف', 'error'); }
+}
+
+async function submitTraderProfileEdit() {
+  var name = document.getElementById('tp_name').value.trim();
+  var addr = document.getElementById('tp_addr').value.trim();
+  var photoFile = document.getElementById('tp_photo').files[0];
+  var traderId = localStorage.getItem('trader_id');
+  var phone = localStorage.getItem('trader_phone');
+  var passHash = localStorage.getItem('trader_pass');
+  if(!name){ showToast('اكتب اسمك', 'error'); return; }
+  try {
+    var photoUrl = null;
+    if(photoFile) photoUrl = await uploadImage(photoFile);
+    await sbRPC('secure_update_market_trader_profile', {p_phone: phone, p_password_hash: passHash, p_trader_id: traderId, p_name: name, p_address: addr, p_photo_url: photoUrl});
+    localStorage.setItem('trader_name', name);
+    showToast('✅ تم حفظ بياناتك');
+    var o = document.getElementById('traderUpdateOverlay');
+    if(o) o.remove();
+    await refreshMarketContent('all');
+  } catch(e) { showToast('حصل خطأ في الحفظ', 'error'); }
+}
+
 function traderLogout() {
+  localStorage.removeItem('trader_id');
   localStorage.removeItem('trader_phone');
   localStorage.removeItem('trader_pass');
   localStorage.removeItem('trader_name');
@@ -9106,9 +9202,9 @@ function traderLogout() {
   refreshMarketContent('all');
 }
 
-async function deleteTrader(id) {
-  if(!confirm('تمسح التاجر ده؟')) return;
-  await sbFetch('DELETE', 'market_traders?id=eq.'+id, null);
+async function deleteMarketProduct(id) {
+  if(!confirm('تمسح الصنف ده؟')) return;
+  await sbFetch('DELETE', 'market_products?id=eq.'+id, null);
   showToast('تم الحذف');
   await refreshMarketContent('all');
 }
