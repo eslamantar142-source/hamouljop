@@ -3693,12 +3693,8 @@ async function submitEditAd(adId) {
       try {
         // تحديث الصورة الرئيسية في جدول الإعلانات
         await sbFetch('PATCH', `ads?id=eq.${adId}`, {image_url: newImages[0]});
-        // تحديث جدول الصور المتعددة: امسح القديمة وضيف الجديدة
-        try { await sbFetch('DELETE', `ad_images?ad_id=eq.${adId}`); } catch(delErr) { console.error('delete old ad_images failed:', delErr.message||delErr); }
-        for(const u of newImages) {
-          try { await sbFetch('POST', 'ad_images', {ad_id: adId, image_url: u}); }
-          catch(insErr) { console.error('insert ad_images failed:', insErr.message||insErr); showToast('⚠️ فشل حفظ صورة: ' + (insErr.message||'').slice(0,60), 'error'); }
-        }
+        // تحديث جدول الصور المتعددة عن طريق دالة آمنة بتتحقق من الملكية
+        await sbRPC('secure_update_ad_images', {p_token: curUser.token, p_ad_id: adId, p_image_urls: newImages});
         showToast('✅ تم تحديث الصور');
       } catch(imgSaveErr) {
         console.error('image save to ads failed:', imgSaveErr.message||imgSaveErr);
