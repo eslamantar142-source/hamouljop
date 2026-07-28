@@ -8001,7 +8001,8 @@ async function confirmDeleteMyProfile(profileId) {
 
 async function deleteMyProfile(profileId, announce) {
   try {
-    await sbFetch('DELETE', `marriage_profiles?id=eq.${profileId}`);
+    const deviceId = getDeviceId();
+    await sbRPC('delete_my_marriage_profile', {p_device_id: deviceId, p_profile_id: profileId});
     // أغلق كل الـ drawers
     document.getElementById('myProfileDrawer')?.remove();
     document.querySelectorAll('div[style*="z-index:700"]').forEach(d=>d.remove());
