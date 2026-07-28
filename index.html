@@ -3680,7 +3680,8 @@ async function submitEditAd(adId) {
         p_phone: updateData.phone, p_phone2: updateData.phone2,
         p_location: updateData.location, p_location_url: updateData.location_url,
         p_price: updateData.price, p_category: updateData.category, p_subcategory: updateData.subcategory,
-        p_images: null
+        p_images: null,
+        p_image_url: (newImages && newImages.length) ? newImages[0] : null
       });
     } catch(rrErr) {
       const rm = (rrErr.message||'');
@@ -3688,12 +3689,9 @@ async function submitEditAd(adId) {
       showToast('❌ ' + m, 'error');
       if(btn){btn.textContent='💾 حفظ التعديلات';btn.disabled=false;} return;
     }
-    // الصور بتتحدث بشكل منفصل (لو فيه صور جديدة)
+    // تحديث جدول الصور المتعددة (لو فيه صور جديدة)
     if(newImages && newImages.length) {
       try {
-        // تحديث الصورة الرئيسية في جدول الإعلانات
-        await sbFetch('PATCH', `ads?id=eq.${adId}`, {image_url: newImages[0]});
-        // تحديث جدول الصور المتعددة عن طريق دالة آمنة بتتحقق من الملكية
         await sbRPC('secure_update_ad_images', {p_token: curUser.token, p_ad_id: adId, p_image_urls: newImages});
         showToast('✅ تم تحديث الصور');
       } catch(imgSaveErr) {
