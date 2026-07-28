@@ -7705,14 +7705,15 @@ function showMarriagePage(filter='all') {
         <button onclick="showMarriageForm()" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ سجّل</button>
       </div>
     </div>
-    <div style="background:linear-gradient(135deg,#be185d,#ec4899);padding:16px;color:white;text-align:center;">
-      <div style="font-size:28px;margin-bottom:6px;">💍</div>
-      <div style="font-size:15px;font-weight:900;">بيت الحلال — مركز الحامول</div>
-      <div style="font-size:12px;opacity:.85;margin-top:4px;">منصة آمنة وموثوقة للتعارف الشرعي</div>
-      <div style="font-size:11px;opacity:.7;margin-top:4px;">البيانات سرية — التواصل بموافقة الطرفين فقط</div>
+    <div id="marriageCollapsible" style="overflow:hidden;max-height:400px;transition:max-height .25s ease;">
+      <div style="background:linear-gradient(135deg,#be185d,#ec4899);padding:16px;color:white;text-align:center;">
+        <div style="font-size:28px;margin-bottom:6px;">💍</div>
+        <div style="font-size:15px;font-weight:900;">بيت الحلال — مركز الحامول</div>
+        <div style="font-size:12px;opacity:.85;margin-top:4px;">منصة آمنة وموثوقة للتعارف الشرعي</div>
+        <div style="font-size:11px;opacity:.7;margin-top:4px;">البيانات سرية — التواصل بموافقة الطرفين فقط</div>
+      </div>
+      <div id="marriageTipsBox">${localStorage.getItem('marriage_tips_seen') ? '' : renderMarriageTipsCard()}</div>
     </div>
-
-    <div id="marriageTipsBox">${localStorage.getItem('marriage_tips_seen') ? '' : renderMarriageTipsCard()}</div>
 
     <!-- تابات الجنس -->
     <div style="display:flex;background:white;border-bottom:2px solid var(--border);">
@@ -7789,6 +7790,22 @@ function showMarriagePage(filter='all') {
   document.body.style.overflow = 'hidden';
   loadCatBanner('marriage');
   loadMarriageProfiles(filter);
+
+  // إخفاء البانر التعريفي تلقائيًا لما ننزل، وإظهاره تاني لما نرجع لفوق
+  const mContent = document.getElementById('marriageContent');
+  const mCollapsible = document.getElementById('marriageCollapsible');
+  if(mContent && mCollapsible) {
+    let lastTop = 0;
+    mContent.addEventListener('scroll', function() {
+      const top = mContent.scrollTop;
+      if(top > lastTop && top > 40) {
+        mCollapsible.style.maxHeight = '0px';
+      } else if(top < lastTop) {
+        mCollapsible.style.maxHeight = '400px';
+      }
+      lastTop = top;
+    });
+  }
 }
 
 async function loadMarriageProfiles(filter='all') {
@@ -7984,16 +8001,19 @@ async function showMyMarriageProfile() {
 
 async function confirmDeleteMyProfile(profileId) {
   const drawer = document.createElement('div');
+  drawer.className = 'marriageDeleteConfirmDrawer';
   drawer.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:20px;';
+  drawer.addEventListener('click', e => { if(e.target===drawer) drawer.remove(); });
   drawer.innerHTML = `
-    <div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:340px;text-align:center;">
+    <div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:340px;text-align:center;position:relative;">
+      <button onclick="this.closest('.marriageDeleteConfirmDrawer').remove()" style="position:absolute;top:10px;left:10px;background:#f3f4f6;border:none;width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;">✕</button>
       <div style="font-size:40px;margin-bottom:12px;">💍</div>
       <div style="font-size:16px;font-weight:900;margin-bottom:8px;">هل اتجوزت؟ 🎉</div>
       <p style="font-size:13px;color:var(--gray);line-height:1.6;margin-bottom:20px;">لو اتجوزت الحمد لله! احذف ملفك عشان تفرّح الناس بخبر جواز جديد في الحامول 💍<br><br>لو مش اتجوزت وعاوز تحذف لسبب تاني، اضغط تأكيد الحذف.</p>
       <div style="display:flex;flex-direction:column;gap:8px;">
         <button onclick="deleteMyProfile('${profileId}', true)" style="background:#10b981;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💍 اتجوزت — احذف وشاركوا الخبر!</button>
         <button onclick="deleteMyProfile('${profileId}', false)" style="background:#fee2e2;color:#dc2626;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🗑️ حذف بدون إعلان</button>
-        <button onclick="this.closest('div[style*=\"fixed\"]').remove()" style="background:#f3f4f6;color:var(--gray);border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>
+        <button onclick="this.closest('.marriageDeleteConfirmDrawer').remove()" style="background:#f3f4f6;color:var(--gray);border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>
       </div>
     </div>`;
   document.body.appendChild(drawer);
@@ -8005,6 +8025,7 @@ async function deleteMyProfile(profileId, announce) {
     await sbRPC('delete_my_marriage_profile', {p_device_id: deviceId, p_profile_id: profileId});
     // أغلق كل الـ drawers
     document.getElementById('myProfileDrawer')?.remove();
+    document.querySelectorAll('.marriageDeleteConfirmDrawer').forEach(d=>d.remove());
     document.querySelectorAll('div[style*="z-index:700"]').forEach(d=>d.remove());
     if(announce) {
       showToast('💍 مبروك الجواز! تم حذف ملفك');
@@ -8014,7 +8035,10 @@ async function deleteMyProfile(profileId, announce) {
       showToast('✅ تم حذف ملفك');
     }
     loadMarriageProfiles();
-  } catch(e) { showToast('خطأ في الحذف','error'); }
+  } catch(e) {
+    document.querySelectorAll('.marriageDeleteConfirmDrawer').forEach(d=>d.remove());
+    showToast('خطأ في الحذف','error');
+  }
 }
 
 async function toggleMarriageLike(profileId, btn) {
@@ -8526,7 +8550,7 @@ function showMarriageForm() {
             <button onclick="removeMCard()" style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
           </div>
           <label for="mCardInput" id="mCardLabel" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:2px dashed #be185d;border-radius:10px;cursor:pointer;color:#be185d;font-size:13px;font-weight:700;background:#fdf2f8;">
-            <span style="font-size:20px;">🖼️</span> اضغط لرفع صورة البطاقة
+            <span style="font-size:20px;">🖼️</span> اضغط لرفع صورة البطاقة <span style="color:#dc2626;">(إجباري)*</span>
           </label>
           <input type="file" id="mCardInput" accept="image/*" style="display:none;" onchange="previewMCard(this)">
         </div>
@@ -8669,19 +8693,19 @@ async function submitMarriageProfile() {
   if(!phone || !/^01[0-9]{9}$/.test(phone)) { showToast('رقم التليفون لازم يبدأ بـ 01 ويتكون من 11 رقم','error'); return; }
   if(whatsapp && !/^01[0-9]{9}$/.test(whatsapp)) { showToast('رقم الواتساب لازم يبدأ بـ 01 ويتكون من 11 رقم','error'); return; }
   if(!agree) { showToast('لازم توافق على سياسة الخصوصية وشروط الاستخدام أولاً','error'); return; }
+  const cardInputCheck = document.getElementById('mCardInput');
+  if(!cardInputCheck || !cardInputCheck.files[0]) { showToast('لازم ترفع صورة البطاقة الشخصية','error'); return; }
 
   const btn = document.getElementById('mSubmit');
   btn.disabled=true;
 
   try {
-    // رفع صورة البطاقة
+    // رفع صورة البطاقة (إجباري)
     let card_image = null;
     const cardInput = document.getElementById('mCardInput');
-    if(cardInput && cardInput.files[0]) {
-      btn.textContent = '⏳ جاري رفع صورة البطاقة...';
-      try { card_image = await uploadMarriageImage(cardInput.files[0], 'card'); }
-      catch(e) { showToast('⚠️ تعذر رفع صورة البطاقة — سيتم الإرسال بدونها'); }
-    }
+    btn.textContent = '⏳ جاري رفع صورة البطاقة...';
+    try { card_image = await uploadMarriageImage(cardInput.files[0], 'card'); }
+    catch(e) { showToast('⚠️ تعذر رفع صورة البطاقة، حاول تاني','error'); btn.disabled=false; btn.textContent='إرسال'; return; }
 
     // رفع الصورة الشخصية (اختيارية)
     let personal_photo = null;
