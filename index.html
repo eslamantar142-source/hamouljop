@@ -8906,6 +8906,7 @@ function renderTraderMarket(rows, filter) {
               '</div>' +
               (t.phone ? '<a href="tel:' + escapeHtml(t.phone) + '" style="background:#dcfce7;color:#16a34a;border:none;padding:8px 10px;border-radius:8px;font-size:16px;text-decoration:none;flex-shrink:0;">📞</a>' : '') +
               (waNum ? '<a href="https://wa.me/' + waNum + '" target="_blank" style="background:#dcfce7;color:#16a34a;border:none;padding:8px 10px;border-radius:8px;font-size:16px;text-decoration:none;flex-shrink:0;">💬</a>' : '') +
+              (isAdmin ? '<button data-trid="'+t.trader_id+'" data-trname="'+escapeHtml(t.trader_name||'')+'" onclick="resetTraderPassword(this.dataset.trid,this.dataset.trname)" style="background:#fef3c7;color:#92400e;border:none;padding:8px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">🔑</button>' : '') +
               (isAdmin ? '<button data-tid="'+t.id+'" onclick="deleteMarketProduct(this.dataset.tid)" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">🗑️</button>' : '') +
             '</div>';
           }).join('') +
@@ -8995,8 +8996,15 @@ function showTraderLoginDialog() {
         '<button onclick="doTraderLogin()" style="flex:1;background:#1a7a4a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">دخول</button>' +
         '<button onclick="var o=document.getElementById(\'traderLoginOverlay\');if(o)o.remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
       '</div>' +
+      '<a href="javascript:void(0)" onclick="forgotTraderPassword()" style="display:block;margin-top:14px;font-size:12px;color:#0369a1;text-decoration:underline;">نسيت كلمة السر؟</a>' +
     '</div>';
   document.body.appendChild(overlay);
+}
+
+function forgotTraderPassword() {
+  const phone = document.getElementById('tl_phone').value.trim();
+  const msg = 'السلام عليكم، نسيت كلمة سر حسابي كتاجر في سوق الحامول. رقم موبايلي: ' + (phone || '(اكتب رقمك هنا)');
+  window.open('https://wa.me/' + ADMIN_WA + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
 async function doTraderLogin() {
@@ -9219,6 +9227,17 @@ function traderLogout() {
   var o = document.getElementById('traderUpdateOverlay');
   if(o) o.remove();
   refreshMarketContent('all');
+}
+
+async function resetTraderPassword(traderId, traderName) {
+  if(!confirm('تعيد ضبط كلمة سر "'+traderName+'"؟ الباسورد القديم هيبقى ملغي.')) return;
+  const tempPass = String(Math.floor(100000 + Math.random()*900000)); // كود 6 أرقام
+  try {
+    const passHash = await hashPass(tempPass);
+    await sbRPC('admin_reset_market_trader_password', {p_trader_id: traderId, p_new_password_hash: passHash});
+    prompt('كلمة السر المؤقتة الجديدة (انسخها وابعتها للتاجر):', tempPass);
+    showToast('✅ تم إعادة ضبط كلمة السر');
+  } catch(e) { showToast('حصل خطأ', 'error'); }
 }
 
 async function deleteMarketProduct(id) {
