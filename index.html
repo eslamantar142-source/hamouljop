@@ -444,7 +444,7 @@ async function hashPass(str) {
 }
 
 // ============ نظام تسجيل المستخدمين (موبايل+باسورد أو جيميل) ============
-const GOOGLE_CLIENT_ID = 'GOOGLE_CLIENT_ID_PLACEHOLDER'; // حط الـ Client ID بتاعك من Google Cloud Console هنا
+const GOOGLE_CLIENT_ID = '1075657280150-b7l2nqp8ui28kipq01p9m02u5mgu6tum.apps.googleusercontent.com';
 
 async function sbRPC(fn, params) {
   const res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
@@ -631,13 +631,15 @@ function renderGoogleButton() {
 
 async function handleGoogleCredential(response) {
   try {
-    const base64 = response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
-    const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(function(c){
-      return '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2);
-    }).join('')));
-    const rows = await sbRPC('upsert_google_user', {p_email:payload.email, p_name:payload.name||payload.email, p_google_sub:payload.sub});
-    const u = rows && rows[0];
-    finishAuth({id:u.id, name:u.name, email:payload.email, token:u.token});
+    const res = await fetch(SB_URL + '/functions/v1/verify-google-login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY},
+      body: JSON.stringify({credential: response.credential})
+    });
+    const rows = await res.json();
+    if(!res.ok || !rows || !rows[0]) throw new Error((rows && rows.error) || 'فشل التحقق');
+    const u = rows[0];
+    finishAuth({id:u.id, name:u.name, email:u.email||'', token:u.token});
   } catch(e) {
     showToast('❌ حصل خطأ في تسجيل الجيميل', 'error');
   }
