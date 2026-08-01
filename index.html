@@ -1737,6 +1737,7 @@ function showShopLoginForId(traderId, subcategory) {
         '<button onclick="doShopLoginForId(\'' + traderId + '\',\'' + subcategory + '\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">دخول</button>' +
         '<button onclick="document.getElementById(\'shopLoginOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
       '</div>' +
+      '<a href="javascript:void(0)" onclick="forgotShopTraderPassword()" style="display:block;margin-top:14px;font-size:12px;color:#0369a1;text-decoration:underline;">نسيت كلمة السر؟</a>' +
     '</div>';
   document.body.appendChild(overlay);
 }
@@ -2182,8 +2183,16 @@ function showShopLogin(subcategory) {
         '<button onclick="doShopLogin(\'' + subcategory + '\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">دخول</button>' +
         '<button onclick="document.getElementById(\'shopLoginOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
       '</div>' +
+      '<a href="javascript:void(0)" onclick="forgotShopTraderPassword()" style="display:block;margin-top:14px;font-size:12px;color:#0369a1;text-decoration:underline;">نسيت كلمة السر؟</a>' +
     '</div>';
   document.body.appendChild(overlay);
+}
+
+function forgotShopTraderPassword() {
+  var phoneInput = document.getElementById('sl_phone');
+  var phone = phoneInput ? phoneInput.value.trim() : '';
+  var msg = 'السلام عليكم، نسيت كلمة سر حسابي كصاحب نشاط في دليل الحامول. رقم موبايلي: ' + (phone || '(اكتب رقمك هنا)');
+  window.open('https://wa.me/' + ADMIN_WA + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
 async function doShopLogin(subcategory) {
@@ -5318,10 +5327,22 @@ async function loadAdminShops(cont) {
             '<div style="font-size:13px;font-weight:700;">' + escapeHtml(t.shop_name) + '</div>' +
             '<div style="font-size:11px;color:#64748b;">' + t.subcategory + ' • ' + t.phone + '</div>' +
           '</div>' +
+          '<button data-tid="'+t.id+'" data-tname="'+escapeHtml(t.shop_name||'')+'" onclick="resetShopTraderPassword(this.dataset.tid,this.dataset.tname)" style="background:#fef3c7;color:#92400e;border:none;padding:5px 10px;border-radius:8px;font-size:14px;cursor:pointer;">🔑</button>' +
           '<button data-tid="'+t.id+'" onclick="deleteShopTraderAdmin(this.dataset.tid)" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️</button>' +
         '</div>';
       }).join('') : '<p style="font-size:12px;color:#94a3b8;">مفيش معارض معتمدة</p>') +
     '</div>';
+}
+
+async function resetShopTraderPassword(traderId, traderName) {
+  if(!confirm('تعيد ضبط كلمة سر "'+traderName+'"؟ الباسورد القديم هيبقى ملغي.')) return;
+  const tempPass = String(Math.floor(100000 + Math.random()*900000)); // كود 6 أرقام
+  try {
+    const passHash = await hashPass(tempPass);
+    await sbRPC('admin_reset_shop_trader_password', {p_trader_id: traderId, p_new_password_hash: passHash});
+    prompt('كلمة السر المؤقتة الجديدة (انسخها وابعتها لصاحب النشاط):', tempPass);
+    showToast('✅ تم إعادة ضبط كلمة السر');
+  } catch(e) { showToast('حصل خطأ', 'error'); }
 }
 
 async function approveShopTrader(id) {
