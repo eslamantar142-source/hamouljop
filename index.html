@@ -650,21 +650,27 @@ function finishAuth(user) {
   closeAuthModal();
   showToast('✅ أهلاً ' + user.name + '!');
   renderAcctStatusBox();
-  if(!user.phone) { setTimeout(function(){ showCollectPhoneModal(); }, 400); }
+  checkPhoneRequired();
   if(_authResolve) { const r = _authResolve; _authResolve = null; r(user); }
 }
 
-// ===== طلب رقم الموبايل ممن سجّل بالجيميل (مفيش رقم موبايل من جوجل) =====
+// ===== طلب رقم الموبايل ممن سجّل بالجيميل (مفيش رقم موبايل من جوجل) — إجباري لاستكمال التسجيل =====
+function checkPhoneRequired() {
+  var u = getCurrentUser();
+  if(u && !u.phone) showCollectPhoneModal();
+}
+
 function showCollectPhoneModal() {
   if(document.getElementById('collectPhoneOverlay')) return;
+  document.body.style.overflow = 'hidden';
   var overlay = document.createElement('div');
   overlay.id = 'collectPhoneOverlay';
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
   overlay.innerHTML =
     '<div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:340px;text-align:center;">' +
       '<div style="font-size:32px;margin-bottom:8px;">📱</div>' +
-      '<div style="font-size:15px;font-weight:900;margin-bottom:6px;">كمّل بياناتك</div>' +
-      '<div style="font-size:12px;color:#64748b;margin-bottom:14px;">محتاجين رقم موبايلك عشان نقدر نتواصل معاك عند الحاجة</div>' +
+      '<div style="font-size:15px;font-weight:900;margin-bottom:6px;">استكمال التسجيل</div>' +
+      '<div style="font-size:12px;color:#64748b;margin-bottom:14px;">لازم تكتب رقم موبايلك عشان تقدر تكمل استخدام الموقع</div>' +
       '<input id="cph_phone" type="tel" placeholder="رقم موبايلك (01xxxxxxxxx)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:14px;text-align:center;">' +
       '<button onclick="submitCollectPhone()" style="width:100%;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">حفظ</button>' +
     '</div>';
@@ -682,6 +688,7 @@ async function submitCollectPhone() {
     setCurrentUser(u);
     var o = document.getElementById('collectPhoneOverlay');
     if(o) o.remove();
+    document.body.style.overflow = '';
     showToast('✅ تم حفظ رقم موبايلك');
   } catch(e) {
     if(String(e.message||'').indexOf('PHONE_EXISTS') !== -1) showToast('الرقم ده مسجل بحساب تاني', 'error');
@@ -12245,6 +12252,9 @@ function showGoldPrices() {
 
 // لو حد فتح رابط مشاركة موضوع (?post=ID) أو إعلان (?ad=ID) أو معرض (?shop=ID)، افتحله مباشرة
 (function(){
+  window.addEventListener('load', function(){
+    setTimeout(checkPhoneRequired, 500);
+  });
   try {
     const params = new URLSearchParams(window.location.search);
     const sharedPostId = params.get('post');
