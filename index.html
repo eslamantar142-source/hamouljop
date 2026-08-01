@@ -2249,6 +2249,15 @@ async function submitChangeShopPassword(traderId) {
   } catch(e) { showToast('كلمة السر الحالية غلط أو حصل خطأ ❌', 'error'); }
 }
 
+function shopTraderLogout(traderId) {
+  localStorage.removeItem('my_shop_phone_'+traderId);
+  localStorage.removeItem('my_shop_pass_'+traderId);
+  var o = document.getElementById('shopDashOverlay');
+  if(o) o.remove();
+  showToast('تم تسجيل الخروج');
+  openShop(traderId);
+}
+
 // ===== لوحة تحكم التاجر =====
 async function showShopDashboard(trader) {
   var sections = await sbFetch('GET', 'shop_sections?trader_id=eq.'+trader.id+'&order=sort_order.asc') || [];
@@ -2283,6 +2292,7 @@ async function showShopDashboard(trader) {
           '<button onclick="deleteMyShop(\''+trader.id+'\')" style="flex:1;background:#fee2e2;color:#dc2626;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🗑️ حذف المعرض نهائيًا</button>' +
         '</div>' +
         '<button onclick="showChangeShopPasswordForm(\''+trader.id+'\')" style="width:100%;margin-top:8px;background:#f8fafc;color:#475569;border:1px solid var(--border);padding:9px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🔒 غيّر كلمة السر</button>' +
+        '<button onclick="shopTraderLogout(\''+trader.id+'\')" style="width:100%;margin-top:8px;background:#fee2e2;color:#dc2626;border:none;padding:9px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🚪 تسجيل الخروج من حساب النشاط</button>' +
       '</div>' +
       // صور توضيحية للمعرض
       '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">' +
