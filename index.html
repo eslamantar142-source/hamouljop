@@ -650,7 +650,43 @@ function finishAuth(user) {
   closeAuthModal();
   showToast('✅ أهلاً ' + user.name + '!');
   renderAcctStatusBox();
+  if(!user.phone) { setTimeout(function(){ showCollectPhoneModal(); }, 400); }
   if(_authResolve) { const r = _authResolve; _authResolve = null; r(user); }
+}
+
+// ===== طلب رقم الموبايل ممن سجّل بالجيميل (مفيش رقم موبايل من جوجل) =====
+function showCollectPhoneModal() {
+  if(document.getElementById('collectPhoneOverlay')) return;
+  var overlay = document.createElement('div');
+  overlay.id = 'collectPhoneOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:340px;text-align:center;">' +
+      '<div style="font-size:32px;margin-bottom:8px;">📱</div>' +
+      '<div style="font-size:15px;font-weight:900;margin-bottom:6px;">كمّل بياناتك</div>' +
+      '<div style="font-size:12px;color:#64748b;margin-bottom:14px;">محتاجين رقم موبايلك عشان نقدر نتواصل معاك عند الحاجة</div>' +
+      '<input id="cph_phone" type="tel" placeholder="رقم موبايلك (01xxxxxxxxx)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:14px;text-align:center;">' +
+      '<button onclick="submitCollectPhone()" style="width:100%;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">حفظ</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function submitCollectPhone() {
+  var phone = document.getElementById('cph_phone').value.trim();
+  if(!phone || !/^01[0-9]{9}$/.test(phone)) { showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
+  var u = getCurrentUser();
+  if(!u) return;
+  try {
+    await sbRPC('secure_update_user_phone', {p_token: u.token, p_phone: phone});
+    u.phone = phone;
+    setCurrentUser(u);
+    var o = document.getElementById('collectPhoneOverlay');
+    if(o) o.remove();
+    showToast('✅ تم حفظ رقم موبايلك');
+  } catch(e) {
+    if(String(e.message||'').indexOf('PHONE_EXISTS') !== -1) showToast('الرقم ده مسجل بحساب تاني', 'error');
+    else showToast('حصل خطأ، حاول تاني', 'error');
+  }
 }
 
 function renderAcctStatusBox() {
@@ -5297,7 +5333,7 @@ async function showAdminPanel(tab='pending') {
 
   const tabList = [
     ['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],
-    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار'],['shops','🛍️ معارض'],['backup','💾 نسخة احتياطية']
+    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار'],['shops','🛍️ معارض'],['users','👤 مستخدمين'],['backup','💾 نسخة احتياطية']
   ];
 
   // بناء الهيكل دايماً من أول
@@ -5340,7 +5376,51 @@ async function showAdminPanel(tab='pending') {
     loadAdminBackup(cont);
   } else if(tab === 'shops') {
     loadAdminShops(cont);
+  } else if(tab === 'users') {
+    loadAdminUsers(cont);
   }
+}
+
+async function loadAdminUsers(cont) {
+  cont.innerHTML = '<div style="text-align:center;padding:30px;">⏳ جاري التحميل...</div>';
+  var users = [];
+  try {
+    users = await sbFetch('GET', 'users?select=id,name,phone,email,created_at&order=created_at.desc&limit=500') || [];
+  } catch(e) {
+    console.error('load admin users error:', e);
+    cont.innerHTML = '<div style="text-align:center;padding:30px;color:#dc2626;">⚠️ حصل خطأ في تحميل المستخدمين<br><span style="font-size:11px;">' + (e.message||'') + '</span></div>';
+    return;
+  }
+  cont.innerHTML =
+    '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;">' +
+      '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">👤 المستخدمون المسجلون (' + users.length + ')</div>' +
+      '<input id="adminUsersSearch" type="text" placeholder="🔍 دوّر بالاسم أو رقم الموبايل" oninput="filterAdminUsers()" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:10px;">' +
+      '<div id="adminUsersList">' + renderAdminUsersList(users) + '</div>' +
+    '</div>';
+  window._adminUsersCache = users;
+}
+
+function renderAdminUsersList(users) {
+  if(!users.length) return '<p style="font-size:12px;color:#94a3b8;">مفيش مستخدمين</p>';
+  return users.map(function(u){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px;background:#f8fafc;border-radius:8px;margin-bottom:6px;">' +
+      '<div style="width:36px;height:36px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">👤</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:700;">' + escapeHtml(u.name||'—') + '</div>' +
+        '<div style="font-size:11px;color:#64748b;">' + (u.phone ? '📱 ' + escapeHtml(u.phone) : '<span style="color:#dc2626;">مفيش رقم موبايل</span>') + (u.email ? ' • ✉️ ' + escapeHtml(u.email) : '') + '</div>' +
+      '</div>' +
+      (u.phone ? '<a href="https://wa.me/20'+(u.phone.charAt(0)==='0'?u.phone.slice(1):u.phone)+'" target="_blank" style="background:#dcfce7;color:#16a34a;border:none;padding:6px 10px;border-radius:8px;font-size:12px;text-decoration:none;flex-shrink:0;">💬</a>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function filterAdminUsers() {
+  var q = (document.getElementById('adminUsersSearch').value||'').trim().toLowerCase();
+  var users = window._adminUsersCache || [];
+  var filtered = !q ? users : users.filter(function(u){
+    return (u.name||'').toLowerCase().indexOf(q)!==-1 || (u.phone||'').indexOf(q)!==-1;
+  });
+  document.getElementById('adminUsersList').innerHTML = renderAdminUsersList(filtered);
 }
 
 async function loadAdminShops(cont) {
