@@ -2203,9 +2203,50 @@ async function doShopLogin(subcategory) {
   var rows = await sbRPC('shop_trader_login', {p_phone: phone, p_password_hash: passHash, p_subcategory: subcategory}) || [];
   if(!rows.length){ showToast('الموبايل أو كلمة السر غلط ❌', 'error'); return; }
   var trader = rows[0];
+  localStorage.setItem('my_shop_phone_'+trader.id, phone);
+  localStorage.setItem('my_shop_pass_'+trader.id, passHash);
   document.getElementById('shopLoginOverlay').remove();
   if(trader.status === 'pending'){ showToast('⏳ نشاطك لسه تحت المراجعة', 'error'); return; }
   showShopDashboard(trader);
+}
+
+// ===== تغيير كلمة السر (لصاحب المعرض) =====
+function showChangeShopPasswordForm(traderId) {
+  var overlay = document.createElement('div');
+  overlay.id = 'shopPassChangeOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:10020;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:340px;text-align:center;">' +
+      '<div style="font-size:32px;margin-bottom:8px;">🔒</div>' +
+      '<div style="font-size:15px;font-weight:900;margin-bottom:14px;">غيّر كلمة السر</div>' +
+      '<input id="cp_old" type="password" placeholder="كلمة السر الحالية" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:8px;text-align:center;">' +
+      '<input id="cp_new" type="password" placeholder="كلمة السر الجديدة (4 حروف/أرقام على الأقل)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:8px;text-align:center;">' +
+      '<input id="cp_confirm" type="password" placeholder="أكّد كلمة السر الجديدة" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:14px;text-align:center;">' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button onclick="submitChangeShopPassword(\''+traderId+'\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">حفظ</button>' +
+        '<button onclick="document.getElementById(\'shopPassChangeOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function submitChangeShopPassword(traderId) {
+  var oldPass = document.getElementById('cp_old').value.trim();
+  var newPass = document.getElementById('cp_new').value.trim();
+  var confirmPass = document.getElementById('cp_confirm').value.trim();
+  if(!oldPass || !newPass || !confirmPass){ showToast('املأ كل الحقول', 'error'); return; }
+  if(newPass.length < 4){ showToast('كلمة السر الجديدة لازم تكون 4 حروف/أرقام على الأقل', 'error'); return; }
+  if(newPass !== confirmPass){ showToast('كلمة السر الجديدة غير متطابقة', 'error'); return; }
+  var phone = localStorage.getItem('my_shop_phone_'+traderId);
+  try {
+    var oldHash = await hashPass(oldPass);
+    var newHash = await hashPass(newPass);
+    await sbRPC('secure_change_shop_trader_password', {p_phone: phone, p_old_password_hash: oldHash, p_trader_id: traderId, p_new_password_hash: newHash});
+    localStorage.setItem('my_shop_pass_'+traderId, newHash);
+    var o = document.getElementById('shopPassChangeOverlay');
+    if(o) o.remove();
+    showToast('✅ تم تغيير كلمة السر');
+  } catch(e) { showToast('كلمة السر الحالية غلط أو حصل خطأ ❌', 'error'); }
 }
 
 // ===== لوحة تحكم التاجر =====
@@ -2241,6 +2282,7 @@ async function showShopDashboard(trader) {
           '<button onclick="showShopEditForm(\''+trader.id+'\')" style="flex:1;background:#eff6ff;color:#2563eb;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;font-weight:800;cursor:pointer;">✏️ تعديل البيانات</button>' +
           '<button onclick="deleteMyShop(\''+trader.id+'\')" style="flex:1;background:#fee2e2;color:#dc2626;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🗑️ حذف المعرض نهائيًا</button>' +
         '</div>' +
+        '<button onclick="showChangeShopPasswordForm(\''+trader.id+'\')" style="width:100%;margin-top:8px;background:#f8fafc;color:#475569;border:1px solid var(--border);padding:9px;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🔒 غيّر كلمة السر</button>' +
       '</div>' +
       // صور توضيحية للمعرض
       '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);">' +
