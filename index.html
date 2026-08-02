@@ -1802,7 +1802,14 @@ async function doShopLoginForId(traderId, subcategory) {
   var pass = document.getElementById('sl_pass').value.trim();
   if(!phone || !pass){ showToast('اكتب الموبايل وكلمة السر', 'error'); return; }
   var passHash = await hashPass(pass);
-  var rows = await sbRPC('shop_trader_login_by_id', {p_trader_id: traderId, p_phone: phone, p_password_hash: passHash}) || [];
+  var rows;
+  try {
+    rows = await sbRPC('shop_trader_login_by_id', {p_trader_id: traderId, p_phone: phone, p_password_hash: passHash}) || [];
+  } catch(e) {
+    if(String(e.message||'') === 'TOO_MANY_ATTEMPTS') showToast('⏳ حاولت كتير غلط، استنى ربع ساعة وجرب تاني', 'error');
+    else showToast('خطأ في الدخول', 'error');
+    return;
+  }
   if(!rows.length){ showToast('الموبايل أو كلمة السر غلط ❌', 'error'); return; }
   var trader = rows[0];
   // احفظ في localStorage عشان يبقى الزر ظاهر في المرات الجاية
@@ -2255,7 +2262,14 @@ async function doShopLogin(subcategory) {
   var pass = document.getElementById('sl_pass').value.trim();
   if(!phone || !pass){ showToast('اكتب الموبايل وكلمة السر', 'error'); return; }
   var passHash = await hashPass(pass);
-  var rows = await sbRPC('shop_trader_login', {p_phone: phone, p_password_hash: passHash, p_subcategory: subcategory}) || [];
+  var rows;
+  try {
+    rows = await sbRPC('shop_trader_login', {p_phone: phone, p_password_hash: passHash, p_subcategory: subcategory}) || [];
+  } catch(e) {
+    if(String(e.message||'') === 'TOO_MANY_ATTEMPTS') showToast('⏳ حاولت كتير غلط، استنى ربع ساعة وجرب تاني', 'error');
+    else showToast('خطأ في الدخول', 'error');
+    return;
+  }
   if(!rows.length){ showToast('الموبايل أو كلمة السر غلط ❌', 'error'); return; }
   var trader = rows[0];
   localStorage.setItem('my_shop_phone_'+trader.id, phone);
@@ -9208,7 +9222,10 @@ async function doTraderLogin() {
     document.getElementById('traderLoginOverlay').remove();
     showToast('أهلاً يا '+rows[0].name+' 👋');
     await refreshMarketContent('all');
-  } catch(e) { showToast('خطأ في الدخول', 'error'); }
+  } catch(e) {
+    if(String(e.message||'') === 'TOO_MANY_ATTEMPTS') showToast('⏳ حاولت كتير غلط، استنى ربع ساعة وجرب تاني', 'error');
+    else showToast('خطأ في الدخول', 'error');
+  }
 }
 
 // ===== تسجيل تاجر جديد بنفسه (بدون موافقة أدمن) =====
