@@ -639,7 +639,7 @@ async function handleGoogleCredential(response) {
     const rows = await res.json();
     if(!res.ok || !rows || !rows[0]) throw new Error((rows && rows.error) || 'فشل التحقق');
     const u = rows[0];
-    finishAuth({id:u.id, name:u.name, email:u.email||'', token:u.token});
+    finishAuth({id:u.id, name:u.name, email:u.email||'', phone:u.phone||'', token:u.token});
   } catch(e) {
     showToast('❌ حصل خطأ في تسجيل الجيميل', 'error');
   }
