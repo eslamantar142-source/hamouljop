@@ -581,7 +581,11 @@ async function submitLogin() {
     const hash = await hashPass(pass);
     const rows = await sbRPC('auth_login', {p_phone:phone, p_hash:hash});
     const r = (rows && rows[0]) || {};
-    if(r.out_status !== 'ok') { showToast('❌ رقم الموبايل أو كلمة المرور غلط', 'error'); btn.disabled=false; btn.textContent='دخول'; return; }
+    if(r.out_status !== 'ok') {
+      if(r.out_message === 'TOO_MANY_ATTEMPTS') showToast('⏳ حاولت كتير غلط، استنى شوية وجرب تاني بعد ربع ساعة', 'error');
+      else showToast('❌ رقم الموبايل أو كلمة المرور غلط', 'error');
+      btn.disabled=false; btn.textContent='دخول'; return;
+    }
     finishAuth({id:r.out_user_id, name:r.out_name, phone, token:r.out_token});
   } catch(e) {
     showToast('❌ حصل خطأ، حاول تاني', 'error');
