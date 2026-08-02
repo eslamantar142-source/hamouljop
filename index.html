@@ -521,6 +521,13 @@ function closeAuthModal() {
   if(el) el.remove();
 }
 
+function forgotUserPassword() {
+  var phoneInput = document.getElementById('authPhone');
+  var phone = phoneInput ? phoneInput.value.trim() : '';
+  var msg = 'السلام عليكم، نسيت كلمة سر حسابي في دليل الحامول. رقم موبايلي: ' + (phone || '(اكتب رقمك هنا)');
+  window.open('https://wa.me/' + ADMIN_WA + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
 function switchAuthTab(tab) {
   const lb = document.getElementById('authTabLogin'), rb = document.getElementById('authTabRegister');
   lb.style.background = tab==='login' ? 'white' : 'transparent';
@@ -532,7 +539,8 @@ function switchAuthTab(tab) {
     c.innerHTML =
       '<input id="authPhone" type="tel" placeholder="رقم الموبايل" dir="ltr" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
       '<input id="authPass" type="password" placeholder="كلمة المرور" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
-      '<button id="authSubmitBtn" onclick="submitLogin()" style="width:100%;background:var(--primary);color:white;border:none;padding:12px;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">دخول</button>';
+      '<button id="authSubmitBtn" onclick="submitLogin()" style="width:100%;background:var(--primary);color:white;border:none;padding:12px;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">دخول</button>' +
+      '<a href="javascript:void(0)" onclick="forgotUserPassword()" style="display:block;text-align:center;margin-top:12px;font-size:12px;color:#0369a1;text-decoration:underline;">نسيت كلمة السر؟</a>';
   } else {
     c.innerHTML =
       '<input id="authName" type="text" placeholder="الاسم" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
@@ -5417,8 +5425,20 @@ function renderAdminUsersList(users) {
         '<div style="font-size:11px;color:#64748b;">' + (u.phone ? '📱 ' + escapeHtml(u.phone) : '<span style="color:#dc2626;">مفيش رقم موبايل</span>') + (u.email ? ' • ✉️ ' + escapeHtml(u.email) : '') + '</div>' +
       '</div>' +
       (u.phone ? '<a href="https://wa.me/20'+(u.phone.charAt(0)==='0'?u.phone.slice(1):u.phone)+'" target="_blank" style="background:#dcfce7;color:#16a34a;border:none;padding:6px 10px;border-radius:8px;font-size:12px;text-decoration:none;flex-shrink:0;">💬</a>' : '') +
+      '<button data-uid="'+u.id+'" data-uname="'+escapeHtml(u.name||'')+'" onclick="resetUserPassword(this.dataset.uid,this.dataset.uname)" style="background:#fef3c7;color:#92400e;border:none;padding:6px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">🔑</button>' +
     '</div>';
   }).join('');
+}
+
+async function resetUserPassword(userId, userName) {
+  if(!confirm('تعيد ضبط كلمة سر "'+userName+'"؟ الباسورد القديم هيبقى ملغي.\n\n(ملحوظة: لو المستخدم بيدخل بالجيميل بس، الباسورد الجديد ده مش هيتستخدم أصلاً)')) return;
+  const tempPass = String(Math.floor(100000 + Math.random()*900000));
+  try {
+    const passHash = await hashPass(tempPass);
+    await sbRPC('admin_reset_user_password', {p_user_id: userId, p_new_password_hash: passHash});
+    prompt('كلمة السر المؤقتة الجديدة (انسخها وابعتها للمستخدم):', tempPass);
+    showToast('✅ تم إعادة ضبط كلمة السر');
+  } catch(e) { showToast('حصل خطأ', 'error'); }
 }
 
 function filterAdminUsers() {
