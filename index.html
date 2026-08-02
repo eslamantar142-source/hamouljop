@@ -449,7 +449,7 @@ const GOOGLE_CLIENT_ID = '1075657280150-b7l2nqp8ui28kipq01p9m02u5mgu6tum.apps.go
 async function sbRPC(fn, params) {
   const res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
     method: 'POST',
-    headers: {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},
+    headers: {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+(adminAccessToken || SB_KEY)},
     body: JSON.stringify(params)
   });
   let data = null;
