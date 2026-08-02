@@ -436,6 +436,15 @@ function escapeHtml(str) {
   s = s.replace(/\x27/g, '&#39;');
   return s;
 }
+
+// بيتأكد إن أي لينك جاي من المستخدم (فيديو، سوشيال ميديا، خريطة) بيبدأ بنوع آمن بس
+// وبيرفض javascript: وأي حاجة تانية ممكن تنفّذ كود لو حد ضغط على اللينك
+function safeUrl(u) {
+  if(!u) return '';
+  var s = String(u).trim();
+  if(/^(https?:|tel:|mailto:)/i.test(s)) return s;
+  return '';
+}
 const ADMIN_WA = '201080150801';
 
 async function hashPass(str) {
@@ -1480,7 +1489,7 @@ async function openShop(traderId) {
           var ic = l.type==='facebook'?'📘 فيسبوك':l.type==='youtube'?'▶️ يوتيوب':l.type==='tiktok'?'🎵 تيك توك':'🔗 رابط';
           var bg = l.type==='facebook'?'#e8f0fb':l.type==='youtube'?'#fee2e2':'#f1f5f9';
           var col = l.type==='facebook'?'#1877f2':l.type==='youtube'?'#dc2626':'#334155';
-          return '<a href="'+escapeHtml(l.url)+'" target="_blank" style="background:'+bg+';color:'+col+';padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;">'+ic+'</a>';
+          return '<a href="'+escapeHtml(safeUrl(l.url))+'" target="_blank" style="background:'+bg+';color:'+col+';padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;">'+ic+'</a>';
         }).join('') +
       '</div>'
     : '') +
@@ -1513,7 +1522,7 @@ async function openShop(traderId) {
       (trader.address || trader.phone ?
         '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">' +
           (trader.phone ? '<a href="tel:'+trader.phone+'" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:#1e293b;font-size:13px;font-weight:700;"><span style="font-size:16px;">📞</span><span dir="ltr">'+trader.phone+'</span></a>' : '') +
-          (trader.address ? '<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#1e293b;"><span style="font-size:16px;">📍</span><span style="flex:1;">'+escapeHtml(trader.address)+(trader.map_url ? ' — <a href="'+escapeHtml(trader.map_url)+'" target="_blank" style="color:#0369a1;">🗺️ الخريطة</a>' : '')+'</span></div>' : '') +
+          (trader.address ? '<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#1e293b;"><span style="font-size:16px;">📍</span><span style="flex:1;">'+escapeHtml(trader.address)+(trader.map_url ? ' — <a href="'+escapeHtml(safeUrl(trader.map_url))+'" target="_blank" style="color:#0369a1;">🗺️ الخريطة</a>' : '')+'</span></div>' : '') +
           (trader.opening_hours ? '<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#1e293b;"><span style="font-size:16px;">🕐</span>'+escapeHtml(trader.opening_hours)+'</div>' : '') +
           (trader.delivery_available ? '<div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:'+(trader.delivery_available==='متاح'?'#16a34a':'#dc2626')+';"><span style="font-size:16px;">🛵</span>التوصيل: '+escapeHtml(trader.delivery_available)+'</div>' : '') +
         '</div>'
@@ -1541,7 +1550,7 @@ async function openShop(traderId) {
         '<span style="font-size:18px;">📍</span>' +
         '<div style="flex:1;">' +
           (trader.address ? '<div style="font-size:12px;font-weight:700;color:#1e293b;">' + escapeHtml(trader.address) + '</div>' : '') +
-          (trader.map_url ? '<a href="'+escapeHtml(trader.map_url)+'" target="_blank" style="font-size:11px;color:#0369a1;text-decoration:none;font-weight:700;">🗺️ عرض على الخريطة</a>' : '') +
+          (trader.map_url ? '<a href="'+escapeHtml(safeUrl(trader.map_url))+'" target="_blank" style="font-size:11px;color:#0369a1;text-decoration:none;font-weight:700;">🗺️ عرض على الخريطة</a>' : '') +
         '</div>' +
       '</div>'
     : '') +
@@ -1745,7 +1754,7 @@ function renderProductsGrid(products) {
       var linksHtml = '';
       if(p.links && p.links.length) {
         linksHtml = '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">' +
-          p.links.map(function(l){ return '<a href="'+escapeHtml(l.url)+'" target="_blank" style="background:#f0f9ff;color:#0369a1;padding:3px 7px;border-radius:6px;font-size:10px;text-decoration:none;font-weight:700;">'+(l.icon||'🔗')+' '+escapeHtml(l.label||'لينك')+'</a>'; }).join('') +
+          p.links.map(function(l){ return '<a href="'+escapeHtml(safeUrl(l.url))+'" target="_blank" style="background:#f0f9ff;color:#0369a1;padding:3px 7px;border-radius:6px;font-size:10px;text-decoration:none;font-weight:700;">'+(l.icon||'🔗')+' '+escapeHtml(l.label||'لينك')+'</a>'; }).join('') +
         '</div>';
       }
 
@@ -2941,7 +2950,7 @@ async function openShopProduct(productId) {
                    l.url.includes('facebook')||l.url.includes('fb.') ? '📘' :
                    l.url.includes('tiktok') ? '🎵' :
                    l.url.includes('instagram') ? '📸' : '🔗');
-        return '<a href="'+escapeHtml(l.url)+'" target="_blank" style="flex:1;min-width:120px;background:#f0fdf4;color:#16a34a;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-size:13px;font-weight:700;border:1px solid #bbf7d0;">'+icon+' '+escapeHtml(l.label||'لينك')+'</a>';
+        return '<a href="'+escapeHtml(safeUrl(l.url))+'" target="_blank" style="flex:1;min-width:120px;background:#f0fdf4;color:#16a34a;padding:10px;border-radius:10px;text-align:center;text-decoration:none;font-size:13px;font-weight:700;border:1px solid #bbf7d0;">'+icon+' '+escapeHtml(l.label||'لينك')+'</a>';
       }).join('') +
     '</div>';
   }
@@ -2975,7 +2984,7 @@ async function openShopProduct(productId) {
         '</div>'
       : '') +
       (trader && trader.map_url ?
-        '<a href="'+escapeHtml(trader.map_url)+'" target="_blank" style="display:block;width:100%;margin-top:10px;background:#0369a1;color:white;padding:12px;border-radius:12px;text-align:center;text-decoration:none;font-size:14px;font-weight:900;">🗺️ عرض موقع المعرض على الخريطة</a>'
+        '<a href="'+escapeHtml(safeUrl(trader.map_url))+'" target="_blank" style="display:block;width:100%;margin-top:10px;background:#0369a1;color:white;padding:12px;border-radius:12px;text-align:center;text-decoration:none;font-size:14px;font-weight:900;">🗺️ عرض موقع المعرض على الخريطة</a>'
       : '') +
     '</div>';
 
@@ -3389,11 +3398,11 @@ async function openAdDetails(adId) {
             ${ad.quantity?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f0fdf4;border-radius:10px;"><span style="font-size:18px;">📦</span><div><div style="font-size:11px;color:#94a3b8;">الكمية المتاحة</div><div style="font-size:13px;font-weight:700;color:#166534;">${ad.quantity}</div></div></div>`:''}
             ${ad.relation?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f1f5f9;border-radius:10px;"><span style="font-size:18px;">👤</span><div><div style="font-size:11px;color:#94a3b8;">صلة القرابة</div><div style="font-size:13px;font-weight:700;color:#334155;">${ad.relation}</div></div></div>`:''}
             ${ad.death_date?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f1f5f9;border-radius:10px;"><span style="font-size:18px;">📅</span><div><div style="font-size:11px;color:#94a3b8;">تاريخ الوفاة</div><div style="font-size:13px;font-weight:700;color:#334155;">${formatDeathDate(ad.death_date)}</div></div></div>`:''}
-            ${ad.opening_hours?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fef9c3;border-radius:10px;"><span style="font-size:18px;">🕐</span><div><div style="font-size:11px;color:#94a3b8;">مواعيد العمل</div><div style="font-size:13px;font-weight:700;color:#854d0e;">${ad.opening_hours}</div></div></div>`:''}
-            ${ad.delivery?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fef9c3;border-radius:10px;"><span style="font-size:18px;">🛵</span><div><div style="font-size:11px;color:#94a3b8;">التوصيل</div><div style="font-size:13px;font-weight:700;color:#854d0e;">${ad.delivery}</div></div></div>`:''}
-            ${ad.address?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;cursor:pointer;" onclick="ad.location_url?window.open(fixMapUrl(ad.location_url),'_blank'):null"><span style="font-size:18px;">📍</span><div><div style="font-size:11px;color:#94a3b8;">العنوان</div><div style="font-size:13px;font-weight:700;">${ad.address}</div></div></div>`:''}
-            ${ad.phone?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">📞</span><div><div style="font-size:11px;color:#94a3b8;">التليفون</div><div style="font-size:13px;font-weight:700;" dir="ltr">${ad.phone}</div></div></div>`:''}
-            ${ad.phone2?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">📱</span><div><div style="font-size:11px;color:#94a3b8;">رقم ثاني</div><div style="font-size:13px;font-weight:700;" dir="ltr">${ad.phone2}</div></div></div>`:''}
+            ${ad.opening_hours?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fef9c3;border-radius:10px;"><span style="font-size:18px;">🕐</span><div><div style="font-size:11px;color:#94a3b8;">مواعيد العمل</div><div style="font-size:13px;font-weight:700;color:#854d0e;">${escapeHtml(ad.opening_hours)}</div></div></div>`:''}
+            ${ad.delivery?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fef9c3;border-radius:10px;"><span style="font-size:18px;">🛵</span><div><div style="font-size:11px;color:#94a3b8;">التوصيل</div><div style="font-size:13px;font-weight:700;color:#854d0e;">${escapeHtml(ad.delivery)}</div></div></div>`:''}
+            ${ad.address?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;cursor:pointer;" onclick="safeUrl(ad.location_url)?window.open(fixMapUrl(ad.location_url),'_blank'):null"><span style="font-size:18px;">📍</span><div><div style="font-size:11px;color:#94a3b8;">العنوان</div><div style="font-size:13px;font-weight:700;">${escapeHtml(ad.address)}</div></div></div>`:''}
+            ${ad.phone?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">📞</span><div><div style="font-size:11px;color:#94a3b8;">التليفون</div><div style="font-size:13px;font-weight:700;" dir="ltr">${escapeHtml(ad.phone)}</div></div></div>`:''}
+            ${ad.phone2?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">📱</span><div><div style="font-size:11px;color:#94a3b8;">رقم ثاني</div><div style="font-size:13px;font-weight:700;" dir="ltr">${escapeHtml(ad.phone2)}</div></div></div>`:''}
           </div>
         </div>`:''}
         ${ad.description?(()=>{
@@ -3443,7 +3452,7 @@ async function openAdDetails(adId) {
         📞 تواصل على واتساب
       </a>
       ${ad.phone2?`<a href="https://wa.me/${ad.phone2.startsWith('0')?'20'+ad.phone2.substring(1):ad.phone2}?text=${waMsg}" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#128C7E;color:white;padding:13px;border-radius:12px;font-size:12px;font-weight:700;text-decoration:none;">📱 رقم 2</a>`:''}
-      ${ad.location_url?`<a href="${fixMapUrl(ad.location_url)}" target="_blank" onclick="trackStat('${adId}','map')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#4285f4;color:white;padding:13px;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;">🗺️ خريطة</a>`:''}
+      ${ad.location_url?`<a href="${escapeHtml(safeUrl(fixMapUrl(ad.location_url)))}" target="_blank" onclick="trackStat('${adId}','map')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#4285f4;color:white;padding:13px;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;">🗺️ خريطة</a>`:''}
     </div>`;
   })();
   scrollArea.appendChild(contentDiv);
@@ -3478,7 +3487,7 @@ async function openAdDetails(adId) {
         html += '<div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px;">🎥 روابط الفيديو</div>';
         html += '<div style="display:flex;flex-direction:column;gap:8px;">';
         vids.forEach(function(v) {
-          html += '<a href="' + v + '" target="_blank" style="display:flex;align-items:center;gap:8px;background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:10px;padding:10px 14px;text-decoration:none;font-size:13px;font-weight:700;">';
+          html += '<a href="' + escapeHtml(safeUrl(v)) + '" target="_blank" style="display:flex;align-items:center;gap:8px;background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:10px;padding:10px 14px;text-decoration:none;font-size:13px;font-weight:700;">';
           html += getVideoIcon(v) + ' ' + getVideoDomain(v);
           html += '</a>';
         });
@@ -4750,7 +4759,7 @@ function renderVideoLinks(videoLinksJson) {
     var html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;">';
     for(var i=0; i<vids.length; i++) {
       var v = vids[i];
-      html += '<a href="' + v + '" target="_blank" onclick="event.stopPropagation()" style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;text-decoration:none;">';
+      html += '<a href="' + escapeHtml(safeUrl(v)) + '" target="_blank" onclick="event.stopPropagation()" style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;text-decoration:none;">';
       html += getVideoIcon(v) + ' ' + getVideoDomain(v);
       html += '</a>';
     }
@@ -10630,7 +10639,7 @@ function renderVideoBlock(url) {
       <iframe src="https://www.youtube.com/embed/${yt[1]}" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allowfullscreen loading="lazy"></iframe>
     </div>`;
   }
-  return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:8px;margin-top:10px;background:#fef3c7;color:#92400e;padding:10px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">🎥 مشاهدة الفيديو</a>`;
+  return `<a href="${escapeHtml(safeUrl(url))}" target="_blank" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:8px;margin-top:10px;background:#fef3c7;color:#92400e;padding:10px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">🎥 مشاهدة الفيديو</a>`;
 }
 
 const WA_ICON_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M17.6 6.3A8.9 8.9 0 0 0 12.04 3.5c-4.9 0-8.9 4-8.9 8.9 0 1.57.41 3.1 1.19 4.45L3 21.5l4.8-1.26a8.9 8.9 0 0 0 4.24 1.08h0c4.9 0 8.9-4 8.9-8.9 0-2.38-.93-4.6-2.6-6.28zM12.04 19.7h0a7.4 7.4 0 0 1-3.77-1.03l-.27-.16-2.8.74.75-2.73-.18-.28a7.4 7.4 0 0 1-1.14-3.94c0-4.1 3.34-7.44 7.45-7.44a7.4 7.4 0 0 1 5.27 2.18 7.4 7.4 0 0 1 2.18 5.27c0 4.1-3.34 7.4-7.5 7.4zm4.08-5.56c-.22-.11-1.32-.65-1.53-.72-.2-.08-.35-.11-.5.11-.15.22-.58.72-.71.87-.13.15-.26.16-.48.05-.22-.11-.94-.35-1.79-1.11-.66-.59-1.11-1.32-1.24-1.54-.13-.22-.01-.34.1-.45.1-.1.22-.26.33-.4.11-.13.15-.22.22-.37.07-.15.04-.28-.02-.4-.05-.11-.5-1.2-.68-1.65-.18-.43-.36-.37-.5-.38h-.43c-.15 0-.4.05-.6.28-.2.22-.8.78-.8 1.9s.82 2.2.94 2.35c.11.15 1.62 2.48 3.94 3.48.55.24.98.38 1.31.48.55.18 1.05.15 1.45.09.44-.07 1.32-.54 1.51-1.06.19-.52.19-.97.13-1.06-.05-.1-.2-.15-.42-.26z"/></svg>';
