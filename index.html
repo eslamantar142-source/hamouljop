@@ -5366,7 +5366,7 @@ async function showAdminPanel(tab='pending') {
 
   const tabList = [
     ['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],
-    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار'],['shops','🛍️ معارض'],['users','👤 مستخدمين'],['backup','💾 نسخة احتياطية']
+    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار'],['shops','🛍️ معارض'],['users','👤 مستخدمين'],['dellog','🗑️ سجل الحذف'],['backup','💾 نسخة احتياطية']
   ];
 
   // بناء الهيكل دايماً من أول
@@ -5411,7 +5411,35 @@ async function showAdminPanel(tab='pending') {
     loadAdminShops(cont);
   } else if(tab === 'users') {
     loadAdminUsers(cont);
+  } else if(tab === 'dellog') {
+    loadAdminDeletionLog(cont);
   }
+}
+
+async function loadAdminDeletionLog(cont) {
+  cont.innerHTML = '<div style="text-align:center;padding:30px;">⏳ جاري التحميل...</div>';
+  var logs = [];
+  try {
+    logs = await sbFetch('GET', 'admin_deletion_log?select=id,table_name,record_id,item_label,deleted_at&order=deleted_at.desc&limit=300') || [];
+  } catch(e) {
+    console.error('load deletion log error:', e);
+    cont.innerHTML = '<div style="text-align:center;padding:30px;color:#dc2626;">⚠️ حصل خطأ في تحميل السجل<br><span style="font-size:11px;">' + (e.message||'') + '</span></div>';
+    return;
+  }
+  var labels = {market_products: '🛒 منتج سوق', shop_traders: '🛍️ معرض'};
+  cont.innerHTML =
+    '<div style="background:white;border-radius:14px;padding:14px;">' +
+      '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">🗑️ سجل عمليات الحذف (' + logs.length + ')</div>' +
+      (!logs.length ? '<p style="font-size:12px;color:#94a3b8;">مفيش عمليات حذف مسجّلة لحد دلوقتي</p>' :
+        logs.map(function(l){
+          var dt = new Date(l.deleted_at).toLocaleString('ar-EG', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+          return '<div style="padding:9px;background:#f8fafc;border-radius:8px;margin-bottom:6px;">' +
+            '<div style="font-size:13px;font-weight:700;">' + (labels[l.table_name] || l.table_name) + ' — ' + escapeHtml(l.item_label||'—') + '</div>' +
+            '<div style="font-size:11px;color:#64748b;margin-top:2px;">' + dt + '</div>' +
+          '</div>';
+        }).join('')
+      ) +
+    '</div>';
 }
 
 async function loadAdminUsers(cont) {
@@ -5505,7 +5533,7 @@ async function loadAdminShops(cont) {
             '<div style="font-size:11px;color:#64748b;">' + t.subcategory + ' • ' + t.phone + '</div>' +
           '</div>' +
           '<button data-tid="'+t.id+'" data-tname="'+escapeHtml(t.shop_name||'')+'" onclick="resetShopTraderPassword(this.dataset.tid,this.dataset.tname)" style="background:#fef3c7;color:#92400e;border:none;padding:5px 10px;border-radius:8px;font-size:14px;cursor:pointer;">🔑</button>' +
-          '<button data-tid="'+t.id+'" onclick="deleteShopTraderAdmin(this.dataset.tid)" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️</button>' +
+          '<button data-tid="'+t.id+'" data-tname="'+escapeHtml(t.shop_name||'')+'" onclick="deleteShopTraderAdmin(this.dataset.tid,this.dataset.tname)" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️</button>' +
         '</div>';
       }).join('') : '<p style="font-size:12px;color:#94a3b8;">مفيش معارض معتمدة</p>') +
     '</div>';
@@ -5534,11 +5562,12 @@ async function rejectShopTrader(id) {
   showAdminPanel('shops');
 }
 
-async function deleteShopTraderAdmin(id) {
+async function deleteShopTraderAdmin(id, shopName) {
   if(!confirm('مسح المعرض نهائياً؟ (منتجاته هتتخفي معاه)')) return;
   try {
     // نستخدم PATCH بدل DELETE عشان يشتغل على الموبايل (زي حذف الإعلانات بالظبط)
     await sbFetch('PATCH', 'shop_traders?id=eq.'+id, {status: 'deleted'});
+    await sbRPC('admin_log_deletion', {p_table_name: 'shop_traders', p_record_id: id, p_item_label: shopName || ''});
     showToast('تم الحذف');
     showAdminPanel('shops');
   } catch(e) {
@@ -8971,7 +9000,7 @@ function formatLastUpdate(date, isToday) {
 // جيب كل أسعار التجار (مش مرتبطة بيوم — كل تاجر عنده منتجات كتير، كل منتج له آخر سعر بتاعه)
 async function loadMarketPricesData() {
   try {
-    const raw = await sbFetch('GET', 'market_products?select=id,section,product_name,price,updated_at,trader_id,trader:market_traders(name,phone,address,photo_url)&order=updated_at.desc&limit=500') || [];
+    const raw = await sbFetch('GET', 'market_products?select=id,section,product_name,price,updated_at,trader_id,trader:market_traders(name,phone,address,photo_url)&deleted_at=is.null&order=updated_at.desc&limit=500') || [];
     const rows = raw.map(function(r){
       return {
         id: r.id, section: r.section, product_name: r.product_name, price: r.price, updated_at: r.updated_at,
@@ -9107,7 +9136,7 @@ function renderTraderMarket(rows, filter) {
               (t.phone ? '<a href="tel:' + escapeHtml(t.phone) + '" style="background:#dcfce7;color:#16a34a;border:none;padding:8px 10px;border-radius:8px;font-size:16px;text-decoration:none;flex-shrink:0;">📞</a>' : '') +
               (waNum ? '<a href="https://wa.me/' + waNum + '" target="_blank" style="background:#dcfce7;color:#16a34a;border:none;padding:8px 10px;border-radius:8px;font-size:16px;text-decoration:none;flex-shrink:0;">💬</a>' : '') +
               (isAdmin ? '<button data-trid="'+t.trader_id+'" data-trname="'+escapeHtml(t.trader_name||'')+'" onclick="resetTraderPassword(this.dataset.trid,this.dataset.trname)" style="background:#fef3c7;color:#92400e;border:none;padding:8px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">🔑</button>' : '') +
-              (isAdmin ? '<button data-tid="'+t.id+'" onclick="deleteMarketProduct(this.dataset.tid)" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">🗑️</button>' : '') +
+              (isAdmin ? '<button data-tid="'+t.id+'" data-plabel="'+escapeHtml(prodName+' - '+(t.trader_name||''))+'" onclick="deleteMarketProduct(this.dataset.tid,this.dataset.plabel)" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 10px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;">🗑️</button>' : '') +
             '</div>';
           }).join('') +
         '</div>';
@@ -9289,7 +9318,7 @@ async function showTraderUpdateDialog() {
   if(!traderId || !phone || !pass){ showToast('لازم تسجل دخول تاني ⚠️', 'error'); return; }
 
   var myProducts = [];
-  try { myProducts = await sbFetch('GET', 'market_products?trader_id=eq.'+traderId+'&order=updated_at.desc') || []; } catch(e) {}
+  try { myProducts = await sbFetch('GET', 'market_products?trader_id=eq.'+traderId+'&deleted_at=is.null&order=updated_at.desc') || []; } catch(e) {}
 
   var secs = MARKET_SECTIONS.map(function(s){ return '<option value="'+s.id+'">'+s.icon+' '+s.id+'</option>'; }).join('');
 
@@ -9443,11 +9472,17 @@ async function resetTraderPassword(traderId, traderName) {
   } catch(e) { showToast('حصل خطأ', 'error'); }
 }
 
-async function deleteMarketProduct(id) {
-  if(!confirm('تمسح الصنف ده؟')) return;
-  await sbFetch('DELETE', 'market_products?id=eq.'+id, null);
-  showToast('تم الحذف');
-  await refreshMarketContent('all');
+async function deleteMarketProduct(id, productName) {
+  if(!confirm('تعطيل الصنف ده؟ (هيتخفي من العرض، بس مش هيتمسح نهائي)')) return;
+  try {
+    await sbFetch('PATCH', 'market_products?id=eq.'+id, {deleted_at: new Date().toISOString()});
+    await sbRPC('admin_log_deletion', {p_table_name: 'market_products', p_record_id: id, p_item_label: productName || ''});
+    showToast('تم التعطيل');
+    await refreshMarketContent('all');
+  } catch(e) {
+    showToast('⚠️ حصل خطأ — جرب تاني', 'error');
+    console.error('delete market product error:', e);
+  }
 }
 
 // TRANSPORT NEWS PAGE
