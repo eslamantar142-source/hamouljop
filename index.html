@@ -3020,15 +3020,15 @@ function renderShopGrid(ads, cat) {
       var waUrl = phone ? 'https://wa.me/'+phone+'?text='+waMsg : '#';
       return '<div onclick="openAdDetails(\'' + ad.id + '\')" style="background:white;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;position:relative;">' +
         (ad.is_sponsored ? '<div style="position:absolute;top:6px;right:6px;background:#7c3aed;color:white;padding:2px 6px;border-radius:10px;font-size:9px;font-weight:900;z-index:1;">ممول</div>' : '') +
-        (ad.image_url ? '<img src="'+ad.image_url+'" style="width:100%;height:130px;object-fit:cover;display:block;">' :
+        (ad.image_url ? '<img src="'+escapeHtml(safeUrl(ad.image_url))+'" style="width:100%;height:130px;object-fit:cover;display:block;">' :
           '<div style="width:100%;height:130px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);display:flex;align-items:center;justify-content:center;font-size:40px;">🛍️</div>') +
         '<div style="padding:8px;">' +
         '<div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:4px;line-height:1.3;">' + escapeHtml(ad.title||'') + '</div>' +
-        (ad.condition ? '<div style="font-size:10px;color:#64748b;margin-bottom:4px;">' + ad.condition + (ad.color?' · 🎨 '+ad.color:'') + '</div>' : (ad.color ? '<div style="font-size:10px;color:#64748b;margin-bottom:4px;">🎨 '+ad.color+'</div>' : '')) +
-        (ad.warranty ? '<div style="font-size:10px;color:#166534;margin-bottom:4px;">🛡️ '+ad.warranty+'</div>' : '') +
+        (ad.condition ? '<div style="font-size:10px;color:#64748b;margin-bottom:4px;">' + escapeHtml(ad.condition) + (ad.color?' · 🎨 '+escapeHtml(ad.color):'') + '</div>' : (ad.color ? '<div style="font-size:10px;color:#64748b;margin-bottom:4px;">🎨 '+escapeHtml(ad.color)+'</div>' : '')) +
+        (ad.warranty ? '<div style="font-size:10px;color:#166534;margin-bottom:4px;">🛡️ '+escapeHtml(ad.warranty)+'</div>' : '') +
         (ad.price ? '<div style="font-size:16px;font-weight:900;color:#16a34a;margin-bottom:6px;">' + ad.price.toLocaleString('ar-EG') + ' <span style="font-size:11px;">جنيه</span></div>' :
           '<div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:6px;">تواصل للسعر</div>') +
-        (ad.quantity ? '<div style="font-size:10px;color:#64748b;margin-bottom:6px;">📦 متاح: '+ad.quantity+'</div>' : '') +
+        (ad.quantity ? '<div style="font-size:10px;color:#64748b;margin-bottom:6px;">📦 متاح: '+escapeHtml(ad.quantity)+'</div>' : '') +
         '<a href="' + waUrl + '" target="_blank" onclick="event.stopPropagation();trackStat(\'' + ad.id + '\',\'whatsapp\')" style="display:block;background:#25D366;color:white;border-radius:8px;padding:6px;text-align:center;font-size:12px;font-weight:900;text-decoration:none;">🛒 اطلب دلوقتي</a>' +
         '</div></div>';
     }).join('') + '</div>';
@@ -3056,17 +3056,17 @@ function renderAdsList(ads, cat, sub) {
     const favBg = isFav(ad.id) ? '#fee2e2' : '#f3f4f6';
     const favColor = isFav(ad.id) ? '#dc2626' : '#aaa';
     const adminBtn = isAdmin ? '<button class="btn-del" onclick="deleteAdAdmin(\'' + ad.id + '\')">🗑️</button>' : '';
-    const imgHtml = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')">' : '';
-    const addrHtml = ad.address ? '<div style="font-size:12px;color:var(--gray);margin-bottom:6px;">📍 ' + ad.address + '</div>' : '';
-    const subHtml = ad.subcategory ? '<span class="ad-sub-badge">' + ad.subcategory + '</span>' : '';
-    const salaryHtml = ad.salary ? '<div style="font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:6px;">💰 ' + ad.salary + '</div>' : '';
-    const jobStatusHtml = ad.job_status ? '<div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px;">📌 ' + ad.job_status + '</div>' : '';
+    const imgHtml = ad.image_url ? '<img src="' + escapeHtml(safeUrl(ad.image_url)) + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')">' : '';
+    const addrHtml = ad.address ? '<div style="font-size:12px;color:var(--gray);margin-bottom:6px;">📍 ' + escapeHtml(ad.address) + '</div>' : '';
+    const subHtml = ad.subcategory ? '<span class="ad-sub-badge">' + escapeHtml(ad.subcategory) + '</span>' : '';
+    const salaryHtml = ad.salary ? '<div style="font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:6px;">💰 ' + escapeHtml(ad.salary) + '</div>' : '';
+    const jobStatusHtml = ad.job_status ? '<div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px;">📌 ' + escapeHtml(ad.job_status) + '</div>' : '';
     const lostModeHtml = ad.category === 'lost' ? '<div style="font-size:11px;font-weight:900;color:' + (ad.lost_mode==='found'?'#166534':'#dc2626') + ';margin-bottom:6px;">' + (ad.lost_mode==='found'?'🙂 لقيت حاجة':'😟 فقدت حاجة') + '</div>' : '';
-    const rewardHtml = ad.reward ? '<div style="font-size:12px;font-weight:800;color:#c2410c;background:#fff7ed;display:inline-block;padding:2px 10px;border-radius:20px;margin-bottom:6px;">🎁 مكافأة: ' + ad.reward + '</div>' : '';
-    const funeralHtml = ad.funeral_info ? '<div style="font-size:12px;color:#334155;margin-bottom:4px;">🕌 ' + ad.funeral_info + '</div>' : '';
-    const condolenceHtml = ad.condolence_info ? '<div style="font-size:12px;color:#334155;margin-bottom:6px;">🤲 ' + ad.condolence_info + '</div>' : '';
+    const rewardHtml = ad.reward ? '<div style="font-size:12px;font-weight:800;color:#c2410c;background:#fff7ed;display:inline-block;padding:2px 10px;border-radius:20px;margin-bottom:6px;">🎁 مكافأة: ' + escapeHtml(ad.reward) + '</div>' : '';
+    const funeralHtml = ad.funeral_info ? '<div style="font-size:12px;color:#334155;margin-bottom:4px;">🕌 ' + escapeHtml(ad.funeral_info) + '</div>' : '';
+    const condolenceHtml = ad.condolence_info ? '<div style="font-size:12px;color:#334155;margin-bottom:6px;">🤲 ' + escapeHtml(ad.condolence_info) + '</div>' : '';
     const deathDateHtml = ad.death_date ? '<div style="font-size:12px;color:#64748b;margin-bottom:6px;">📅 ' + formatDeathDate(ad.death_date) + '</div>' : '';
-    const foodInfoHtml = (ad.opening_hours || ad.delivery) ? '<div style="font-size:12px;color:#854d0e;margin-bottom:6px;">' + (ad.opening_hours?'🕐 '+ad.opening_hours:'') + (ad.opening_hours&&ad.delivery?' · ':'') + (ad.delivery==='متاح'?'🛵 توصيل متاح':ad.delivery==='غير متاح'?'🚫 بدون توصيل':'') + '</div>' : '';
+    const foodInfoHtml = (ad.opening_hours || ad.delivery) ? '<div style="font-size:12px;color:#854d0e;margin-bottom:6px;">' + (ad.opening_hours?'🕐 '+escapeHtml(ad.opening_hours):'') + (ad.opening_hours&&ad.delivery?' · ':'') + (ad.delivery==='متاح'?'🛵 توصيل متاح':ad.delivery==='غير متاح'?'🚫 بدون توصيل':'') + '</div>' : '';
 
     const moveBtns = isAdmin ? '<div style="display:flex;gap:3px;">' +
         (adIdx > 0 ? '<button onclick="moveAdOrder(\''+ad.id+'\',\'up\',\''+cat.id+'\',\''+(sub||'').replace(/'/g,"")+'\')" style="background:#334155;color:white;border:none;width:26px;height:26px;border-radius:50%;font-size:12px;cursor:pointer;">⬆️</button>' : '') +
@@ -3080,29 +3080,29 @@ function renderAdsList(ads, cat, sub) {
       '<a href="' + waUrl + '" target="_blank" class="btn-wa" onclick="trackStat(\'' + ad.id + '\',\'whatsapp\')">💬 واتساب</a>';
 
     if(ad.is_sponsored) {
-      const imgSponsored = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')" style="border-bottom:2px solid #7c3aed;">' : '';
+      const imgSponsored = ad.image_url ? '<img src="' + escapeHtml(safeUrl(ad.image_url)) + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')" style="border-bottom:2px solid #7c3aed;">' : '';
       return '<div class="ad-card" style="border:2px solid #7c3aed;background:linear-gradient(135deg,#faf5ff,#fff);position:relative;overflow:visible;">' +
         '<div style="position:absolute;top:-1px;right:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;padding:3px 14px;border-radius:0 0 10px 10px;font-size:11px;font-weight:900;">📢 إعلان ممول</div>' +
         imgSponsored +
         '<div class="ad-body" style="padding-top:' + (ad.image_url ? '10px' : '22px') + ';">' +
-        '<div style="font-size:11px;color:#7c3aed;font-weight:700;margin-bottom:4px;">' + cat.icon + ' ' + cat.name + (ad.subcategory ? ' ← ' + ad.subcategory : '') + '</div>' +
+        '<div style="font-size:11px;color:#7c3aed;font-weight:700;margin-bottom:4px;">' + cat.icon + ' ' + cat.name + (ad.subcategory ? ' ← ' + escapeHtml(ad.subcategory) : '') + '</div>' +
         '<div class="ad-title" onclick="openAdDetails(\'' + ad.id + '\')" style="color:#4c1d95;">' + escapeHtml(ad.title||'') + '</div>' +
         addrHtml +
-        '<div class="ad-desc">' + (ad.description||'') + '</div>' +
+        '<div class="ad-desc">' + escapeHtml(ad.description||'') + '</div>' +
         '<div class="ad-footer"><span class="ad-date">' + date + '</span><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' + actionBtns + '</div></div>' +
         '</div></div>';
     }
 
     if(ad.is_offer) {
-      const imgOffer = ad.image_url ? '<img src="' + ad.image_url + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')" style="border-bottom:2px solid #f59e0b;">' : '';
+      const imgOffer = ad.image_url ? '<img src="' + escapeHtml(safeUrl(ad.image_url)) + '" class="ad-img" loading="lazy" onerror="this.style.display=\'none\'" onclick="openAdDetails(\'' + ad.id + '\')" style="border-bottom:2px solid #f59e0b;">' : '';
       return '<div class="ad-card" style="border:2px solid #f59e0b;background:linear-gradient(135deg,#fffbeb,#fff);position:relative;overflow:visible;">' +
         '<div style="position:absolute;top:-1px;right:12px;background:#f59e0b;color:white;padding:3px 12px;border-radius:0 0 8px 8px;font-size:11px;font-weight:900;">⭐ إعلان مميز</div>' +
         imgOffer +
         '<div class="ad-body" style="padding-top:' + (ad.image_url ? '10px' : '18px') + ';">' +
-        '<div style="font-size:11px;color:#92400e;font-weight:700;margin-bottom:4px;">' + cat.icon + ' ' + cat.name + (ad.subcategory ? ' ← ' + ad.subcategory : '') + '</div>' +
+        '<div style="font-size:11px;color:#92400e;font-weight:700;margin-bottom:4px;">' + cat.icon + ' ' + cat.name + (ad.subcategory ? ' ← ' + escapeHtml(ad.subcategory) : '') + '</div>' +
         '<div class="ad-title" onclick="openAdDetails(\'' + ad.id + '\')" style="color:#92400e;">' + escapeHtml(ad.title||'') + '</div>' +
         addrHtml +
-        '<div class="ad-desc">' + (ad.description||'') + '</div>' +
+        '<div class="ad-desc">' + escapeHtml(ad.description||'') + '</div>' +
         '<div class="ad-footer"><span class="ad-date">' + date + '</span><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' + actionBtns + '</div></div>' +
         '</div></div>';
     }
@@ -3121,7 +3121,7 @@ function renderAdsList(ads, cat, sub) {
       funeralHtml +
       condolenceHtml +
       addrHtml +
-      '<div class="ad-desc">' + (ad.description||'') + '</div>' +
+      '<div class="ad-desc">' + escapeHtml(ad.description||'') + '</div>' +
       renderVideoLinks(ad.video_links) +
       '<div class="ad-footer"><span class="ad-date">' + date + '</span><div style="display:flex;gap:6px;align-items:center;">' + actionBtns + '</div></div>' +
       '</div></div>';
