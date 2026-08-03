@@ -6191,8 +6191,8 @@ function renderMarriageAdminCards(profiles) {
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
           <div style="width:44px;height:44px;border-radius:50%;background:#fce7f3;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${isMale?'👨':'👩'}</div>
           <div style="flex:1;">
-            <div style="font-size:13px;font-weight:900;">${isMale?'طالب زواج':'طالبة زواج'} — ${p.age} سنة${p.ref_code?' | 🔖 '+p.ref_code:''}</div>
-            <div style="font-size:11px;color:var(--gray);">${p.social_status||''} | ${p.education||''} | ${p.religiosity||''}</div>
+            <div style="font-size:13px;font-weight:900;">${isMale?'طالب زواج':'طالبة زواج'} — ${p.age} سنة${p.ref_code?' | 🔖 '+escapeHtml(p.ref_code):''}</div>
+            <div style="font-size:11px;color:var(--gray);">${escapeHtml(p.social_status||'')} | ${escapeHtml(p.education||'')} | ${escapeHtml(p.religiosity||'')}</div>
             <div style="margin-top:3px;"><span style="background:${statusColor}22;color:${statusColor};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">${statusLabel}</span></div>
           </div>
           <div style="font-size:11px;color:var(--gray);">${new Date(p.created_at).toLocaleDateString('ar-EG')}</div>
@@ -6203,20 +6203,20 @@ function renderMarriageAdminCards(profiles) {
         ${p.requirements?`<div style="font-size:12px;color:var(--gray);margin-bottom:6px;line-height:1.5;">🎯 ${escapeHtml(p.requirements)}</div>`:''}
 
         <div style="background:#f0fdf4;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;font-weight:700;color:#166534;">
-          📞 ${p.phone||'—'}${p.whatsapp?' | 💬 '+p.whatsapp:''}
+          📞 ${escapeHtml(p.phone||'—')}${p.whatsapp?' | 💬 '+escapeHtml(p.whatsapp):''}
         </div>
         ${p.is_verified?`<div style="background:#dcfce7;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:11px;font-weight:700;color:#166534;">🛡️ متحقق منه — تم التواصل والتأكد من الجدية</div>`:''}
 
         ${p.card_image?`
           <div style="margin-bottom:8px;">
             <div style="font-size:10px;color:#be185d;font-weight:700;margin-bottom:4px;">🖼️ صورة البطاقة (للتحقق من المصداقية)</div>
-            <img src="${p.card_image}" onerror="this.parentElement.style.display='none'" style="width:100%;max-height:130px;object-fit:cover;border-radius:8px;display:block;">
+            <img src="${escapeHtml(safeUrl(p.card_image))}" onerror="this.parentElement.style.display='none'" style="width:100%;max-height:130px;object-fit:cover;border-radius:8px;display:block;">
           </div>`:''}
 
         ${p.personal_photo?`
           <div style="margin-bottom:8px;border:1px dashed #f9a8d4;border-radius:8px;padding:8px;">
             <div style="font-size:10px;color:#be185d;font-weight:700;margin-bottom:4px;">🔒 الصورة الشخصية — للإدارة فقط</div>
-            <img src="${p.personal_photo}" onerror="this.parentElement.style.display='none'" style="width:100%;max-height:120px;object-fit:cover;border-radius:6px;display:block;">
+            <img src="${escapeHtml(safeUrl(p.personal_photo))}" onerror="this.parentElement.style.display='none'" style="width:100%;max-height:120px;object-fit:cover;border-radius:6px;display:block;">
           </div>`:''}
 
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
@@ -6232,7 +6232,7 @@ function renderMarriageAdminCards(profiles) {
             <button onclick="approveMarriageProfile('${p.id}')" style="background:#f0fdf4;color:var(--green);border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">↩️ استعادة</button>
             <button onclick="deleteMarriageProfile('${p.id}')" style="background:#fee2e2;color:var(--red);border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🗑️ حذف نهائي</button>
           `:''}
-          ${p.phone?`<a href="https://wa.me/20${p.phone.replace(/^0/,'')}" target="_blank" style="background:#f0fdf4;color:var(--green);border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;text-decoration:none;display:inline-block;">📞 واتساب</a>`:''}
+          ${p.phone?`<a href="https://wa.me/20${String(p.phone||'').replace(/[^0-9]/g,'').replace(/^0/,'')}" target="_blank" style="background:#f0fdf4;color:var(--green);border:none;padding:7px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;text-decoration:none;display:inline-block;">📞 واتساب</a>`:''}
         </div>
       </div>
     </div>`;
@@ -7412,8 +7412,8 @@ async function doGlobalSearch() {
               <div style="width:40px;height:40px;border-radius:50%;background:${isMale?'#dbeafe':'#fce7f3'};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${isMale?'👨':'👩'}</div>
               <div style="flex:1;">
                 <div style="font-size:13px;font-weight:900;color:${color};">${isMale?'طالب زواج':'طالبة زواج'}</div>
-                <div style="font-size:12px;color:var(--gray);">📍 ${p.city||'الحامول'} • ${p.age} سنة • ${p.social_status||''}</div>
-                ${p.ref_code?`<div style="font-size:11px;color:#64748b;font-weight:700;">🔖 ${p.ref_code}</div>`:''}
+                <div style="font-size:12px;color:var(--gray);">📍 ${escapeHtml(p.city||'الحامول')} • ${p.age} سنة • ${escapeHtml(p.social_status||'')}</div>
+                ${p.ref_code?`<div style="font-size:11px;color:#64748b;font-weight:700;">🔖 ${escapeHtml(p.ref_code)}</div>`:''}
               </div>
               <div style="font-size:20px;color:#ccc;">›</div>
             </div>
@@ -7425,7 +7425,7 @@ async function doGlobalSearch() {
   if(!totalCount) {
     results.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--gray);">
       <div style="font-size:48px;margin-bottom:12px;">😕</div>
-      <p style="font-size:15px;font-weight:700;">مفيش نتايج لـ "${q}"</p>
+      <p style="font-size:15px;font-weight:700;">مفيش نتايج لـ "${escapeHtml(q)}"</p>
       <p style="font-size:13px;margin-top:6px;color:#aaa;">جرب كلمة تانية</p>
     </div>`;
     return;
@@ -8099,7 +8099,7 @@ function renderMarriageProfiles(profiles) {
               <span style="font-size:14px;font-weight:900;color:${textBadge};">${isMale?'👨 طالب زواج':'👩 طالبة زواج'}</span>
               ${p.is_verified?'<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">✅ موثق</span>':''}
             </div>
-            <div style="font-size:12px;color:var(--gray);margin-top:2px;">📍 ${p.city||'الحامول'} • ${p.age} سنة • ${p.social_status||''}</div>
+            <div style="font-size:12px;color:var(--gray);margin-top:2px;">📍 ${escapeHtml(p.city||'الحامول')} • ${p.age} سنة • ${escapeHtml(p.social_status||'')}</div>
             ${p.ref_code?`<div style="font-size:11px;font-weight:900;color:#64748b;margin-top:3px;background:#f1f5f9;display:inline-block;padding:2px 8px;border-radius:6px;">🔖 ${p.ref_code}</div>`:''}
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
@@ -8108,8 +8108,8 @@ function renderMarriageProfiles(profiles) {
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
-          <div style="background:#f8f9fa;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:11px;color:var(--gray);">المؤهل</div><div style="font-size:12px;font-weight:700;">${p.education||'—'}</div></div>
-          <div style="background:#f8f9fa;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:11px;color:var(--gray);">المهنة</div><div style="font-size:12px;font-weight:700;">${p.job||'—'}</div></div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:11px;color:var(--gray);">المؤهل</div><div style="font-size:12px;font-weight:700;">${escapeHtml(p.education||'—')}</div></div>
+          <div style="background:#f8f9fa;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:11px;color:var(--gray);">المهنة</div><div style="font-size:12px;font-weight:700;">${escapeHtml(p.job||'—')}</div></div>
         </div>
         <div style="display:flex;gap:6px;">
           <button onclick="event.stopPropagation();toggleMarriageLike('${p.id}',this)" style="flex:1;background:${p.i_liked?'#be185d':bgBadge};color:${p.i_liked?'white':textBadge};border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">${p.i_liked?'❤️ معجب':'🤍 اهتمام'}</button>
@@ -8181,11 +8181,11 @@ async function showMyMarriageProfile() {
           <div style="font-size:14px;font-weight:900;color:${textColor};margin-bottom:10px;">${isMale?'👨 طالب زواج':'👩 طالبة زواج'}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <div style="background:white;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:10px;color:var(--gray);">السن</div><div style="font-size:13px;font-weight:700;">${p.age} سنة</div></div>
-            <div style="background:white;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:10px;color:var(--gray);">الحالة</div><div style="font-size:13px;font-weight:700;">${p.social_status||'—'}</div></div>
-            <div style="background:white;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:10px;color:var(--gray);">البلد</div><div style="font-size:13px;font-weight:700;">${p.city||'—'}</div></div>
-            <div style="background:white;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:10px;color:var(--gray);">المهنة</div><div style="font-size:13px;font-weight:700;">${p.job||'—'}</div></div>
+            <div style="background:white;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:10px;color:var(--gray);">الحالة</div><div style="font-size:13px;font-weight:700;">${escapeHtml(p.social_status||'—')}</div></div>
+            <div style="background:white;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:10px;color:var(--gray);">البلد</div><div style="font-size:13px;font-weight:700;">${escapeHtml(p.city||'—')}</div></div>
+            <div style="background:white;border-radius:8px;padding:8px;text-align:center;"><div style="font-size:10px;color:var(--gray);">المهنة</div><div style="font-size:13px;font-weight:700;">${escapeHtml(p.job||'—')}</div></div>
           </div>
-          ${p.about?`<div style="background:white;border-radius:8px;padding:10px;margin-top:8px;font-size:13px;line-height:1.6;"><span style="font-size:11px;color:var(--gray);">نبذة: </span>${p.about}</div>`:''}
+          ${p.about?`<div style="background:white;border-radius:8px;padding:10px;margin-top:8px;font-size:13px;line-height:1.6;"><span style="font-size:11px;color:var(--gray);">نبذة: </span>${escapeHtml(p.about)}</div>`:''}
         </div>
 
         <!-- إحصائيات -->
@@ -8314,7 +8314,7 @@ function openContactRequest(profileId) {
         <button onclick="document.getElementById('contactRequestModal').remove()" style="background:#f3f4f6;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
       </div>
       <div style="background:${bgBadge};border-radius:10px;padding:10px;margin-bottom:14px;font-size:12px;color:${textBadge};font-weight:700;">
-        ${isMale?'👨 طالب زواج':'👩 طالبة زواج'} • ${p.age} سنة • ${p.city||'الحامول'}
+        ${isMale?'👨 طالب زواج':'👩 طالبة زواج'} • ${p.age} سنة • ${escapeHtml(p.city||'الحامول')}
       </div>
       <div style="margin-bottom:10px;">
         <label style="font-size:12px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">اسمك *</label>
@@ -8386,7 +8386,7 @@ function openMarriageDetail(profileId) {
           <div style="width:42px;height:42px;border-radius:50%;background:${bgBadge};display:flex;align-items:center;justify-content:center;font-size:22px;">${isMale?'👨':'👩'}</div>
           <div>
             <div style="font-size:14px;font-weight:900;color:${textBadge};">${isMale?'👨 طالب زواج':'👩 طالبة زواج'}</div>
-            <div style="font-size:12px;color:var(--gray);">📍 ${p.city||'الحامول'}${p.is_verified?' • ✅ موثق':''}${p.ref_code?' • 🔖 '+p.ref_code:''}</div>
+            <div style="font-size:12px;color:var(--gray);">📍 ${escapeHtml(p.city||'الحامول')}${p.is_verified?' • ✅ موثق':''}${p.ref_code?' • 🔖 '+escapeHtml(p.ref_code):''}</div>
           </div>
         </div>
         <button onclick="document.getElementById('marriageDetailDrawer').remove()" style="background:#f3f4f6;border:none;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;">✕</button>
@@ -8394,29 +8394,29 @@ function openMarriageDetail(profileId) {
       <div style="padding:16px 16px 28px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
           <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">السن</div><div style="font-size:15px;font-weight:800;">${p.age} سنة</div></div>
-          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">الحالة</div><div style="font-size:14px;font-weight:700;">${p.social_status||'—'}</div></div>
-          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">المؤهل</div><div style="font-size:13px;font-weight:700;">${p.education||'—'}</div></div>
-          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">المهنة</div><div style="font-size:13px;font-weight:700;">${p.job||'—'}</div></div>
-          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;grid-column:1/-1;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">الالتزام الديني</div><div style="font-size:13px;font-weight:700;">${p.religiosity||'—'}</div></div>
-          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">📍 البلد</div><div style="font-size:13px;font-weight:700;">${p.city||'—'}</div></div>
-          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">💍 نوع الزواج</div><div style="font-size:13px;font-weight:700;">${p.marriage_type||'—'}</div></div>
-          ${p.children?`<div style="background:#fef9c3;border-radius:10px;padding:10px;text-align:center;grid-column:1/-1;"><div style="font-size:11px;color:#92400e;margin-bottom:3px;">👶 الأطفال</div><div style="font-size:13px;font-weight:700;color:#92400e;">${p.children}</div></div>`:''}
+          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">الحالة</div><div style="font-size:14px;font-weight:700;">${escapeHtml(p.social_status||'—')}</div></div>
+          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">المؤهل</div><div style="font-size:13px;font-weight:700;">${escapeHtml(p.education||'—')}</div></div>
+          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">المهنة</div><div style="font-size:13px;font-weight:700;">${escapeHtml(p.job||'—')}</div></div>
+          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;grid-column:1/-1;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">الالتزام الديني</div><div style="font-size:13px;font-weight:700;">${escapeHtml(p.religiosity||'—')}</div></div>
+          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">📍 البلد</div><div style="font-size:13px;font-weight:700;">${escapeHtml(p.city||'—')}</div></div>
+          <div style="background:#f8f9fa;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:11px;color:var(--gray);margin-bottom:3px;">💍 نوع الزواج</div><div style="font-size:13px;font-weight:700;">${escapeHtml(p.marriage_type||'—')}</div></div>
+          ${p.children?`<div style="background:#fef9c3;border-radius:10px;padding:10px;text-align:center;grid-column:1/-1;"><div style="font-size:11px;color:#92400e;margin-bottom:3px;">👶 الأطفال</div><div style="font-size:13px;font-weight:700;color:#92400e;">${escapeHtml(p.children)}</div></div>`:''}
         </div>
-        ${p.about?`<div style="background:#fdf2f8;border-radius:10px;padding:12px;margin-bottom:10px;border-right:3px solid #be185d;"><div style="font-size:11px;color:#be185d;font-weight:700;margin-bottom:5px;">📝 نبذة</div><div style="font-size:13px;line-height:1.7;">${p.about}</div></div>`:''}
-        ${p.requirements?`<div style="background:#f0fdf4;border-radius:10px;padding:12px;margin-bottom:14px;border-right:3px solid #10b981;"><div style="font-size:11px;color:#10b981;font-weight:700;margin-bottom:5px;">🎯 المطلوب في الشريك</div><div style="font-size:13px;line-height:1.7;">${p.requirements}</div></div>`:''}
+        ${p.about?`<div style="background:#fdf2f8;border-radius:10px;padding:12px;margin-bottom:10px;border-right:3px solid #be185d;"><div style="font-size:11px;color:#be185d;font-weight:700;margin-bottom:5px;">📝 نبذة</div><div style="font-size:13px;line-height:1.7;">${escapeHtml(p.about)}</div></div>`:''}
+        ${p.requirements?`<div style="background:#f0fdf4;border-radius:10px;padding:12px;margin-bottom:14px;border-right:3px solid #10b981;"><div style="font-size:11px;color:#10b981;font-weight:700;margin-bottom:5px;">🎯 المطلوب في الشريك</div><div style="font-size:13px;line-height:1.7;">${escapeHtml(p.requirements)}</div></div>`:''}
         ${isAdmin?`
           <div style="background:#fff7f0;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid #fed7aa;">
             <div style="font-size:11px;color:#ea580c;font-weight:700;margin-bottom:8px;">🔐 بيانات الإدارة</div>
-            <div style="font-size:15px;font-weight:800;color:#166534;margin-bottom:10px;">📞 ${p.phone||'—'}${p.whatsapp?' | 💬 '+p.whatsapp:''}</div>
-            ${p.card_image?`<div style="margin-bottom:10px;"><div style="font-size:11px;color:#be185d;font-weight:700;margin-bottom:5px;">🖼️ صورة البطاقة</div><img src="${p.card_image}" onclick="openImgFull(this.src)" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;cursor:zoom-in;" onerror="this.parentElement.style.display='none'"></div>`:''}
-            ${p.personal_photo?`<div><div style="font-size:11px;color:#be185d;font-weight:700;margin-bottom:5px;">🔒 الصورة الشخصية — للإدارة فقط</div><img src="${p.personal_photo}" onclick="openImgFull(this.src)" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;cursor:zoom-in;" onerror="this.parentElement.style.display='none'"></div>`:''}
+            <div style="font-size:15px;font-weight:800;color:#166534;margin-bottom:10px;">📞 ${escapeHtml(p.phone||'—')}${p.whatsapp?' | 💬 '+escapeHtml(p.whatsapp):''}</div>
+            ${p.card_image?`<div style="margin-bottom:10px;"><div style="font-size:11px;color:#be185d;font-weight:700;margin-bottom:5px;">🖼️ صورة البطاقة</div><img src="${escapeHtml(safeUrl(p.card_image))}" onclick="openImgFull(this.src)" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;cursor:zoom-in;" onerror="this.parentElement.style.display='none'"></div>`:''}
+            ${p.personal_photo?`<div><div style="font-size:11px;color:#be185d;font-weight:700;margin-bottom:5px;">🔒 الصورة الشخصية — للإدارة فقط</div><img src="${escapeHtml(safeUrl(p.personal_photo))}" onclick="openImgFull(this.src)" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;cursor:zoom-in;" onerror="this.parentElement.style.display='none'"></div>`:''}
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             ${p.status==='pending'?`<button onclick="approveMarriage('${p.id}')" style="flex:1;background:#10b981;color:white;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">✅ موافقة</button>`:''}
             ${p.status==='approved'?`<button onclick="rejectMarriage('${p.id}')" style="flex:1;background:#fee2e2;color:#dc2626;border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">❌ إلغاء موافقة</button>` +
             `<button onclick="toggleMarriageVerified('${p.id}',${p.is_verified?'false':'true'})" style="flex:1;background:${p.is_verified?'#f3f4f6':'#dcfce7'};color:${p.is_verified?'#64748b':'#166534'};border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${p.is_verified?'↩️ إلغاء التوثيق':'🛡️ توثيق'}</button>`:''}
             <button onclick="deleteMarriage('${p.id}')" style="background:#fee2e2;color:#dc2626;border:none;padding:10px 14px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">🗑️</button>
-            ${p.phone?`<a href="https://wa.me/20${p.phone.replace(/^0/,'')}" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#25D366;color:white;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-decoration:none;padding:10px;">📞 واتساب</a>`:''}
+            ${p.phone?`<a href="https://wa.me/20${String(p.phone||'').replace(/[^0-9]/g,'').replace(/^0/,'')}" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#25D366;color:white;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;text-decoration:none;padding:10px;">📞 واتساب</a>`:''}
           </div>
         `:`
           <div style="display:flex;gap:8px;margin-bottom:10px;">
