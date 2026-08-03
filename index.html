@@ -7378,9 +7378,9 @@ async function doGlobalSearch() {
         const titleH = escapeHtml(ad.title||'').replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'), m=>`<mark style="background:#fef9c3;border-radius:2px;">${m}</mark>`);
         return `<div class="ad-card" style="${ad.is_offer?'border-right:3px solid #f59e0b;':''}" onclick="openAdDetails('${ad.id}')">
           <div class="ad-body">
-            <div style="font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;">${cat.icon} ${cat.name}${ad.subcategory?' ← '+ad.subcategory:''} ${ad.is_offer?'⭐':''}</div>
+            <div style="font-size:11px;color:var(--primary);font-weight:700;margin-bottom:4px;">${cat.icon} ${cat.name}${ad.subcategory?' ← '+escapeHtml(ad.subcategory):''} ${ad.is_offer?'⭐':''}</div>
             <div class="ad-title">${titleH}</div>
-            ${ad.description?`<div class="ad-desc">${ad.description.substring(0,80)}...</div>`:''}
+            ${ad.description?`<div class="ad-desc">${escapeHtml(ad.description.substring(0,80))}...</div>`:''}
             <div style="margin-top:8px;display:flex;gap:6px;">
               <button class="btn-details" onclick="event.stopPropagation();openAdDetails('${ad.id}')">التفاصيل</button>
               ${phone?`<a href="https://wa.me/${phone}?text=%D8%A7%D9%84%D8%B3%D9%84%D8%A7%D9%85+%D8%B9%D9%84%D9%8A%D9%83%D9%85%D8%8C+%D8%B1%D8%A3%D9%8A%D8%AA+%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D9%83%D9%85+%D8%B9%D9%84%D9%89+%D8%AF%D9%84%D9%8A%D9%84+%D8%A7%D9%84%D8%AD%D8%A7%D9%85%D9%88%D9%84+%D9%88%D8%A3%D8%B1%D9%8A%D8%AF+%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1" target="_blank" class="btn-wa" onclick="event.stopPropagation()">💬 واتساب</a>`:''}
@@ -7550,10 +7550,10 @@ function loadSimilarAds(currentId, category, subcategory) {
         let phone = ad.phone||''; if(phone.startsWith('01')) phone='20'+phone.substring(1);
         return `
         <div onclick="openAdDetails('${ad.id}')" style="display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid #f9fafb;cursor:pointer;">
-          ${ad.image_url ? `<img src="${ad.image_url}" loading="lazy" style="width:60px;height:60px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display='none'">` : `<div style="width:60px;height:60px;border-radius:8px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${fakeCat.icon}</div>`}
+          ${ad.image_url ? `<img src="${escapeHtml(safeUrl(ad.image_url))}" loading="lazy" style="width:60px;height:60px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display='none'">` : `<div style="width:60px;height:60px;border-radius:8px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${fakeCat.icon}</div>`}
           <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:700;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ad.title||''}</div>
-            ${ad.description ? `<div style="font-size:12px;color:var(--gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ad.description.substring(0,60)}</div>` : ''}
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(ad.title||'')}</div>
+            ${ad.description ? `<div style="font-size:12px;color:var(--gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(ad.description.substring(0,60))}</div>` : ''}
             <div style="margin-top:6px;display:flex;gap:6px;">
               ${ad.is_offer ? '<span style="background:#fff7ed;color:var(--orange);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">⭐ مميز</span>' : ''}
               <span style="font-size:11px;color:var(--gray);">${new Date(ad.created_at).toLocaleDateString('ar-EG')}</span>
