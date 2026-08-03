@@ -3600,7 +3600,9 @@ async function deleteAdAdmin(id) {
   if(!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
   try {
     // نستخدم PATCH بدل DELETE عشان يشتغل على الموبايل
+    const adRef = allAds.find(a => a.id === id);
     await sbFetch('PATCH', `ads?id=eq.${id}`, {status: 'deleted'});
+    try { await sbRPC('admin_log_deletion', {p_table_name: 'ads', p_record_id: id, p_item_label: (adRef && adRef.title) || ''}); } catch(e) {}
     showToast('تم الحذف 🗑️');
     allAds = allAds.filter(a => a.id !== id);
     loadAds();
@@ -5435,7 +5437,7 @@ async function loadAdminDeletionLog(cont) {
     cont.innerHTML = '<div style="text-align:center;padding:30px;color:#dc2626;">⚠️ حصل خطأ في تحميل السجل<br><span style="font-size:11px;">' + (e.message||'') + '</span></div>';
     return;
   }
-  var labels = {market_products: '🛒 منتج سوق', shop_traders: '🛍️ معرض'};
+  var labels = {market_products: '🛒 منتج سوق', shop_traders: '🛍️ معرض', ads: '📋 إعلان', marriage_profiles: '💍 ملف زواج'};
   cont.innerHTML =
     '<div style="background:white;border-radius:14px;padding:14px;">' +
       '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">🗑️ سجل عمليات الحذف (' + logs.length + ')</div>' +
@@ -6261,6 +6263,7 @@ async function rejectMarriageProfile(id) {
 async function deleteMarriageProfile(id) {
   if(!confirm('هل أنت متأكد من الحذف النهائي للملف؟')) return;
   await sbFetch('DELETE', `marriage_profiles?id=eq.${id}`);
+  try { await sbRPC('admin_log_deletion', {p_table_name: 'marriage_profiles', p_record_id: id, p_item_label: 'ملف زواج'}); } catch(e) {}
   showToast('🗑️ تم الحذف النهائي');
   loadAdminMarriage(document.getElementById('dynamicPage'));
 }
