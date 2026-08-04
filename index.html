@@ -3581,6 +3581,8 @@ function restoreDynState(state) {
     if(state.catId && state.childId && state.subName) showAdsPageV2(state.catId, state.childId, state.subName);
   } else if(state.type === 'shops') {
     if(state.sub) showShopsPage(state.sub, state.catId || getShopCatId(state.sub));
+  } else if(state.type === 'teacherSub') {
+    if(state.sub) showTeacherAds(state.sub);
   } else {
     document.getElementById('dynamicPage').classList.remove('active');
     document.body.style.overflow = '';
@@ -3947,6 +3949,8 @@ function openAddModal(catId='', sub='') {
 function openAddModalForm(catId='', sub='') {
   addCatId = catId; addSubId = sub;
   addSelectedFiles = [];
+  const currentDynState = sessionStorage.getItem('dynState');
+  if(currentDynState) sessionStorage.setItem('parentDynState', currentDynState);
   sessionStorage.setItem('dynState', JSON.stringify({type:'add', catId, sub}));
   try{history.pushState({dyn:1},'');}catch(e){}
   const page = document.getElementById('dynamicPage');
@@ -10548,6 +10552,8 @@ async function showTeacherAds(subName) {
   await loadAds();
   window._teacherAdsSubName = subName;
   window._teacherAdsAll = allAds.filter(a => a.status==='approved' && (a.subcategory===subName || a.title?.includes(subName)));
+  sessionStorage.setItem('dynState', JSON.stringify({type:'teacherSub', sub: subName}));
+  try{history.pushState({dyn:1},'');}catch(e){}
   const fakeCat = {id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:[]};
   const isTeacherRequest = subName === 'مطلوب مدرس';
   const page = document.getElementById('dynamicPage');
