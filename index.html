@@ -3973,7 +3973,7 @@ function openAddModalForm(catId='', sub='') {
         </div>
         <div class="fg" id="fSubWrap" style="margin-bottom:0;">
           <label id="fSubLabel">التخصص</label>
-          <select id="fSub" onchange="updateDescPlaceholder();updateJobsUI();updateLostUI();updateDeathsUI();" style="font-size:14px;"></select>
+          <select id="fSub" onchange="updateTitlePlaceholder();updateDescPlaceholder();updateJobsUI();updateLostUI();updateDeathsUI();" style="font-size:14px;"></select>
         </div>
       </div>
 
@@ -4243,16 +4243,40 @@ function openAddModalForm(catId='', sub='') {
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
-  setTimeout(function(){ updateFSub(); if(sub){ var fs=document.getElementById('fSub'); if(fs){ for(var i=0;i<fs.options.length;i++){ if(fs.options[i].value===sub){fs.value=sub;break;} } } } updateDescPlaceholder(); updateJobsUI(); updateLostUI(); updateDeathsUI(); }, 50);
+  setTimeout(function(){ updateFSub(); if(sub){ var fs=document.getElementById('fSub'); if(fs){ for(var i=0;i<fs.options.length;i++){ if(fs.options[i].value===sub){fs.value=sub;break;} } } } updateTitlePlaceholder(); updateDescPlaceholder(); updateJobsUI(); updateLostUI(); updateDeathsUI(); }, 50);
   updateFSub();
-  if(sub) { setTimeout(() => { const sel = document.getElementById('fSub'); if(sel) sel.value = sub; updateDescPlaceholder(); updateJobsUI(); updateLostUI(); updateDeathsUI(); }, 100); }
+  if(sub) { setTimeout(() => { const sel = document.getElementById('fSub'); if(sel) sel.value = sub; updateTitlePlaceholder(); updateDescPlaceholder(); updateJobsUI(); updateLostUI(); updateDeathsUI(); }, 100); }
 }
 
 function buildAddForm(catId, sub) { openAddModal(catId, sub); }
 function closeAddModal() { hideDynPage(); }
 
-function updateFSub() {
-  // تحديث placeholder العنوان حسب الفئة
+function titlePlaceholderFor(catId, subVal) {
+  const subPlaceholders = {
+    'cars': {
+      'إيجار سيارات': 'مثال: سيارة هيونداي 2020 للإيجار اليومي',
+      'مغسلة سيارات': 'مثال: مغسلة سيارات — غسيل وتلميع بالحامول',
+      'صيانة وزيت': 'مثال: تغيير زيت وصيانة سيارات',
+      'تروسيكل': 'مثال: تروسيكل للبيع — موديل 2019',
+      '🛺 اطلب توكتوك': 'مثال: مطلوب توكتوك — من الحامول لكفر الشيخ',
+      'نقل عفش': 'مثال: نقل عفش وأثاث — بالحامول وضواحيها',
+      'دليفري': 'مثال: خدمة دليفري وتوصيل طلبات',
+      'سواقين': 'مثال: سواق خاص — متاح يوميًا',
+    }
+  };
+  if(catId && subVal && subPlaceholders[catId] && subPlaceholders[catId][subVal]) {
+    return subPlaceholders[catId][subVal];
+  }
+  return null;
+}
+
+function updateTitlePlaceholder() {
+  const catId = document.getElementById('fCat')?.value;
+  const subVal = document.getElementById('fSub')?.value;
+  const titleInput = document.getElementById('fTitle');
+  if(!titleInput) return;
+  const subPh = titlePlaceholderFor(catId, subVal);
+  if(subPh) { titleInput.placeholder = subPh; return; }
   const placeholders = {
     'jobs': 'مثال: مطلوب محاسب — خبرة 3 سنوات',
     'jobs_vacancy': 'مثال: مطلوب موظف مبيعات — براتب مجزي',
@@ -4266,7 +4290,7 @@ function updateFSub() {
     'food_cafe': 'اكتب اسم الكافيه',
     'doctors': 'مثال: دكتور محمد علي — طبيب أسنان',
     'teachers_hub': 'مثال: مدرس رياضيات — ثانوي عام',
-    'cars': 'مثال: سيارة هيونداي 2020 للبيع',
+    'cars': 'اكتب عنوان واضح يوصف الخدمة أو السيارة',
     'used_market': 'مثال: تليفزيون سامسونج 55 بوصة للبيع',
     'fashion': 'اكتب اسم المحل أو الشركة',
     'shoes': 'اكتب اسم المحل أو الشركة',
@@ -4285,13 +4309,16 @@ function updateFSub() {
     'deaths': 'مثال: نعي المرحوم الحاج محمد أحمد',
     'marriage': 'مثال: أبحث عن شريكة حياة — الحامول',
   };
-  const phCatId = document.getElementById('fCat')?.value;
-  const titleInput = document.getElementById('fTitle');
-  if(titleInput && phCatId && placeholders[phCatId]) {
-    titleInput.placeholder = placeholders[phCatId];
-  } else if(titleInput) {
+  if(catId && placeholders[catId]) {
+    titleInput.placeholder = placeholders[catId];
+  } else {
     titleInput.placeholder = 'اكتب عنوان إعلانك هنا';
   }
+}
+
+function updateFSub() {
+  // تحديث placeholder العنوان حسب الفئة
+  updateTitlePlaceholder();
   // رقم التليفون اختياري في الوفيات
   var phoneLabel = document.getElementById('fPhoneLabel');
   var phoneInput = document.getElementById('fPhone');
