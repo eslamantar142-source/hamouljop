@@ -1529,7 +1529,7 @@ async function openShop(traderId) {
       : '') +
       '<div style="display:flex;gap:8px;">' +
         '<a href="'+waLink+'" target="_blank" style="flex:1;background:#25D366;color:white;padding:12px;border-radius:12px;text-decoration:none;font-size:13.5px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;">💬 تواصل واتساب</a>' +
-        (isOwner ? '<button onclick="openShopOwnerPanel(\'' + traderId + '\')" style="background:#f1f5f9;color:#334155;border:none;padding:12px 16px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;font-weight:800;cursor:pointer;">⚙️</button>' : '') +
+        (isOwner ? '<button onclick="openShopOwnerPanel(\'' + traderId + '\')" style="background:#f1f5f9;color:#334155;border:none;padding:12px 16px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;">📦 إدارة المحل</button>' : '') +
       '</div>' +
     '</div>' +
     '<div style="height:12px;"></div>' +
@@ -11095,6 +11095,21 @@ function openNewPostModal(communityId='teachers_community') {
 }
 
 function openNewPostModalForm(communityId='teachers_community') {
+  const postPlaceholders = {
+    'teachers_community': {
+      title: 'مثال: كيف تشرح الكسور لطلاب الابتدائي؟',
+      content: 'مثال: عنوان الدرس، المرحلة الدراسية، والمنطقة — أو أي تفاصيل تساعد زملاءك يفهموا موضوعك بسرعة'
+    },
+    'doctors_community': {
+      title: 'مثال: إيه أفضل علاج لالتهاب اللوزتين عند الأطفال؟',
+      content: 'مثال: السن، الأعراض، ومن قد إيه — أو أي تفاصيل تساعد الدكاترة يردوا عليك بدقة'
+    },
+    'news': {
+      title: 'مثال: تعطل مياه في منطقة وسط البلد النهاردة',
+      content: 'مثال: مكان الحدث، الوقت، وأي تفاصيل تهم أهل الحامول — أو رأيك في موضوع بيهم الكل'
+    }
+  };
+  const ph = postPlaceholders[communityId] || postPlaceholders['news'];
   const curUser = getCurrentUser();
   const old = document.getElementById('newPostModal');
   if(old) old.remove();
@@ -11124,11 +11139,11 @@ function openNewPostModalForm(communityId='teachers_community') {
       </div>
       <div style="margin-bottom:10px;">
         <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">عنوان الموضوع *</label>
-        <input id="postTitle" placeholder="مثال: كيف تشرح الكسور لطلاب الابتدائي؟" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;">
+        <input id="postTitle" placeholder="${ph.title}" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;">
       </div>
       <div style="margin-bottom:14px;">
         <label style="font-size:11px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">تفاصيل الموضوع *</label>
-        <textarea id="postContent" rows="4" placeholder="مثال: عنوان الدرس، المرحلة الدراسية، والمنطقة — أو أي تفاصيل تساعد زملاءك يفهموا موضوعك بسرعة" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;resize:none;"></textarea>
+        <textarea id="postContent" rows="4" placeholder="${ph.content}" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;resize:none;"></textarea>
         <div style="font-size:11px;color:#94a3b8;margin-top:4px;padding-right:4px;">💡 كل ما كانت التفاصيل أدق، كل ما كان الرد أسرع من زملائك</div>
       </div>
       <div style="margin-bottom:14px;">
