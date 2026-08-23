@@ -12286,6 +12286,38 @@ function restoreOnRefresh() {
   } catch(e) { console.warn('restoreOnRefresh failed:', e); }
 }
 
+// ===== بوب أب تحفيزي للتسجيل المبكر =====
+function maybeShowRegisterUrgencyPopup() {
+  if(isAdmin) return;
+  var lastShown = localStorage.getItem('reg_urgency_popup_last');
+  var now = Date.now();
+  if(lastShown && (now - parseInt(lastShown)) < 24 * 60 * 60 * 1000) return; // مرة كل يوم بس
+  setTimeout(function() {
+    if(document.getElementById('regUrgencyOverlay')) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'regUrgencyOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML =
+      '<div style="background:white;border-radius:18px;max-width:360px;width:100%;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.3);position:relative;">' +
+        '<button onclick="closeRegUrgencyPopup()" style="position:absolute;top:10px;left:10px;background:rgba(255,255,255,.9);border:none;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;z-index:2;">✕</button>' +
+        '<div style="background:linear-gradient(135deg,#1a7a4a,#0e5c33);padding:24px 20px;text-align:center;color:white;">' +
+          '<div style="font-size:40px;margin-bottom:8px;">🚀</div>' +
+          '<div style="font-size:17px;font-weight:900;">سجّل نشاطك دلوقتي وكن الأول!</div>' +
+        '</div>' +
+        '<div style="padding:18px 20px;text-align:center;">' +
+          '<p style="font-size:13px;color:#475569;line-height:1.8;margin:0 0 16px;">الأماكن الأولى في كل قسم بتاخد أكبر نسبة مشاهدة. سجّل نشاطك أو خدمتك دلوقتي عشان تظهر من أوائل النتائج قبل ما الأماكن تتزحم.</p>' +
+          '<button onclick="closeRegUrgencyPopup()" style="width:100%;background:#1a7a4a;color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">تمام، هسجل 👍</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    localStorage.setItem('reg_urgency_popup_last', String(Date.now()));
+  }, 2500);
+}
+function closeRegUrgencyPopup() {
+  var el = document.getElementById('regUrgencyOverlay');
+  if(el) el.remove();
+}
+
 // ===== INIT =====
 buildCatsGrid();
 // ===== ربط زرار الرجوع (أندرويد/متصفح) بالتنقل الداخلي =====
@@ -12316,6 +12348,7 @@ loadAds().then(async function() {
   try { loadPrayerTimes(); } catch(e) {}
   try { loadGoldPrice(); } catch(e) {}
   try { trackSiteVisit(); } catch(e) {}
+  try { maybeShowRegisterUrgencyPopup(); } catch(e) {}
 }).catch(function(e) { console.warn(e); }).finally(function() {
   setTimeout(function() {
     var s = document.getElementById('splashScreen');
