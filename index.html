@@ -12380,6 +12380,36 @@ function installPWA() {
   }
 }
 
+// ===== بانر تثبيت التطبيق بعد 12 ثانية =====
+function maybeShowInstallBanner() {
+  if(isStandaloneMode()) return; // متثبت بالفعل — متظهرش تاني أبدًا
+  if(sessionStorage.getItem('install_banner_shown_session')) return; // ظهرت خلاص في الجلسة دي
+  setTimeout(function() {
+    if(isStandaloneMode() || document.getElementById('installBannerBar')) return;
+    var bar = document.createElement('div');
+    bar.id = 'installBannerBar';
+    bar.style.cssText = 'position:fixed;left:12px;right:12px;bottom:80px;z-index:9998;background:linear-gradient(135deg,#1a7a4a,#0e5c33);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.3);display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;animation:slideUpBanner .3s ease;';
+    bar.innerHTML =
+      '<span style="font-size:26px;">📲</span>' +
+      '<div style="flex:1;color:white;">' +
+        '<div style="font-size:13px;font-weight:900;">ثبّت التطبيق على موبايلك</div>' +
+        '<div style="font-size:11px;opacity:.85;">وصول أسرع، من غير ما تفتح المتصفح كل مرة</div>' +
+      '</div>' +
+      '<button onclick="event.stopPropagation();closeInstallBanner();" style="background:rgba(255,255,255,.2);border:none;color:white;width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0;">✕</button>';
+    bar.onclick = function() { closeInstallBanner(); installPWA(); };
+    var style = document.createElement('style');
+    style.textContent = '@keyframes slideUpBanner { from { transform:translateY(30px); opacity:0; } to { transform:translateY(0); opacity:1; } }';
+    document.head.appendChild(style);
+    document.body.appendChild(bar);
+    sessionStorage.setItem('install_banner_shown_session', '1');
+  }, 12000);
+}
+function closeInstallBanner() {
+  var el = document.getElementById('installBannerBar');
+  if(el) el.remove();
+}
+
+
 try {
   if(isStandaloneMode()) {
     var _ib = document.getElementById('installBtn'); if(_ib) _ib.style.display = 'none';
@@ -12418,6 +12448,7 @@ loadAds().then(async function() {
   try { loadGoldPrice(); } catch(e) {}
   try { trackSiteVisit(); } catch(e) {}
   try { maybeShowRegisterUrgencyPopup(); } catch(e) {}
+  try { maybeShowInstallBanner(); } catch(e) {}
 }).catch(function(e) { console.warn(e); }).finally(function() {
   setTimeout(function() {
     var s = document.getElementById('splashScreen');
