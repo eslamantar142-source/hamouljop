@@ -64,7 +64,7 @@
   }
 }
 </script>
-<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22%D8%B3%D9%88%D9%82%20%D9%88%D8%AF%D9%84%D9%8A%D9%84%20%D8%A7%D9%84%D8%AD%D8%A7%D9%85%D9%88%D9%84%22,%22short_name%22:%22%D8%AF%D9%84%D9%8A%D9%84%22,%22display%22:%22standalone%22,%22background_color%22:%22%231a7a4a%22,%22theme_color%22:%22%231a7a4a%22,%22start_url%22:%22.%22}">
+<link rel="manifest" id="pwaManifestLink" href="data:application/manifest+json,{%22name%22:%22%D8%B3%D9%88%D9%82%20%D9%88%D8%AF%D9%84%D9%8A%D9%84%20%D8%A7%D9%84%D8%AD%D8%A7%D9%85%D9%88%D9%84%22,%22short_name%22:%22%D8%AF%D9%84%D9%8A%D9%84%22,%22display%22:%22standalone%22,%22background_color%22:%22%231a7a4a%22,%22theme_color%22:%22%231a7a4a%22,%22start_url%22:%22.%22}">
 <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgo=">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12319,6 +12319,75 @@ function closeRegUrgencyPopup() {
 }
 
 // ===== INIT =====
+// ===== PWA: manifest ديناميكي بأيقونة حقيقية + دعم التثبيت =====
+(function setupPWAManifest() {
+  try {
+    var logoEl = document.getElementById('logoImg');
+    var iconSrc = logoEl ? logoEl.src : '';
+    var manifest = {
+      name: "سوق ودليل الحامول",
+      short_name: "دليل الحامول",
+      description: "دليل إلكتروني مجاني لمركز الحامول، كفر الشيخ",
+      display: "standalone",
+      background_color: "#1a7a4a",
+      theme_color: "#1a7a4a",
+      start_url: ".",
+      icons: iconSrc ? [
+        { src: iconSrc, sizes: "192x192", type: "image/jpeg", purpose: "any" },
+        { src: iconSrc, sizes: "512x512", type: "image/jpeg", purpose: "any" },
+        { src: iconSrc, sizes: "192x192", type: "image/jpeg", purpose: "maskable" }
+      ] : []
+    };
+    var blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+    var url = URL.createObjectURL(blob);
+    var link = document.getElementById('pwaManifestLink');
+    if(link) link.setAttribute('href', url);
+  } catch(e) { console.warn('manifest setup failed', e); }
+})();
+
+function isStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+var deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  try { var b = document.getElementById('installBtn'); if(b) b.style.display = 'flex'; } catch(e2) {}
+});
+window.addEventListener('appinstalled', function() {
+  deferredInstallPrompt = null;
+  try { var b = document.getElementById('installBtn'); if(b) b.style.display = 'none'; } catch(e2) {}
+  try { showToast('✅ تم تثبيت التطبيق بنجاح'); } catch(e3) {}
+});
+
+function installPWA() {
+  if(isStandaloneMode()) {
+    try { showToast('التطبيق مثبت بالفعل ✅'); } catch(e) {}
+    return;
+  }
+  if(deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(function() { deferredInstallPrompt = null; });
+    return;
+  }
+  var ua = navigator.userAgent || '';
+  var isIOS = /iphone|ipad|ipod/i.test(ua);
+  if(isIOS) {
+    alert('لتثبيت التطبيق على آيفون:\n\n1. دوس على أيقونة المشاركة ⬆️ تحت في المتصفح (Safari)\n2. مرّر لحد ما تلاقي "إضافة إلى الشاشة الرئيسية"\n3. دوس "إضافة"');
+  } else {
+    alert('لتثبيت التطبيق:\n\n1. دوس على قائمة المتصفح (⋮ فوق يمين)\n2. اختار "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية"');
+  }
+}
+
+try {
+  if(isStandaloneMode()) {
+    var _ib = document.getElementById('installBtn'); if(_ib) _ib.style.display = 'none';
+  } else {
+    var _ib2 = document.getElementById('installBtn'); if(_ib2) _ib2.style.display = 'flex';
+  }
+} catch(e) {}
+
 buildCatsGrid();
 // ===== ربط زرار الرجوع (أندرويد/متصفح) بالتنقل الداخلي =====
 window.addEventListener('popstate', function() {
