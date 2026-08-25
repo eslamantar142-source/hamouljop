@@ -776,7 +776,7 @@ const CATEGORIES = [
     ]},
   ]},
   { id:'online',     name:'البيع أونلاين',      icon:'🛍️', color:'#ede9fe', subs:['ملابس حريمي','ملابس رجالي','ملابس أطفال','أحذية وشنط','مستحضرات تجميل وعناية','عطور','إكسسوارات وهدايا','موبايلات وإلكترونيات','سماعات وإكسسوار تقني','ساعات','أدوات منزلية','مفروشات وديكور','ألعاب أطفال','كتب ومستلزمات مدرسية','أغذية وحلويات هوم ميد','مخبوزات وكيك','عسل ومنتجات طبيعية','مكملات غذائية','أدوات رياضية','أدوات حرف يدوية','نباتات وبذور','حيوانات أليفة ومستلزماتها','أخرى'] },
-  { id:'doctors',    name:'أطباء',              icon:'🩺', color:'#fee2e2', subs:['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','عام'] },
+  { id:'doctors',    name:'أطباء',              icon:'🩺', color:'#fee2e2', subs:['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','عام'] },
   { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:['رياضيات','علوم','لغة عربية','لغة إنجليزية','فيزياء','كيمياء','أحياء','تاريخ وجغرافيا','تربية دينية','حاسب آلي','موسيقى ورسم','مواد ابتدائي','مواد إعدادي','مواد ثانوي','لغة فرنسية','سنتر تعليمي','روضة وحضانة','كورسات لغات','كورسات كمبيوتر','تأهيل وتدريب مهني','فصل دراسي خاص','مطلوب مدرس','أخرى'] },
   { id:'realestate', name:'عقارات', icon:'🏠', color:'#dbeafe', subs:[], children: [
     { id:'re_rent', name:'إيجار', icon:'🔑', color:'#dbeafe', subs:[
@@ -3652,7 +3652,7 @@ function openEditAd(adId) {
   
   // نفس فورم الإضافة بس بنملأه ببيانات الإعلان
   // بننادي الفورم مباشرة (المستخدم مسجّل بالفعل لأن زرار التعديل ظهرله)
-  openAddModalForm(ad.category || '', ad.subcategory || '');
+  openAddModalForm(ad.category || '', ad.subcategory || '', true);
   
   // بعد ما الفورم يفتح نملأه بالبيانات
   setTimeout(function() {
@@ -3978,9 +3978,10 @@ function updateNavAddVisibility() {
 // (لو اتضاف إعلان عادي في الأقسام دي مش هيظهر أبدًا للزوار لأن صفحة العرض بتقرا من جدول المعارض بس)
 const SHOP_ONLY_CAT_IDS = ['online','cars_market','fashion','shoes','furniture','home','tech','agri','events','ads','medservices','sports','salon','gold','building'];
 
-function openAddModalForm(catId='', sub='') {
+function openAddModalForm(catId='', sub='', isEdit=false) {
   // لو حد وصل بلينك قديم أو زرار قديم لقسم من أقسام المعارض، حوّله لصفحة تسجيل النشاط بدل الفورم العادي
-  if(SHOP_ONLY_CAT_IDS.indexOf(catId) !== -1) {
+  // (ما ينفعش يمنع فتح فورم تعديل إعلان قديم مسجل أصلاً في قسم زي ده)
+  if(!isEdit && SHOP_ONLY_CAT_IDS.indexOf(catId) !== -1) {
     hideDynPage();
     showToast('🏪 القسم ده للمعارض بس — سجّل نشاطك من زرار "سجّل نشاطك"');
     const cat = CATEGORIES.find(c => c.id === catId);
@@ -10085,8 +10086,9 @@ function buildSpecsGrid() {
     {sub:'جلدية',icon:'🩺'},{sub:'مخ وأعصاب',icon:'🧠'},
     {sub:'جراحة عامة',icon:'🏥'},{sub:'صدر',icon:'🫁'},
     {sub:'مسالك بولية',icon:'💊'},{sub:'أورام',icon:'🔬'},
-    {sub:'عام',icon:'👨‍⚕️'},
+    {sub:'علاج طبيعي',icon:'🤸'},{sub:'عام',icon:'👨‍⚕️'},
   ];
+  const knownSubs = specs.map(function(s){ return s.sub; });
   specs.forEach(function(s) {
     const count = allAds.filter(function(a){ return a.status==='approved' && a.category==='doctors' && a.subcategory===s.sub; }).length;
     const div = document.createElement('div');
@@ -10108,6 +10110,20 @@ function buildSpecsGrid() {
     div.appendChild(nameEl);
     grid.appendChild(div);
   });
+  // تصنيف احتياطي: أي طبيب اتسجل بتخصص مش من القايمة (أو من غير تخصص خالص) بيظهر هنا بدل ما يضيع
+  const otherCount = allAds.filter(function(a){ return a.status==='approved' && a.category==='doctors' && knownSubs.indexOf((a.subcategory||'').trim()) === -1; }).length;
+  const otherDiv = document.createElement('div');
+  otherDiv.onclick = function(){ showDoctorAds('__other__'); };
+  otherDiv.style.cssText = 'background:white;border:1px solid #cffafe;border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;position:relative;';
+  if(otherCount > 0) {
+    const obadge = document.createElement('div');
+    obadge.style.cssText = 'position:absolute;top:4px;left:4px;background:#0891b2;color:white;width:16px;height:16px;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;';
+    obadge.textContent = otherCount;
+    otherDiv.appendChild(obadge);
+  }
+  otherDiv.innerHTML += '<div style="font-size:22px;margin-bottom:4px;">➕</div><div style="font-size:10px;font-weight:700;color:#0e7490;">تخصصات أخرى</div>';
+  grid.appendChild(otherDiv);
+
   const addBtn = document.createElement('div');
   addBtn.onclick = function(){ openAddModal('doctors',''); };
   addBtn.style.cssText = 'background:linear-gradient(135deg,#0891b2,#0e7490);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;';
@@ -10117,20 +10133,24 @@ function buildSpecsGrid() {
 
 async function showDoctorAds(subName) {
   await loadAds();
+  const isOther = subName === '__other__';
+  const knownSubs = ['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','عام'];
   const filtered = allAds.filter(a => {
     if(a.status !== 'approved') return false;
     if(a.category !== 'doctors') return false;
     const adSub = (a.subcategory || '').trim();
+    if(isOther) return knownSubs.indexOf(adSub) === -1;
     const targetSub = (subName || '').trim();
     return adSub === targetSub;
   });
   const fakeCat = {id:'doctors', name:'أطباء', icon:'🩺', color:'#fee2e2', subs:[]};
+  const headerLabel = isOther ? 'تخصصات أخرى' : subName;
   const page = document.getElementById('dynamicPage');
   page.innerHTML = `
     <div class="dyn-header" style="background:linear-gradient(135deg,#0891b2,#0e7490);">
       <button class="dyn-back" onclick="showDoctorsHub()">←</button>
-      <span>👨‍⚕️ ${subName}</span>
-      <button onclick="openAddModal('doctors','${subName}')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ أضف</button>
+      <span>👨‍⚕️ ${headerLabel}</span>
+      ${isOther ? '<span></span>' : `<button onclick="openAddModal('doctors','${subName}')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ أضف</button>`}
     </div>
     <div class="dyn-content" style="padding:16px 16px 80px;" id="adsContent">
       ${renderAdsList(filtered, fakeCat)}
@@ -10138,7 +10158,7 @@ async function showDoctorAds(subName) {
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
   // أول ما يفتح القسم يظهر البوب أب الممول بس (بدون بانر ثاني)
-  showPopupBanner('doctors', subName, null);
+  if(!isOther) showPopupBanner('doctors', subName, null);
 }
 
 function showDoctorsCommunity() {
@@ -11603,7 +11623,7 @@ async function deleteBanner(id) {
 // BANNER CATEGORY HELPER FUNCTIONS
 function getBannerSubcatOptions(catId, selectedSub) {
   const subsMap = {
-    'doctors': ['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','عام'],
+    'doctors': ['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','عام'],
     'medservices': ['صيدليات','معامل تحاليل','مراكز أشعة','مراكز تخاطب','مستلزمات طبية','معامل نظارات','تمريض منزلي','الطب التكميلي'],
     'food_rest': ['مطاعم بروست','مطاعم مشويات','مطاعم فول وطعمية','مطاعم كشري','مطاعم بيتزا وكريب','مطاعم شاورما','مطاعم سمك','مطاعم وجبات سريعة','حلويات ومخبوزات','عصائر ومشروبات'],
     'food_cafe': ['كافيهات قهوة','كافيهات مشروبات','كافيهات متكاملة'],
@@ -12257,6 +12277,7 @@ function renderAdminAdsList(cont, ads, tab) {
         '<button data-id="'+ad.id+'" onclick="openRejectReasonModal(this.dataset.id)" style="flex:1;background:#ef4444;color:white;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">❌ رفض</button>'
       ) : '') +
       (tab==='rejected' ? '<button data-id="'+ad.id+'" onclick="approveAd(this.dataset.id)" style="flex:1;background:var(--green);color:white;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✅ موافقة</button>' : '') +
+      '<button data-id="'+ad.id+'" onclick="openEditAd(this.dataset.id)" style="background:#eff6ff;color:#2563eb;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✏️ تعديل</button>' +
       '<button data-id="'+ad.id+'" onclick="deleteAdAdmin(this.dataset.id)" style="background:#fee2e2;color:#dc2626;border:none;padding:8px 12px;border-radius:8px;font-size:14px;cursor:pointer;">🗑️</button>' +
 
       '</div></div>';
