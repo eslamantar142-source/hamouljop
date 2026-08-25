@@ -483,6 +483,7 @@ function logoutUser() {
   showToast('تم تسجيل الخروج');
   const el = document.getElementById('acctStatusBox');
   if(el) renderAcctStatusBox();
+  updateNavAddVisibility();
 }
 function isOwnerOf(item) {
   const u = getCurrentUser();
@@ -623,6 +624,8 @@ async function submitRegister() {
       btn.disabled = false; btn.textContent = 'إنشاء حساب';
       return;
     }
+    // علّم إنه حساب جديد لسه اتعمل، عشان لو جاي من زرار "+" العام في الأسفل نوديه للرئيسية بدل ما نفتحله فورم إضافة موضوع على طول
+    window._justRegisteredNow = true;
     finishAuth({id:r.out_user_id, name:r.out_name || name, phone, token:r.out_token});
   } catch(e) {
     showToast('❌ حصل خطأ، حاول تاني', 'error');
@@ -674,6 +677,7 @@ function finishAuth(user) {
   showToast('✅ أهلاً ' + user.name + '!');
   renderAcctStatusBox();
   checkPhoneRequired();
+  updateNavAddVisibility();
   if(_authResolve) { const r = _authResolve; _authResolve = null; r(user); }
 }
 
@@ -2287,7 +2291,7 @@ async function doShopLogin(subcategory) {
   localStorage.setItem('my_shop_pass_'+trader.id, passHash);
   document.getElementById('shopLoginOverlay').remove();
   if(trader.status === 'pending'){ showToast('⏳ نشاطك لسه تحت المراجعة', 'error'); return; }
-  showShopDashboard(trader);
+  openShop(trader.id);
 }
 
 // ===== تغيير كلمة السر (لصاحب المعرض) =====
@@ -3947,10 +3951,42 @@ async function deleteMyAd(adId) {
 }
 
 function openAddModal(catId='', sub='') {
-  requireLogin().then(function(){ openAddModalForm(catId, sub); });
+  // زرار "+" العام في الشريط السفلي بقى بس لتسجيل حساب جديد — مش لإضافة مواضيع
+  if(!catId) {
+    if(getCurrentUser()) { updateNavAddVisibility(); return; }
+    requireLogin().then(function(){
+      window._justRegisteredNow = false;
+      updateNavAddVisibility();
+    });
+    return;
+  }
+  requireLogin().then(function(){
+    window._justRegisteredNow = false;
+    openAddModalForm(catId, sub);
+  });
 }
 
+// يخفي زرار "+" العام من الشريط السفلي لو المستخدم عامل حساب بالفعل (مبقاش له لازمة بعد التسجيل)
+function updateNavAddVisibility() {
+  try {
+    var el = document.querySelector('.nav-add');
+    if(el) el.style.display = getCurrentUser() ? 'none' : 'flex';
+  } catch(e) {}
+}
+
+// الأقسام دي "معارض" فقط — أصحابها لازم يسجلوا نشاطهم بزرار "سجّل نشاطك" مش عن طريق فورم الإعلان العادي
+// (لو اتضاف إعلان عادي في الأقسام دي مش هيظهر أبدًا للزوار لأن صفحة العرض بتقرا من جدول المعارض بس)
+const SHOP_ONLY_CAT_IDS = ['online','cars_market','fashion','shoes','furniture','home','tech','agri','events','ads','medservices','sports','salon','gold','building'];
+
 function openAddModalForm(catId='', sub='') {
+  // لو حد وصل بلينك قديم أو زرار قديم لقسم من أقسام المعارض، حوّله لصفحة تسجيل النشاط بدل الفورم العادي
+  if(SHOP_ONLY_CAT_IDS.indexOf(catId) !== -1) {
+    hideDynPage();
+    showToast('🏪 القسم ده للمعارض بس — سجّل نشاطك من زرار "سجّل نشاطك"');
+    const cat = CATEGORIES.find(c => c.id === catId);
+    if(cat) showSubsPage(cat);
+    return;
+  }
   addCatId = catId; addSubId = sub;
   addSelectedFiles = [];
   const currentDynState = sessionStorage.getItem('dynState');
@@ -3972,12 +4008,15 @@ function openAddModalForm(catId='', sub='') {
         <div class="fg" style="margin-bottom:10px;">
           <label>القسم *</label>
           <select id="fCat" onchange="updateFSub()" style="font-size:14px;">
-            ${CATEGORIES.map(c=>`<option value="${c.id}" ${c.id===catId?'selected':''}>${c.icon} ${c.name}</option>`).join('')}
+            ${CATEGORIES.filter(c=>SHOP_ONLY_CAT_IDS.indexOf(c.id)===-1).map(c=>`<option value="${c.id}" ${c.id===catId?'selected':''}>${c.icon} ${c.name}</option>`).join('')}
           </select>
         </div>
         <div class="fg" id="fSubWrap" style="margin-bottom:0;">
           <label id="fSubLabel">التخصص</label>
           <select id="fSub" onchange="updateTitlePlaceholder();updateDescPlaceholder();updateJobsUI();updateLostUI();updateDeathsUI();" style="font-size:14px;"></select>
+        </div>
+        <div onclick="hideDynPage();showHome();" style="margin-top:10px;background:#f5f3ff;border:1.5px dashed #7c3aed;border-radius:10px;padding:10px 12px;font-size:12px;color:#5b21b6;cursor:pointer;text-align:center;font-weight:700;">
+          🏪 عندك محل / معرض / نشاط تجاري؟ سجّله من قسمه مباشرة بزرار "سجّل نشاطك"
         </div>
       </div>
 
@@ -4355,6 +4394,10 @@ function updateFSub() {
   let allSubs = [];
   if(cat.subs && cat.subs.length > 0) {
     allSubs = cat.subs.map(s => typeof s === 'string' ? s : s.name);
+    // في المستعمل، شيل التخصصات اللي شغالة كمعارض تسجيل (ليها زرار "سجّل نشاطك" لوحدها) عشان محدش يضيف إعلان عادي فيها يضيع
+    if(catId === 'used_market') {
+      allSubs = allSubs.filter(s => USED_MARKET_SHOP_SUBS.indexOf(s) === -1);
+    }
   }
   if(cat.children && cat.children.length > 0) {
     cat.children.forEach(child => {
@@ -12434,6 +12477,7 @@ window.addEventListener('popstate', function() {
 });
 
 try { buildSlider(); } catch(e) { console.warn('slider err:', e); }
+try { updateNavAddVisibility(); } catch(e) {}
 loadAds().then(async function() {
   try { checkNewAds(); } catch(e) {}
   // تحقق من الـ admin session المحفوظة (جلسة حقيقية عبر Supabase Auth)
