@@ -5612,6 +5612,7 @@ async function loadAdminShops(cont) {
   }
   var pending = traders.filter(function(t){ return t.status==='pending'; });
   var approved = traders.filter(function(t){ return t.status==='approved'; });
+  var rejected = traders.filter(function(t){ return t.status==='rejected'; });
 
   cont.innerHTML =
     '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;">' +
@@ -5627,6 +5628,20 @@ async function loadAdminShops(cont) {
           '</div>' +
         '</div>';
       }).join('') : '<p style="font-size:12px;color:#94a3b8;">مفيش معارض في الانتظار</p>') +
+    '</div>' +
+    '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;">' +
+      '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">❌ معارض مرفوضة (' + rejected.length + ')</div>' +
+      (rejected.length ? rejected.map(function(t){
+        return '<div style="background:#fee2e2;border-radius:10px;padding:12px;margin-bottom:8px;">' +
+          '<div style="font-size:13px;font-weight:900;">' + escapeHtml(t.shop_name) + '</div>' +
+          '<div style="font-size:11px;color:#64748b;margin-top:2px;">📦 ' + t.subcategory + ' • 📞 ' + t.phone + '</div>' +
+          (t.description ? '<div style="font-size:11px;color:#64748b;margin-top:2px;">' + escapeHtml(t.description) + '</div>' : '') +
+          '<div style="display:flex;gap:8px;margin-top:8px;">' +
+            '<button data-tid="'+t.id+'" onclick="approveShopTrader(this.dataset.tid)" style="flex:1;background:#16a34a;color:white;border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">✅ اعتمد بدل الرفض</button>' +
+            '<button data-tid="'+t.id+'" data-tname="'+escapeHtml(t.shop_name||'')+'" onclick="deleteShopTraderAdmin(this.dataset.tid,this.dataset.tname)" style="background:#f3f4f6;color:#64748b;border:none;padding:8px 12px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️ مسح نهائي</button>' +
+          '</div>' +
+        '</div>';
+      }).join('') : '<p style="font-size:12px;color:#94a3b8;">مفيش معارض مرفوضة</p>') +
     '</div>' +
     '<div style="background:white;border-radius:14px;padding:14px;">' +
       '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">✅ معارض معتمدة (' + approved.length + ')</div>' +
