@@ -777,7 +777,7 @@ const CATEGORIES = [
   ]},
   { id:'online',     name:'البيع أونلاين',      icon:'🛍️', color:'#ede9fe', subs:['ملابس حريمي','ملابس رجالي','ملابس أطفال','أحذية وشنط','مستحضرات تجميل وعناية','عطور','إكسسوارات وهدايا','موبايلات وإلكترونيات','سماعات وإكسسوار تقني','ساعات','أدوات منزلية','مفروشات وديكور','ألعاب أطفال','كتب ومستلزمات مدرسية','أغذية وحلويات هوم ميد','مخبوزات وكيك','عسل ومنتجات طبيعية','مكملات غذائية','أدوات رياضية','أدوات حرف يدوية','نباتات وبذور','حيوانات أليفة ومستلزماتها','أخرى'] },
   { id:'doctors',    name:'أطباء',              icon:'🩺', color:'#fee2e2', subs:['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','عام'] },
-  { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:['رياضيات','علوم','لغة عربية','لغة إنجليزية','فيزياء','كيمياء','أحياء','تاريخ وجغرافيا','تربية دينية','حاسب آلي','موسيقى ورسم','مواد ابتدائي','مواد إعدادي','مواد ثانوي','لغة فرنسية','سنتر تعليمي','روضة وحضانة','كورسات لغات','كورسات كمبيوتر','تأهيل وتدريب مهني','فصل دراسي خاص','مطلوب مدرس','أخرى'] },
+  { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:['رياضيات','علوم','لغة عربية','لغة إنجليزية','فيزياء','كيمياء','أحياء','تاريخ وجغرافيا','تربية دينية','تحفيظ قرآن','فلسفة ومنطق','علم نفس واجتماع','محاسبة واقتصاد','حاسب آلي','موسيقى ورسم','مواد ابتدائي','مواد إعدادي','مواد ثانوي','لغة فرنسية','لغة ألمانية','لغة إيطالية أو إسبانية','سنتر تعليمي','روضة وحضانة','كورسات لغات','كورسات كمبيوتر','تأهيل وتدريب مهني','فصل دراسي خاص','دروس أونلاين','تعليم ذوي الاحتياجات الخاصة','مطلوب مدرس','أخرى'] },
   { id:'realestate', name:'عقارات', icon:'🏠', color:'#dbeafe', subs:[], children: [
     { id:'re_rent', name:'إيجار', icon:'🔑', color:'#dbeafe', subs:[
       {name:'شقق للإيجار', icon:'🏠'},
@@ -3977,6 +3977,8 @@ function updateNavAddVisibility() {
 // الأقسام دي "معارض" فقط — أصحابها لازم يسجلوا نشاطهم بزرار "سجّل نشاطك" مش عن طريق فورم الإعلان العادي
 // (لو اتضاف إعلان عادي في الأقسام دي مش هيظهر أبدًا للزوار لأن صفحة العرض بتقرا من جدول المعارض بس)
 const SHOP_ONLY_CAT_IDS = ['online','cars_market','fashion','shoes','furniture','home','tech','agri','events','ads','medservices','sports','salon','gold','building'];
+// "بيت الحلال" نظام مستقل بجدول بيانات خاص بيه (marriage_profiles) — التسجيل فيه لازم يكون من فورمه وزراره الخاص بس
+const STANDALONE_FORM_CAT_IDS = ['marriage'];
 
 function openAddModalForm(catId='', sub='', isEdit=false) {
   // لو حد وصل بلينك قديم أو زرار قديم لقسم من أقسام المعارض، حوّله لصفحة تسجيل النشاط بدل الفورم العادي
@@ -3986,6 +3988,12 @@ function openAddModalForm(catId='', sub='', isEdit=false) {
     showToast('🏪 القسم ده للمعارض بس — سجّل نشاطك من زرار "سجّل نشاطك"');
     const cat = CATEGORIES.find(c => c.id === catId);
     if(cat) showSubsPage(cat);
+    return;
+  }
+  if(!isEdit && catId === 'marriage') {
+    hideDynPage();
+    showToast('💍 بيت الحلال ليه فورم تسجيل خاص بيه — سجّل من زرار "سجّل" جوه القسم');
+    showMarriagePage();
     return;
   }
   addCatId = catId; addSubId = sub;
@@ -4009,7 +4017,7 @@ function openAddModalForm(catId='', sub='', isEdit=false) {
         <div class="fg" style="margin-bottom:10px;">
           <label>القسم *</label>
           <select id="fCat" onchange="updateFSub()" style="font-size:14px;">
-            ${CATEGORIES.filter(c=>SHOP_ONLY_CAT_IDS.indexOf(c.id)===-1).map(c=>`<option value="${c.id}" ${c.id===catId?'selected':''}>${c.icon} ${c.name}</option>`).join('')}
+            ${CATEGORIES.filter(c=>SHOP_ONLY_CAT_IDS.indexOf(c.id)===-1 && STANDALONE_FORM_CAT_IDS.indexOf(c.id)===-1).map(c=>`<option value="${c.id}" ${c.id===catId?'selected':''}>${c.icon} ${c.name}</option>`).join('')}
           </select>
         </div>
         <div class="fg" id="fSubWrap" style="margin-bottom:0;">
@@ -5214,6 +5222,32 @@ async function submitNewAd() {
         return;
       }
     }
+    // نرفع الصور الأول (قبل ما ننشئ الإعلان) عشان نحط رابط الصورة الرئيسية مع الإعلان من أول لحظة إنشاء
+    // ده بيتجنب مشكلة كانت بتحصل قبل كده: تحديث الصورة الرئيسية بعد إنشاء الإعلان كان بيتمنع بصلاحيات قاعدة البيانات بصمت (من غير أي رسالة خطأ)، فالصورة كانت بتوصل لمعرض الصور بس ومش بتظهر في كروت العرض
+    let firstUrl = null;
+    const progWrap = document.getElementById('imgUploadProgressWrap');
+    const progBar = document.getElementById('imgUploadProgressBar');
+    const progPct = document.getElementById('imgUploadProgressPct');
+    const progLabel = document.getElementById('imgUploadProgressLabel');
+    const uploadedUrls = [];
+    if(addSelectedFiles.length > 0) {
+      btn.textContent='جاري رفع الصور...';
+      const showProgTimer = setTimeout(function(){ if(progWrap) progWrap.style.display = 'block'; }, 2000);
+      for(let i=0; i<addSelectedFiles.length; i++) {
+        try {
+          if(progLabel) progLabel.textContent = 'جاري رفع الصورة ' + (i+1) + ' من ' + addSelectedFiles.length;
+          const url = await uploadImage(addSelectedFiles[i]);
+          if(url) { uploadedUrls.push(url); if(i===0) firstUrl = url; }
+          const pct = Math.round(((i+1)/addSelectedFiles.length)*100);
+          if(progBar) progBar.style.width = pct + '%';
+          if(progPct) progPct.textContent = pct + '%';
+        } catch(imgErr) { console.error('Image upload error:', imgErr); }
+      }
+      clearTimeout(showProgTimer);
+      if(progWrap) progWrap.style.display = 'none';
+      btn.textContent='جاري الإرسال...';
+    }
+    adData.image_url = firstUrl;
     console.log('Sending adData:', JSON.stringify(adData));
     const res = await fetch(SB_URL+'/rest/v1/ads', {
       method:'POST',
@@ -5225,38 +5259,16 @@ async function submitNewAd() {
     const newAds = JSON.parse(resText);
     const newAdId = newAds?.[0]?.id;
 
-    if(newAdId && addSelectedFiles.length > 0) {
-      btn.textContent='جاري رفع الصور...';
-      const progWrap = document.getElementById('imgUploadProgressWrap');
-      const progBar = document.getElementById('imgUploadProgressBar');
-      const progPct = document.getElementById('imgUploadProgressPct');
-      const progLabel = document.getElementById('imgUploadProgressLabel');
-      // لو الرفع استغرق أكتر من ثانيتين، اظهر شريط التقدم
-      const showProgTimer = setTimeout(function(){ if(progWrap) progWrap.style.display = 'block'; }, 2000);
-      let firstUrl = null;
-      for(let i=0; i<addSelectedFiles.length; i++) {
+    // نسجل باقي الصور (لو فيه أكتر من صورة) في معرض الصور المتعدد — الصورة الأولى محفوظة أصلاً مع الإعلان نفسه فوق
+    if(newAdId && uploadedUrls.length > 0) {
+      for(let i=0; i<uploadedUrls.length; i++) {
         try {
-          if(progLabel) progLabel.textContent = 'جاري رفع الصورة ' + (i+1) + ' من ' + addSelectedFiles.length;
-          const url = await uploadImage(addSelectedFiles[i]);
-          if(i===0) firstUrl = url;
           await fetch(SB_URL+'/rest/v1/ad_images', {
             method:'POST',
             headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Prefer':'return=minimal' },
-            body: JSON.stringify({ad_id:newAdId, image_url:url})
+            body: JSON.stringify({ad_id:newAdId, image_url:uploadedUrls[i]})
           });
-          const pct = Math.round(((i+1)/addSelectedFiles.length)*100);
-          if(progBar) progBar.style.width = pct + '%';
-          if(progPct) progPct.textContent = pct + '%';
-        } catch(imgErr) { console.error('Image upload error:', imgErr); }
-      }
-      clearTimeout(showProgTimer);
-      if(progWrap) progWrap.style.display = 'none';
-      if(firstUrl) {
-        await fetch(SB_URL+`/rest/v1/ads?id=eq.${newAdId}`, {
-          method:'PATCH',
-          headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY },
-          body: JSON.stringify({image_url:firstUrl})
-        });
+        } catch(imgErr) { console.error('ad_images insert error:', imgErr); }
       }
     }
     closeAddModal();
@@ -5671,6 +5683,14 @@ async function deleteShopTraderAdmin(id, shopName) {
 function loadAdminBackup(cont) {
   cont.innerHTML = `
     <div style="background:white;border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--border);">
+      <div style="font-size:14px;font-weight:900;margin-bottom:10px;">🔧 إصلاح صور الإعلانات القديمة</div>
+      <p style="font-size:12px;color:#64748b;margin-bottom:14px;line-height:1.7;">
+        بيدور على كل إعلان مالوش صورة ظاهرة بره (في القوائم) بس عنده صورة محفوظة جواه (في صفحة التفاصيل)، ويصلحها تلقائي عشان تظهر في الكروت برة زي أي إعلان تاني.
+      </p>
+      <button onclick="fixMissingAdImages()" id="fixImgsBtn" style="width:100%;background:#0284c7;color:white;border:none;padding:14px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">🔧 ابحث واصلح الصور الناقصة الآن</button>
+      <div id="fixImgsStatus" style="margin-top:10px;font-size:12px;color:#64748b;text-align:center;"></div>
+    </div>
+    <div style="background:white;border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--border);">
       <div style="font-size:14px;font-weight:900;margin-bottom:10px;">💾 نسخة احتياطية من كل بيانات الموقع</div>
       <p style="font-size:12px;color:#64748b;margin-bottom:14px;line-height:1.7;">
         بتحمّل ملف فيه كل الإعلانات، التجار، بروفايلات الزواج، المنتديات، البانرات، وكل حاجة في الموقع.
@@ -5683,6 +5703,45 @@ function loadAdminBackup(cont) {
       <div style="font-size:12px;font-weight:900;margin-bottom:6px;">💡 نصيحة</div>
       <div style="font-size:12px;color:#92400e;line-height:1.7;">حمّل نسخة احتياطية مرة كل أسبوع على الأقل، وخصوصاً قبل أي تعديل كبير في الموقع.</div>
     </div>`;
+}
+
+async function fixMissingAdImages() {
+  var btn = document.getElementById('fixImgsBtn');
+  var status = document.getElementById('fixImgsStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري البحث عن إعلانات ناقصة...';
+  status.textContent = '';
+  try {
+    // الإعلانات اللي مالهاش صورة رئيسية ظاهرة بره
+    var broken = await sbFetch('GET', 'ads?select=id,title&image_url=is.null&status=neq.deleted');
+    if(!broken || !broken.length) {
+      status.textContent = '✅ مفيش أي إعلان ناقص — كله سليم';
+      btn.disabled = false; btn.textContent = '🔧 ابحث واصلح الصور الناقصة الآن';
+      return;
+    }
+    var fixed = 0, skipped = 0;
+    for(var i=0; i<broken.length; i++) {
+      status.textContent = 'جاري الفحص: ' + (i+1) + ' من ' + broken.length + ' (تم إصلاح ' + fixed + ')';
+      try {
+        var imgs = await sbFetch('GET', 'ad_images?ad_id=eq.'+broken[i].id+'&select=image_url&order=created_at.asc&limit=1');
+        if(imgs && imgs.length && imgs[0].image_url) {
+          await sbFetch('PATCH', 'ads?id=eq.'+broken[i].id, {image_url: imgs[0].image_url});
+          fixed++;
+        } else {
+          skipped++;
+        }
+      } catch(e) { console.error('fix image failed for ad', broken[i].id, e); skipped++; }
+    }
+    status.textContent = '✅ تم إصلاح ' + fixed + ' إعلان' + (skipped ? ' — ' + skipped + ' إعلان أصلاً مالوش صورة خالص (طبيعي)' : '');
+    showToast('✅ تم إصلاح ' + fixed + ' إعلان قديم');
+    await loadAds();
+  } catch(e) {
+    console.error('fixMissingAdImages error:', e);
+    status.textContent = '❌ حصل خطأ: ' + (e.message || e);
+    showToast('❌ حصل خطأ أثناء الإصلاح', 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = '🔧 ابحث واصلح الصور الناقصة الآن';
 }
 
 async function downloadFullBackup() {
@@ -10583,10 +10642,13 @@ function showTeachersHub() {
           {sub:'لغة عربية',icon:'📖'},{sub:'لغة إنجليزية',icon:'🇬🇧'},
           {sub:'فيزياء',icon:'⚡'},{sub:'كيمياء',icon:'🧪'},
           {sub:'أحياء',icon:'🌿'},{sub:'تاريخ وجغرافيا',icon:'🌍'},
-          {sub:'تربية دينية',icon:'📿'},{sub:'حاسب آلي',icon:'💻'},
+          {sub:'تربية دينية',icon:'📿'},{sub:'تحفيظ قرآن',icon:'🕌'},
+          {sub:'فلسفة ومنطق',icon:'🏛️'},{sub:'علم نفس واجتماع',icon:'🧠'},
+          {sub:'محاسبة واقتصاد',icon:'📊'},{sub:'حاسب آلي',icon:'💻'},
           {sub:'موسيقى ورسم',icon:'🎨'},{sub:'مواد ابتدائي',icon:'✏️'},
           {sub:'مواد إعدادي',icon:'📝'},{sub:'مواد ثانوي',icon:'🎓'},
-          {sub:'لغة فرنسية',icon:'🇫🇷'},
+          {sub:'لغة فرنسية',icon:'🇫🇷'},{sub:'لغة ألمانية',icon:'🇩🇪'},
+          {sub:'لغة إيطالية أو إسبانية',icon:'🇪🇸'},
         ].map(s=>`
         <div onclick="showTeacherAds('${s.sub}')" style="background:white;border:1px solid #ede9fe;border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;">
           <div style="font-size:22px;margin-bottom:4px;">${s.icon}</div>
@@ -10612,6 +10674,8 @@ function showTeachersHub() {
           {sub:'كورسات كمبيوتر',icon:'💻',color:'#fef3c7',text:'#92400e'},
           {sub:'تأهيل وتدريب مهني',icon:'🎯',color:'#f3e8ff',text:'#7c3aed'},
           {sub:'فصل دراسي خاص',icon:'📚',color:'#e0f2fe',text:'#0284c7'},
+          {sub:'دروس أونلاين',icon:'🖥️',color:'#dcfce7',text:'#166534'},
+          {sub:'تعليم ذوي الاحتياجات الخاصة',icon:'🧩',color:'#fce7f3',text:'#be185d'},
         ].map(s=>`
         <div onclick="showTeacherAds('${s.sub}')" style="background:${s.color};border-radius:14px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
           <span style="font-size:26px;">${s.icon}</span>
