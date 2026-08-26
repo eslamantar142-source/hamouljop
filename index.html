@@ -48,7 +48,7 @@
   "publisher": {
     "@type": "Person",
     "name": "إسلام عنتر",
-    "telephone": "+201080150801"
+    "telephone": "+201014185158"
   },
   "areaServed": {
     "@type": "City",
@@ -64,7 +64,7 @@
   }
 }
 </script>
-<link rel="manifest" id="pwaManifestLink" href="data:application/manifest+json,{%22name%22:%22%D8%B3%D9%88%D9%82%20%D9%88%D8%AF%D9%84%D9%8A%D9%84%20%D8%A7%D9%84%D8%AD%D8%A7%D9%85%D9%88%D9%84%22,%22short_name%22:%22%D8%AF%D9%84%D9%8A%D9%84%22,%22display%22:%22standalone%22,%22background_color%22:%22%231a7a4a%22,%22theme_color%22:%22%231a7a4a%22,%22start_url%22:%22.%22}">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgo=">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -346,7 +346,7 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
         <p>لأي مكان داخل الحامول وضواحيها</p>
       </div>
     </div>
-    <a href="https://wa.me/201080150801" target="_blank" class="farket-btn">📞 اطلب</a>
+    <a href="https://wa.me/201014185158?text=مرحباً%2C%20أنا%20جاي%2Fة%20من%20سوق%20ودليل%20الحامول%20وعايز%20أطلب%20توصيل" target="_blank" class="farket-btn">📞 اطلب</a>
   </div>
 </div>
 
@@ -387,7 +387,7 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
 </div>
 
 <!-- زرار واتساب عائم -->
-<a href="https://wa.me/201080150801" target="_blank" class="wa-float" title="تواصل معنا">📞</a>
+<a href="https://wa.me/201014185158?text=مرحباً%2C%20أنا%20جاي%2Fة%20من%20سوق%20ودليل%20الحامول" target="_blank" class="wa-float" title="تواصل معنا">📞</a>
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
@@ -447,7 +447,7 @@ function safeUrl(u) {
   if(/^(https?:|tel:|mailto:)/i.test(s)) return s;
   return '';
 }
-const ADMIN_WA = '201080150801';
+const ADMIN_WA = '201014185158';
 
 async function hashPass(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -775,8 +775,8 @@ const CATEGORIES = [
       {name:'أخرى', icon:'📋'},
     ]},
   ]},
-  { id:'online',     name:'البيع أونلاين',      icon:'🛍️', color:'#ede9fe', subs:['ملابس حريمي','ملابس رجالي','ملابس أطفال','أحذية وشنط','مستحضرات تجميل وعناية','عطور','إكسسوارات وهدايا','موبايلات وإلكترونيات','سماعات وإكسسوار تقني','ساعات','أدوات منزلية','مفروشات وديكور','ألعاب أطفال','كتب ومستلزمات مدرسية','أغذية وحلويات هوم ميد','مخبوزات وكيك','عسل ومنتجات طبيعية','مكملات غذائية','أدوات رياضية','أدوات حرف يدوية','نباتات وبذور','حيوانات أليفة ومستلزماتها','أخرى'] },
-  { id:'doctors',    name:'أطباء',              icon:'🩺', color:'#fee2e2', subs:['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','تغذية علاجية','طبيب بيطري','عام'] },
+  { id:'online',     name:'البيع أونلاين',      icon:'🛍️', color:'#ede9fe', subs:['ملابس حريمي','ملابس رجالي','ملابس أطفال','أحذية وشنط','مستحضرات تجميل وعناية','عطور','إكسسوارات وهدايا','موبايلات وإلكترونيات','سماعات وإكسسوار تقني','ساعات','أدوات منزلية','مفروشات وديكور','ألعاب أطفال','كتب ومستلزمات مدرسية','أغذية وحلويات هوم ميد','مخبوزات وكيك','ألبان وأجبان بلدي (لبن، قشطة، جبنة)','لحوم ومجمدات','بيع طيور وبط وفراخ','أنابيب بوتاجاز','عسل ومنتجات طبيعية','مكملات غذائية','أدوات رياضية','أدوات حرف يدوية','نباتات وبذور','حيوانات أليفة ومستلزماتها','أخرى'] },
+  { id:'doctors',    name:'أطباء',              icon:'🩺', color:'#fee2e2', subs:['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','عام'] },
   { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:['رياضيات','علوم','لغة عربية','لغة إنجليزية','فيزياء','كيمياء','أحياء','تاريخ وجغرافيا','تربية دينية','تحفيظ قرآن','فلسفة ومنطق','علم نفس واجتماع','محاسبة واقتصاد','حاسب آلي','موسيقى ورسم','مواد ابتدائي','مواد إعدادي','مواد ثانوي','لغة فرنسية','لغة ألمانية','لغة إيطالية أو إسبانية','سنتر تعليمي','روضة وحضانة','كورسات لغات','كورسات كمبيوتر','تأهيل وتدريب مهني','فصل دراسي خاص','دروس أونلاين','تعليم ذوي الاحتياجات الخاصة','مطلوب مدرس','أخرى'] },
   { id:'realestate', name:'عقارات', icon:'🏠', color:'#dbeafe', subs:[], children: [
     { id:'re_rent', name:'إيجار', icon:'🔑', color:'#dbeafe', subs:[
@@ -837,9 +837,58 @@ const CATEGORIES = [
   { id:'fashion',    name:'ملابس',               icon:'👗', color:'#fce7f3', subs:['سنتر متكامل','حريمي','رجالي وشبابي','أطفال','ملابس داخلية','ملابس رياضية'] },
   { id:'shoes',      name:'أحذية وأكسسوارات',   icon:'👟', color:'#fce7f3', subs:['أحذية','أكسسوارات وهدايا'] },
   { id:'cars',       name:'سيارات وتكاتك',       icon:'🚗', color:'#f1f5f9', subs:['إيجار سيارات','مغسلة سيارات','صيانة وزيت','تروسيكل','🛺 اطلب توكتوك','نقل عفش','دليفري','سواقين'] },
-  { id:'cars_market', name:'سوق السيارات والتكاتك', icon:'🚙', color:'#e0f2fe', subs:['معارض بيع سيارات','معارض بيع تكاتك','قطع غيار سيارات','قطع غيار تكاتك'] },
+  { id:'cars_market', name:'سوق السيارات والتكاتك', icon:'🚙', color:'#e0f2fe', subs:['معارض بيع سيارات','معارض بيع تكاتك','قطع غيار سيارات','قطع غيار تكاتك','ميكانيكا وصيانة سيارات','كهرباء وتكييف سيارات','عفشة ودوكو سيارات'] },
   { id:'charity', name:'قسم الخير والتبرعات', icon:'🤍', color:'#f0fdf4', subs:['ملابس وأدوات منزلية','أثاث وعفش','كتب ومستلزمات دراسية','أجهزة وموبايلات','طعام وغذاء','مساعدة مادية','تبرع بدم','غير ذلك'] },
-  { id:'sports', name:'رياضة', icon:'⚽', color:'#dcfce7', subs:['صالات جيم','كرة قدم','أكاديمية فنون قتالية','ألعاب رياضية — مستلزمات وبيع','ملاعب رياضية','سباحة','دراجات'] },
+  { id:'sports', name:'رياضة', icon:'⚽', color:'#dcfce7', subs:['صالات جيم','كرة قدم','أكاديمية فنون قتالية','ألعاب رياضية — مستلزمات وبيع','ملاعب رياضية','نوادي وملاعب خماسية (نجيل صناعي)','سباحة','دراجات'] },
+  { id:'fun',        name:'ترفيه',                icon:'🎡', color:'#ffe4e6', subs:['ملاهي وألعاب أطفال','بلايستيشن وألعاب','مراكز تنمية مهارات وأنشطة شبابية'] },
+  { id:'vet', name:'بيطري ومستلزمات', icon:'🐾', color:'#dcfce7', subs:[], children: [
+    { id:'vet_medical', name:'طب وصيدليات', icon:'💉', color:'#dcfce7', subs:[
+      {name:'طبيب بيطري', icon:'🩺'},
+      {name:'صيدلية بيطرية', icon:'💊'},
+    ]},
+    { id:'vet_supplies', name:'أدوات ومستلزمات', icon:'🎾', color:'#fef3c7', subs:[
+      {name:'أكل ومستلزمات حيوانات أليفة', icon:'🍖'},
+      {name:'أقفاص وتربية طيور', icon:'🦜'},
+      {name:'إكسسوارات وأدوات استحمام وتربية', icon:'🧴'},
+    ]},
+    { id:'vet_breeders', name:'مربي حيوانات وطيور', icon:'🐕', color:'#fce7f3', subs:[
+      {name:'مربي حمام زينة', icon:'🕊️'},
+      {name:'مربي مواشي (كلاب، قطط، طيور)', icon:'🐈'},
+      {name:'مزارع دواجن', icon:'🐔'},
+    ]},
+  ]},
+  { id:'pets_market', name:'بيع حيوانات', icon:'🐶', color:'#fef9c3', subs:['كلاب','قطط','طيور وحمام','فراخ وبط ودواجن','أرانب','حيوانات أخرى'] },
+  { id:'offices', name:'مكاتب وخدمات مهنية', icon:'🗂️', color:'#e0e7ff', subs:[], children: [
+    { id:'offices_legal', name:'قانونية وقضائية', icon:'⚖️', color:'#e0e7ff', subs:[
+      {name:'محاماة واستشارات قانونية', icon:'👨‍⚖️'},
+      {name:'توثيق وشهر عقاري', icon:'📜'},
+      {name:'تحكيم دولي وتسوية منازعات', icon:'🤝'},
+    ]},
+    { id:'offices_finance', name:'محاسبية ومالية وضريبية', icon:'💰', color:'#dcfce7', subs:[
+      {name:'محاسب قانوني ومراجع حسابات', icon:'🧮'},
+      {name:'تخليص ضرائب ومبيعات', icon:'🧾'},
+      {name:'تأسيس شركات ودراسات جدوى', icon:'🏢'},
+      {name:'مراجعة حسابات مخازن ومستودعات', icon:'📦'},
+    ]},
+    { id:'offices_travel', name:'سفر وسياحة وتأشيرات', icon:'✈️', color:'#dbeafe', subs:[
+      {name:'سفر وسياحة وحج وعمرة', icon:'🕋'},
+      {name:'استخراج تأشيرات وجوازات سفر', icon:'🛂'},
+      {name:'حجز رحلات سياحية داخلية وخارجية', icon:'🧳'},
+    ]},
+    { id:'offices_engineering', name:'هندسية واستشارية', icon:'📐', color:'#fef3c7', subs:[
+      {name:'هندسة وتصميم معماري وإنشائي', icon:'🏛️'},
+      {name:'استشارات هندسية ومقاولات عامة', icon:'👷'},
+      {name:'مساحة وهندسة مدنية', icon:'📏'},
+      {name:'تصميم ديكور وتشطيبات داخلية', icon:'🛋️'},
+    ]},
+    { id:'offices_admin', name:'خدمات إدارية وحكومية', icon:'📋', color:'#fce7f3', subs:[
+      {name:'تخليص جمركي واستيراد وتصدير', icon:'🚢'},
+      {name:'خدمات عامة وتخليص أوراق حكومية', icon:'🏛️'},
+      {name:'ترجمة معتمدة', icon:'🌐'},
+      {name:'إدخال بيانات وطباعة وأبحاث', icon:'🖨️'},
+      {name:'عقارية وإدارية (إدارة أملاك)', icon:'🏠'},
+    ]},
+  ]},
   { id:'salon',      name:'صالونات وتجميل',      icon:'💇', color:'#fce7f3', subs:['حلاق رجالي','ميكب آرتيست','بيوتي سنتر','صالون حريمي'] },
   { id:'market_prices', name:'أسعار السوق',        icon:'🛒', color:'#fef9c3', subs:['خضار وفاكهة','سمك','فراخ وطيور','لحوم','بيض ومنتجات ألبان','بقوليات وحبوب'] },
   { id:'gold',       name:'محلات الدهب',          icon:'💍', color:'#fef9c3', subs:['دهب','فضة','مشغولات ذهبية','إصلاح مجوهرات','شراء دهب قديم'] },
@@ -856,6 +905,35 @@ const CATEGORIES = [
       {name:'حرفيين عامة', icon:'🛠️'},
       {name:'خياط حريمي', icon:'🪡'},
       {name:'خياط رجالي', icon:'🧵'},
+      {name:'مقاولي بناء وهدم', icon:'🏗️'},
+      {name:'محارة وبياض', icon:'🧱'},
+      {name:'أعمال سيراميك وبورسلين', icon:'🀄'},
+      {name:'أعمال جبس بورد وسقف معلق', icon:'🏠'},
+      {name:'تركيب واجهات زجاج وكوريتاكين', icon:'🪟'},
+      {name:'أعمال رخام وجرانيت', icon:'⬜'},
+      {name:'نجار مسلح (صب وأسقف خرسانية)', icon:'🧊'},
+      {name:'عزل أسطح وفوم', icon:'🌂'},
+      {name:'ترميمات عامة وهدم', icon:'🔨'},
+      {name:'تركيب كاميرات مراقبة وأنظمة حماية', icon:'📹'},
+      {name:'حداد مسلح ومقاول حديد', icon:'⚙️'},
+      {name:'فني دش وريسيفر', icon:'📡'},
+      {name:'صيانة موبايل ولابتوب', icon:'📱'},
+      {name:'تركيب ورق حائط وثري دي', icon:'🖼️'},
+      {name:'صيانة دفايات وسخانات مركزية', icon:'🔥'},
+      {name:'صيانة فلاتر مياه ومنقيات', icon:'💧'},
+      {name:'فني ستائر ومفروشات', icon:'🪡'},
+      {name:'صيانة مصاعد وأسانسير', icon:'🛗'},
+      {name:'مقاول ترامب وكريتال', icon:'🚪'},
+      {name:'نقاش ومزخرف واجهات', icon:'✨'},
+      {name:'صيانة ماكينات خياطة', icon:'🧵'},
+      {name:'مصلح مفاتيح وكوالين', icon:'🔑'},
+      {name:'صيانة موازين ومقاييس رقمية', icon:'⚖️'},
+      {name:'صنايعي بلاط موزاييك وقرمد', icon:'🧱'},
+      {name:'فني مظلات وبرجولات حدائق', icon:'🌳'},
+      {name:'فني شفاطات ومداخن مطاعم', icon:'🍳'},
+      {name:'فني شبكات غاز طبيعي', icon:'🔥'},
+      {name:'منجد أفرنجي وبلدي', icon:'🛋️'},
+      {name:'نجار موبيليا وأبواب', icon:'🚪'},
     ]},
     { id:'crafts_cleaning', name:'تنظيف', icon:'🧹', color:'#e0f2fe', subs:[
       {name:'تنظيف بيوت', icon:'🏠'},
@@ -864,6 +942,11 @@ const CATEGORIES = [
       {name:'تنظيف خزانات مياه', icon:'💧'},
       {name:'تنظيف واجهات', icon:'🏢'},
       {name:'تعقيم ورش مبيدات', icon:'🧴'},
+    ]},
+    { id:'crafts_moving', name:'نقل عفش', icon:'🚚', color:'#fef3c7', subs:[
+      {name:'ونش رفع عفش هيدروليك (أونسا)', icon:'🏗️'},
+      {name:'رجالة نقل عفش', icon:'💪'},
+      {name:'سيارات نقل عفش مغلقة (دينا / جامبو)', icon:'🚛'},
     ]},
 
   ]},
@@ -1059,7 +1142,7 @@ function showSubsPageV2(parent, child) {
 }
 
 // الفئات المتفرعة (children) اللي بتتوجه لنظام المعارض
-var NESTED_SHOP_CHILDREN = ['food_rest', 'food_cafe', 'crafts_maintenance', 'crafts_cleaning'];
+var NESTED_SHOP_CHILDREN = ['food_rest', 'food_cafe', 'crafts_maintenance', 'crafts_cleaning', 'crafts_moving', 'vet_medical', 'vet_supplies', 'vet_breeders', 'offices_legal', 'offices_finance', 'offices_travel', 'offices_engineering', 'offices_admin'];
 
 function showAdsPageV2(parentId, childId, subName) {
   // فئات متفرعة معينة (مطاعم/كافيهات/صيانة وحرفيين/تنظيف) → نظام المعارض
@@ -1174,7 +1257,7 @@ var USED_MARKET_SHOP_SUBS = ['أثاث وديكور', 'أجهزة كهربائي
 // ======= ADS PAGE =======
 async function showAdsPage(cat, sub) {
   // أقسام المعارض (البيع أونلاين + سوق السيارات + الملابس + ...) → روح لصفحة المعارض
-  if((cat.id === 'online' || cat.id === 'cars_market' || cat.id === 'fashion' || cat.id === 'shoes' || cat.id === 'furniture' || cat.id === 'home' || cat.id === 'tech' || cat.id === 'agri' || cat.id === 'events' || cat.id === 'ads' || cat.id === 'medservices' || cat.id === 'sports' || cat.id === 'salon' || cat.id === 'gold' || cat.id === 'building' || (cat.id === 'used_market' && USED_MARKET_SHOP_SUBS.indexOf(sub) !== -1)) && sub) {
+  if((cat.id === 'online' || cat.id === 'cars_market' || cat.id === 'fashion' || cat.id === 'shoes' || cat.id === 'furniture' || cat.id === 'home' || cat.id === 'tech' || cat.id === 'agri' || cat.id === 'events' || cat.id === 'ads' || cat.id === 'medservices' || cat.id === 'sports' || cat.id === 'salon' || cat.id === 'gold' || cat.id === 'building' || cat.id === 'fun' || (cat.id === 'used_market' && USED_MARKET_SHOP_SUBS.indexOf(sub) !== -1)) && sub) {
     showShopsPage(sub, cat.id);
     return;
   }
@@ -1887,7 +1970,7 @@ function showShopRegister(subcategory, catId) {
       '</label>' +
       '<div id="sr_gallery_preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>' +
       '<div style="display:flex;gap:8px;">' +
-        '<button onclick="submitShopRegister(\'' + subcategory + '\',\'' + (catId || '') + '\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ سجّل معرضي</button>' +
+        '<button id="shopRegSubmitBtn" onclick="submitShopRegister(\'' + subcategory + '\',\'' + (catId || '') + '\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ سجّل معرضي</button>' +
         '<button onclick="document.getElementById(\'shopRegOverlay\').remove()" style="flex:1;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
       '</div>' +
     '</div>';
@@ -2094,7 +2177,22 @@ function previewShopGallery(input) {
   if(input.files.length > 10) showToast('هيتم رفع أول 10 صور بس', 'error');
 }
 
+var _shopRegisterInProgress = false;
 async function submitShopRegister(subcategory, catId) {
+  // منع الإرسال المتكرر: لو حد دوس على الزرار أكتر من مرة (ضغط مزدوج، أو نت بطيء وهو مستني) يتجاهل أي محاولة تانية لحد ما الأولى تخلص
+  if(_shopRegisterInProgress) return;
+  _shopRegisterInProgress = true;
+  var _submitBtn = document.getElementById('shopRegSubmitBtn');
+  var _submitBtnOriginalText = _submitBtn ? _submitBtn.innerHTML : '';
+  if(_submitBtn) { _submitBtn.disabled = true; _submitBtn.style.opacity = '0.6'; _submitBtn.style.cursor = 'not-allowed'; _submitBtn.innerHTML = '⏳ جاري التسجيل...'; }
+  try {
+    await _doSubmitShopRegister(subcategory, catId);
+  } finally {
+    _shopRegisterInProgress = false;
+    if(_submitBtn) { _submitBtn.disabled = false; _submitBtn.style.opacity = '1'; _submitBtn.style.cursor = 'pointer'; _submitBtn.innerHTML = _submitBtnOriginalText; }
+  }
+}
+async function _doSubmitShopRegister(subcategory, catId) {
   var name = document.getElementById('sr_name').value.trim();
   var phone = document.getElementById('sr_phone').value.trim();
   var pass = document.getElementById('sr_pass').value.trim();
@@ -2975,18 +3073,17 @@ async function openShopProduct(productId) {
       (p.description ? '<div style="font-size:14px;color:#374151;line-height:1.8;margin-bottom:12px;">' + escapeHtml(p.description) + '</div>' : '') +
       linksHtml +
       (trader ?
-        '<div style="background:#f8fafc;border-radius:12px;padding:12px;margin-top:14px;">' +
-          '<div style="display:flex;align-items:center;gap:10px;">' +
-            '<div style="font-size:24px;flex-shrink:0;">🏪</div>' +
-            '<div style="flex:1;min-width:0;">' +
-              '<div style="font-size:13px;font-weight:900;">' + escapeHtml(trader.shop_name) + '</div>' +
-              '<div style="font-size:11px;color:#64748b;">' + trader.subcategory + (trader.address ? ' • 📍 ' + escapeHtml(trader.address) : '') + '</div>' +
-            '</div>' +
+        '<div style="background:#f8fafc;border-radius:12px;padding:12px;margin-top:14px;display:flex;align-items:center;gap:10px;">' +
+          '<div style="font-size:24px;">🏪</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px;font-weight:900;">' + escapeHtml(trader.shop_name) + '</div>' +
+            '<div style="font-size:11px;color:#64748b;">' + trader.subcategory + '</div>' +
+            (trader.address ? '<div style="font-size:11px;color:#64748b;margin-top:2px;">📍 ' + escapeHtml(trader.address) + '</div>' : '') +
           '</div>' +
           (function(){
             var waPhone = '20'+(trader.phone.charAt(0)==='0'?trader.phone.slice(1):trader.phone);
             var waMsg = 'مرحباً، أنا من دليل الحامول 🛍️%0Aعايز أستفسر عن: *'+p.title+'*'+(p.price?'%0Aالسعر المعروض: '+parseFloat(p.price).toLocaleString()+' جنيه':'')+'%0Aمن معرض: '+trader.shop_name;
-            return '<a href="https://wa.me/'+waPhone+'?text='+waMsg+'" target="_blank" style="display:block;width:100%;background:#25D366;color:white;padding:13px;border-radius:12px;text-align:center;text-decoration:none;font-size:14px;font-weight:900;margin-top:10px;box-sizing:border-box;">💬 تواصل واتساب بشأن هذا المنتج</a>';
+            return '<a href="https://wa.me/'+waPhone+'?text='+waMsg+'" target="_blank" style="display:block;width:100%;background:#25D366;color:white;padding:13px;border-radius:12px;text-align:center;text-decoration:none;font-size:14px;font-weight:900;margin-top:10px;">💬 تواصل واتساب بشأن هذا المنتج</a>';
           })() +
         '</div>'
       : '') +
@@ -3590,8 +3687,6 @@ function restoreDynState(state) {
     if(state.sub) showShopsPage(state.sub, state.catId || getShopCatId(state.sub));
   } else if(state.type === 'teacherSub') {
     if(state.sub) showTeacherAds(state.sub);
-  } else if(state.type === 'deals') {
-    showDeals();
   } else {
     document.getElementById('dynamicPage').classList.remove('active');
     document.body.style.overflow = '';
@@ -3979,7 +4074,7 @@ function updateNavAddVisibility() {
 
 // الأقسام دي "معارض" فقط — أصحابها لازم يسجلوا نشاطهم بزرار "سجّل نشاطك" مش عن طريق فورم الإعلان العادي
 // (لو اتضاف إعلان عادي في الأقسام دي مش هيظهر أبدًا للزوار لأن صفحة العرض بتقرا من جدول المعارض بس)
-const SHOP_ONLY_CAT_IDS = ['online','cars_market','fashion','shoes','furniture','home','tech','agri','events','ads','medservices','sports','salon','gold','building'];
+const SHOP_ONLY_CAT_IDS = ['online','cars_market','fashion','shoes','furniture','home','tech','agri','events','ads','medservices','sports','salon','gold','building','fun'];
 // "بيت الحلال" نظام مستقل بجدول بيانات خاص بيه (marriage_profiles) — التسجيل فيه لازم يكون من فورمه وزراره الخاص بس
 const STANDALONE_FORM_CAT_IDS = ['marriage'];
 
@@ -5225,32 +5320,6 @@ async function submitNewAd() {
         return;
       }
     }
-    // نرفع الصور الأول (قبل ما ننشئ الإعلان) عشان نحط رابط الصورة الرئيسية مع الإعلان من أول لحظة إنشاء
-    // ده بيتجنب مشكلة كانت بتحصل قبل كده: تحديث الصورة الرئيسية بعد إنشاء الإعلان كان بيتمنع بصلاحيات قاعدة البيانات بصمت (من غير أي رسالة خطأ)، فالصورة كانت بتوصل لمعرض الصور بس ومش بتظهر في كروت العرض
-    let firstUrl = null;
-    const progWrap = document.getElementById('imgUploadProgressWrap');
-    const progBar = document.getElementById('imgUploadProgressBar');
-    const progPct = document.getElementById('imgUploadProgressPct');
-    const progLabel = document.getElementById('imgUploadProgressLabel');
-    const uploadedUrls = [];
-    if(addSelectedFiles.length > 0) {
-      btn.textContent='جاري رفع الصور...';
-      const showProgTimer = setTimeout(function(){ if(progWrap) progWrap.style.display = 'block'; }, 2000);
-      for(let i=0; i<addSelectedFiles.length; i++) {
-        try {
-          if(progLabel) progLabel.textContent = 'جاري رفع الصورة ' + (i+1) + ' من ' + addSelectedFiles.length;
-          const url = await uploadImage(addSelectedFiles[i]);
-          if(url) { uploadedUrls.push(url); if(i===0) firstUrl = url; }
-          const pct = Math.round(((i+1)/addSelectedFiles.length)*100);
-          if(progBar) progBar.style.width = pct + '%';
-          if(progPct) progPct.textContent = pct + '%';
-        } catch(imgErr) { console.error('Image upload error:', imgErr); }
-      }
-      clearTimeout(showProgTimer);
-      if(progWrap) progWrap.style.display = 'none';
-      btn.textContent='جاري الإرسال...';
-    }
-    adData.image_url = firstUrl;
     console.log('Sending adData:', JSON.stringify(adData));
     const res = await fetch(SB_URL+'/rest/v1/ads', {
       method:'POST',
@@ -5262,16 +5331,69 @@ async function submitNewAd() {
     const newAds = JSON.parse(resText);
     const newAdId = newAds?.[0]?.id;
 
-    // نسجل باقي الصور (لو فيه أكتر من صورة) في معرض الصور المتعدد — الصورة الأولى محفوظة أصلاً مع الإعلان نفسه فوق
-    if(newAdId && uploadedUrls.length > 0) {
-      for(let i=0; i<uploadedUrls.length; i++) {
+    if(newAdId && addSelectedFiles.length > 0) {
+      btn.textContent='جاري رفع الصور...';
+      const progWrap = document.getElementById('imgUploadProgressWrap');
+      const progBar = document.getElementById('imgUploadProgressBar');
+      const progPct = document.getElementById('imgUploadProgressPct');
+      const progLabel = document.getElementById('imgUploadProgressLabel');
+      // لو الرفع استغرق أكتر من ثانيتين، اظهر شريط التقدم
+      const showProgTimer = setTimeout(function(){ if(progWrap) progWrap.style.display = 'block'; }, 2000);
+      let firstUrl = null;
+      for(let i=0; i<addSelectedFiles.length; i++) {
         try {
+          if(progLabel) progLabel.textContent = 'جاري رفع الصورة ' + (i+1) + ' من ' + addSelectedFiles.length;
+          const url = await uploadImage(addSelectedFiles[i]);
+          if(i===0) firstUrl = url;
           await fetch(SB_URL+'/rest/v1/ad_images', {
             method:'POST',
             headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Prefer':'return=minimal' },
-            body: JSON.stringify({ad_id:newAdId, image_url:uploadedUrls[i]})
+            body: JSON.stringify({ad_id:newAdId, image_url:url})
           });
-        } catch(imgErr) { console.error('ad_images insert error:', imgErr); }
+          const pct = Math.round(((i+1)/addSelectedFiles.length)*100);
+          if(progBar) progBar.style.width = pct + '%';
+          if(progPct) progPct.textContent = pct + '%';
+        } catch(imgErr) { console.error('Image upload error:', imgErr); }
+      }
+      clearTimeout(showProgTimer);
+      if(progWrap) progWrap.style.display = 'none';
+      if(firstUrl) {
+        // الطريقة الآمنة (نفس اللي بيستخدمها فورم تعديل الإعلان) — التحديث المباشر عبر REST كان بيتمنع بصلاحيات قاعدة البيانات فالصورة كانت بتتحفظ في معرض الصور بس ومش بتوصل لعمود الصورة الرئيسية اللي بتستخدمه كروت العرض بره
+        let mainImgSaved = false;
+        let lastErrMsg = '';
+        if(_curUser && _curUser.token) {
+          try {
+            await sbRPC('secure_update_ad', {
+              p_token: _curUser.token, p_ad_id: newAdId,
+              p_title: adData.title, p_description: adData.description,
+              p_phone: adData.phone, p_phone2: phone2 || null,
+              p_location: adData.address, p_location_url: adData.location_url,
+              p_price: adData.price, p_category: adData.category, p_subcategory: adData.subcategory,
+              p_images: null,
+              p_image_url: firstUrl
+            });
+            mainImgSaved = true;
+          } catch(rpcErr) { lastErrMsg = 'RPC: ' + (rpcErr.message||rpcErr); console.error('secure_update_ad image save failed:', rpcErr.message||rpcErr); }
+        } else {
+          lastErrMsg = 'مفيش مستخدم مسجّل دخول أو مفيش توكن (token) وقت رفع الصورة';
+        }
+        // fallback احتياطي لو الطريقة الآمنة فشلت لأي سبب
+        if(!mainImgSaved) {
+          try {
+            const patchRes = await fetch(SB_URL+`/rest/v1/ads?id=eq.${newAdId}`, {
+              method:'PATCH',
+              headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Prefer':'return=minimal' },
+              body: JSON.stringify({image_url:firstUrl})
+            });
+            if(!patchRes.ok) { const t = await patchRes.text(); lastErrMsg += ' | PATCH: ' + t; console.error('image_url PATCH failed:', t); }
+            else mainImgSaved = true;
+          } catch(patchErr) { lastErrMsg += ' | PATCH: ' + (patchErr.message||patchErr); console.error('image_url PATCH error:', patchErr); }
+        }
+        if(mainImgSaved) {
+          const _ix = allAds.findIndex(a=>a.id===newAdId); if(_ix!==-1) allAds[_ix].image_url = firstUrl;
+        } else {
+          showToast('⚠️ الصورة اتحفظت في معرض الصور بس فشل ظهورها بره — ابعت السبب ده للدعم الفني: ' + lastErrMsg.slice(0,180), 'error');
+        }
       }
     }
     closeAddModal();
@@ -5615,7 +5737,6 @@ async function loadAdminShops(cont) {
   }
   var pending = traders.filter(function(t){ return t.status==='pending'; });
   var approved = traders.filter(function(t){ return t.status==='approved'; });
-  var rejected = traders.filter(function(t){ return t.status==='rejected'; });
 
   cont.innerHTML =
     '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;">' +
@@ -5631,20 +5752,6 @@ async function loadAdminShops(cont) {
           '</div>' +
         '</div>';
       }).join('') : '<p style="font-size:12px;color:#94a3b8;">مفيش معارض في الانتظار</p>') +
-    '</div>' +
-    '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;">' +
-      '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">❌ معارض مرفوضة (' + rejected.length + ')</div>' +
-      (rejected.length ? rejected.map(function(t){
-        return '<div style="background:#fee2e2;border-radius:10px;padding:12px;margin-bottom:8px;">' +
-          '<div style="font-size:13px;font-weight:900;">' + escapeHtml(t.shop_name) + '</div>' +
-          '<div style="font-size:11px;color:#64748b;margin-top:2px;">📦 ' + t.subcategory + ' • 📞 ' + t.phone + '</div>' +
-          (t.description ? '<div style="font-size:11px;color:#64748b;margin-top:2px;">' + escapeHtml(t.description) + '</div>' : '') +
-          '<div style="display:flex;gap:8px;margin-top:8px;">' +
-            '<button data-tid="'+t.id+'" onclick="approveShopTrader(this.dataset.tid)" style="flex:1;background:#16a34a;color:white;border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">✅ اعتمد بدل الرفض</button>' +
-            '<button data-tid="'+t.id+'" data-tname="'+escapeHtml(t.shop_name||'')+'" onclick="deleteShopTraderAdmin(this.dataset.tid,this.dataset.tname)" style="background:#f3f4f6;color:#64748b;border:none;padding:8px 12px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️ مسح نهائي</button>' +
-          '</div>' +
-        '</div>';
-      }).join('') : '<p style="font-size:12px;color:#94a3b8;">مفيش معارض مرفوضة</p>') +
     '</div>' +
     '<div style="background:white;border-radius:14px;padding:14px;">' +
       '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">✅ معارض معتمدة (' + approved.length + ')</div>' +
@@ -5701,14 +5808,6 @@ async function deleteShopTraderAdmin(id, shopName) {
 function loadAdminBackup(cont) {
   cont.innerHTML = `
     <div style="background:white;border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--border);">
-      <div style="font-size:14px;font-weight:900;margin-bottom:10px;">🔧 إصلاح صور الإعلانات القديمة</div>
-      <p style="font-size:12px;color:#64748b;margin-bottom:14px;line-height:1.7;">
-        بيدور على كل إعلان مالوش صورة ظاهرة بره (في القوائم) بس عنده صورة محفوظة جواه (في صفحة التفاصيل)، ويصلحها تلقائي عشان تظهر في الكروت برة زي أي إعلان تاني.
-      </p>
-      <button onclick="fixMissingAdImages()" id="fixImgsBtn" style="width:100%;background:#0284c7;color:white;border:none;padding:14px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">🔧 ابحث واصلح الصور الناقصة الآن</button>
-      <div id="fixImgsStatus" style="margin-top:10px;font-size:12px;color:#64748b;text-align:center;"></div>
-    </div>
-    <div style="background:white;border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--border);">
       <div style="font-size:14px;font-weight:900;margin-bottom:10px;">💾 نسخة احتياطية من كل بيانات الموقع</div>
       <p style="font-size:12px;color:#64748b;margin-bottom:14px;line-height:1.7;">
         بتحمّل ملف فيه كل الإعلانات، التجار، بروفايلات الزواج، المنتديات، البانرات، وكل حاجة في الموقع.
@@ -5721,45 +5820,6 @@ function loadAdminBackup(cont) {
       <div style="font-size:12px;font-weight:900;margin-bottom:6px;">💡 نصيحة</div>
       <div style="font-size:12px;color:#92400e;line-height:1.7;">حمّل نسخة احتياطية مرة كل أسبوع على الأقل، وخصوصاً قبل أي تعديل كبير في الموقع.</div>
     </div>`;
-}
-
-async function fixMissingAdImages() {
-  var btn = document.getElementById('fixImgsBtn');
-  var status = document.getElementById('fixImgsStatus');
-  btn.disabled = true;
-  btn.textContent = '⏳ جاري البحث عن إعلانات ناقصة...';
-  status.textContent = '';
-  try {
-    // الإعلانات اللي مالهاش صورة رئيسية ظاهرة بره
-    var broken = await sbFetch('GET', 'ads?select=id,title&image_url=is.null&status=neq.deleted');
-    if(!broken || !broken.length) {
-      status.textContent = '✅ مفيش أي إعلان ناقص — كله سليم';
-      btn.disabled = false; btn.textContent = '🔧 ابحث واصلح الصور الناقصة الآن';
-      return;
-    }
-    var fixed = 0, skipped = 0;
-    for(var i=0; i<broken.length; i++) {
-      status.textContent = 'جاري الفحص: ' + (i+1) + ' من ' + broken.length + ' (تم إصلاح ' + fixed + ')';
-      try {
-        var imgs = await sbFetch('GET', 'ad_images?ad_id=eq.'+broken[i].id+'&select=image_url&order=created_at.asc&limit=1');
-        if(imgs && imgs.length && imgs[0].image_url) {
-          await sbFetch('PATCH', 'ads?id=eq.'+broken[i].id, {image_url: imgs[0].image_url});
-          fixed++;
-        } else {
-          skipped++;
-        }
-      } catch(e) { console.error('fix image failed for ad', broken[i].id, e); skipped++; }
-    }
-    status.textContent = '✅ تم إصلاح ' + fixed + ' إعلان' + (skipped ? ' — ' + skipped + ' إعلان أصلاً مالوش صورة خالص (طبيعي)' : '');
-    showToast('✅ تم إصلاح ' + fixed + ' إعلان قديم');
-    await loadAds();
-  } catch(e) {
-    console.error('fixMissingAdImages error:', e);
-    status.textContent = '❌ حصل خطأ: ' + (e.message || e);
-    showToast('❌ حصل خطأ أثناء الإصلاح', 'error');
-  }
-  btn.disabled = false;
-  btn.textContent = '🔧 ابحث واصلح الصور الناقصة الآن';
 }
 
 async function downloadFullBackup() {
@@ -7175,7 +7235,7 @@ function showMore() {
         <!-- فركة كعب -->
         <div style="font-size:12px;color:var(--gray);font-weight:700;margin-bottom:8px;padding-right:4px;">🛵 فركة كعب للتوصيل</div>
         <div style="background:white;border-radius:14px;border:1px solid var(--border);overflow:hidden;margin-bottom:16px;">
-          <a href="https://wa.me/201014185158" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px 16px;text-decoration:none;color:var(--dark);border-bottom:1px solid #f3f4f6;">
+          <a href="https://wa.me/201014185158?text=مرحباً%2C%20أنا%20جاي%2Fة%20من%20سوق%20ودليل%20الحامول%20وعايز%20أطلب%20توصيل" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px 16px;text-decoration:none;color:var(--dark);border-bottom:1px solid #f3f4f6;">
             <span style="font-size:22px;">📞</span>
             <div style="flex:1;">
               <div style="font-size:14px;font-weight:700;">اطلب توصيل</div>
@@ -7183,7 +7243,7 @@ function showMore() {
             </div>
             <span style="color:var(--gray);">←</span>
           </a>
-          <a href="https://wa.me/201033253032" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px 16px;text-decoration:none;color:var(--dark);">
+          <a href="https://wa.me/201033253032?text=مرحباً%2C%20أنا%20جاي%2Fة%20من%20سوق%20ودليل%20الحامول%20وعايز%20أطلب%20توصيل" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px 16px;text-decoration:none;color:var(--dark);">
             <span style="font-size:22px;">📱</span>
             <div style="flex:1;">
               <div style="font-size:14px;font-weight:700;">خط احتياطي</div>
@@ -7289,15 +7349,15 @@ function showAbout() {
 
       <!-- المسؤول -->
       <div style="background:linear-gradient(135deg,#1a7a4a,#2d9e63);border-radius:14px;padding:18px;margin-bottom:14px;color:white;">
-        <h3 style="font-size:15px;font-weight:900;margin-bottom:10px;">👤 مسؤول الموقع</h3>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px;">👨‍💼</div>
+        <h3 style="font-size:15px;font-weight:900;margin-bottom:10px;">💬 شكاوى وخدمة عملاء الموقع</h3>
+        <p style="font-size:12px;opacity:.9;margin-bottom:12px;line-height:1.7;">لو عندك أي ملاحظة، اقتراح، أو شكوى عن الموقع نفسه (مش عن التوصيل)، تواصل معنا مباشرة:</p>
+        <a href="https://wa.me/201080150801?text=مرحباً%2C%20عندي%20ملاحظة%2Fشكوى%20عن%20موقع%20سوق%20ودليل%20الحامول" target="_blank" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.15);border-radius:12px;padding:12px;text-decoration:none;color:white;">
+          <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">📞</div>
           <div>
-            <div style="font-size:16px;font-weight:900;">إسلام عنتر</div>
-            <div style="font-size:12px;opacity:.85;">صاحب فركة كعب للتوصيل — الحامول</div>
-            <a href="https://wa.me/201080150801" target="_blank" style="color:#86efac;font-size:12px;font-weight:700;">📞 01080150801</a>
+            <div style="font-size:14px;font-weight:900;">01080150801</div>
+            <div style="font-size:11px;opacity:.85;">دوس هنا للتواصل على واتساب</div>
           </div>
-        </div>
+        </a>
       </div>
 
       <!-- إخلاء المسؤولية -->
@@ -7309,7 +7369,7 @@ function showAbout() {
           ✦ الموقع <strong>لا يتحمل أي مسؤولية</strong> عن طبيعة العلاقة بين الأطراف أو نتائج التواصل بينهم.<br>
           ✦ الموقع <strong>لا يضمن</strong> صحة أو دقة المعلومات المنشورة من قِبل المُعلِنين.<br>
           ✦ جميع الاتفاقيات والتعاملات تتم <strong>مباشرة بين الأطراف المعنية</strong> على مسؤوليتهم الشخصية.<br>
-          ✦ في حالة وجود أي شكوى، يُرجى التواصل مع مسؤول الموقع <strong>إسلام عنتر</strong> على واتساب.
+          ✦ في حالة وجود أي شكوى، يُرجى التواصل مع فريق الموقع على الرقم المخصص للشكاوى وخدمة العملاء بالأعلى.
         </p>
       </div>
 
@@ -8799,7 +8859,7 @@ function showAdvertisePage() {
       <div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:14px;padding:14px;text-align:center;">
         <div style="font-size:13px;font-weight:900;color:#166534;margin-bottom:6px;">📞 للاستفسار والحجز</div>
         <div style="font-size:12px;color:#15803d;margin-bottom:10px;">تواصل معنا مباشرة على واتساب</div>
-        <button onclick="window.open('https://wa.me/201080150801','_blank')" style="background:#25D366;color:white;border:none;padding:10px 24px;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💬 تواصل واتساب</button>
+        <button onclick="window.open('https://wa.me/201014185158','_blank')" style="background:#25D366;color:white;border:none;padding:10px 24px;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">💬 تواصل واتساب</button>
       </div>
 
     </div>`;
@@ -10163,8 +10223,7 @@ function buildSpecsGrid() {
     {sub:'جلدية',icon:'🩺'},{sub:'مخ وأعصاب',icon:'🧠'},
     {sub:'جراحة عامة',icon:'🏥'},{sub:'صدر',icon:'🫁'},
     {sub:'مسالك بولية',icon:'💊'},{sub:'أورام',icon:'🔬'},
-    {sub:'علاج طبيعي',icon:'🤸'},{sub:'تغذية علاجية',icon:'🥗'},
-    {sub:'طبيب بيطري',icon:'🐾'},{sub:'عام',icon:'👨‍⚕️'},
+    {sub:'علاج طبيعي',icon:'🤸'},{sub:'عام',icon:'👨‍⚕️'},
   ];
   const knownSubs = specs.map(function(s){ return s.sub; });
   specs.forEach(function(s) {
@@ -10212,7 +10271,7 @@ function buildSpecsGrid() {
 async function showDoctorAds(subName) {
   await loadAds();
   const isOther = subName === '__other__';
-  const knownSubs = ['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','تغذية علاجية','طبيب بيطري','عام'];
+  const knownSubs = ['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','عام'];
   const filtered = allAds.filter(a => {
     if(a.status !== 'approved') return false;
     if(a.category !== 'doctors') return false;
@@ -11706,7 +11765,7 @@ async function deleteBanner(id) {
 // BANNER CATEGORY HELPER FUNCTIONS
 function getBannerSubcatOptions(catId, selectedSub) {
   const subsMap = {
-    'doctors': ['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','تغذية علاجية','طبيب بيطري','عام'],
+    'doctors': ['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','عام'],
     'medservices': ['صيدليات','معامل تحاليل','مراكز أشعة','مراكز تخاطب','مستلزمات طبية','معامل نظارات','تمريض منزلي','الطب التكميلي'],
     'food_rest': ['مطاعم بروست','مطاعم مشويات','مطاعم فول وطعمية','مطاعم كشري','مطاعم بيتزا وكريب','مطاعم شاورما','مطاعم سمك','مطاعم وجبات سريعة','حلويات ومخبوزات','عصائر ومشروبات'],
     'food_cafe': ['كافيهات قهوة','كافيهات مشروبات','كافيهات متكاملة'],
@@ -12466,31 +12525,14 @@ function closeRegUrgencyPopup() {
 }
 
 // ===== INIT =====
-// ===== PWA: manifest ديناميكي بأيقونة حقيقية + دعم التثبيت =====
-(function setupPWAManifest() {
-  try {
-    var logoEl = document.getElementById('logoImg');
-    var iconSrc = logoEl ? logoEl.src : '';
-    var manifest = {
-      name: "سوق ودليل الحامول",
-      short_name: "دليل الحامول",
-      description: "دليل إلكتروني مجاني لمركز الحامول، كفر الشيخ",
-      display: "standalone",
-      background_color: "#1a7a4a",
-      theme_color: "#1a7a4a",
-      start_url: ".",
-      icons: iconSrc ? [
-        { src: iconSrc, sizes: "192x192", type: "image/jpeg", purpose: "any" },
-        { src: iconSrc, sizes: "512x512", type: "image/jpeg", purpose: "any" },
-        { src: iconSrc, sizes: "192x192", type: "image/jpeg", purpose: "maskable" }
-      ] : []
-    };
-    var blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-    var url = URL.createObjectURL(blob);
-    var link = document.getElementById('pwaManifestLink');
-    if(link) link.setAttribute('href', url);
-  } catch(e) { console.warn('manifest setup failed', e); }
-})();
+// ===== PWA: تسجيل Service Worker (مطلوب على أغلب الموبايلات عشان التثبيت يبقى تطبيق حقيقي مش مجرد اختصار) =====
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').catch(function(e) {
+      console.warn('service worker registration failed', e);
+    });
+  });
+}
 
 function isStandaloneMode() {
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
