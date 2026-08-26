@@ -2975,17 +2975,18 @@ async function openShopProduct(productId) {
       (p.description ? '<div style="font-size:14px;color:#374151;line-height:1.8;margin-bottom:12px;">' + escapeHtml(p.description) + '</div>' : '') +
       linksHtml +
       (trader ?
-        '<div style="background:#f8fafc;border-radius:12px;padding:12px;margin-top:14px;display:flex;align-items:center;gap:10px;">' +
-          '<div style="font-size:24px;">🏪</div>' +
-          '<div style="flex:1;">' +
-            '<div style="font-size:13px;font-weight:900;">' + escapeHtml(trader.shop_name) + '</div>' +
-            '<div style="font-size:11px;color:#64748b;">' + trader.subcategory + '</div>' +
-            (trader.address ? '<div style="font-size:11px;color:#64748b;margin-top:2px;">📍 ' + escapeHtml(trader.address) + '</div>' : '') +
+        '<div style="background:#f8fafc;border-radius:12px;padding:12px;margin-top:14px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<div style="font-size:24px;flex-shrink:0;">🏪</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:13px;font-weight:900;">' + escapeHtml(trader.shop_name) + '</div>' +
+              '<div style="font-size:11px;color:#64748b;">' + trader.subcategory + (trader.address ? ' • 📍 ' + escapeHtml(trader.address) : '') + '</div>' +
+            '</div>' +
           '</div>' +
           (function(){
             var waPhone = '20'+(trader.phone.charAt(0)==='0'?trader.phone.slice(1):trader.phone);
             var waMsg = 'مرحباً، أنا من دليل الحامول 🛍️%0Aعايز أستفسر عن: *'+p.title+'*'+(p.price?'%0Aالسعر المعروض: '+parseFloat(p.price).toLocaleString()+' جنيه':'')+'%0Aمن معرض: '+trader.shop_name;
-            return '<a href="https://wa.me/'+waPhone+'?text='+waMsg+'" target="_blank" style="display:block;width:100%;background:#25D366;color:white;padding:13px;border-radius:12px;text-align:center;text-decoration:none;font-size:14px;font-weight:900;margin-top:10px;">💬 تواصل واتساب بشأن هذا المنتج</a>';
+            return '<a href="https://wa.me/'+waPhone+'?text='+waMsg+'" target="_blank" style="display:block;width:100%;background:#25D366;color:white;padding:13px;border-radius:12px;text-align:center;text-decoration:none;font-size:14px;font-weight:900;margin-top:10px;box-sizing:border-box;">💬 تواصل واتساب بشأن هذا المنتج</a>';
           })() +
         '</div>'
       : '') +
