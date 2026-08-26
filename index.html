@@ -3590,6 +3590,8 @@ function restoreDynState(state) {
     if(state.sub) showShopsPage(state.sub, state.catId || getShopCatId(state.sub));
   } else if(state.type === 'teacherSub') {
     if(state.sub) showTeacherAds(state.sub);
+  } else if(state.type === 'deals') {
+    showDeals();
   } else {
     document.getElementById('dynamicPage').classList.remove('active');
     document.body.style.overflow = '';
