@@ -3589,6 +3589,9 @@ async function openAdDetails(adId) {
           <button onclick="openEditAd('${adId}')" style="flex:1;background:#eff6ff;color:#2563eb;border:2px solid #bfdbfe;padding:11px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">✏️ تعديل الإعلان</button>
           <button onclick="if(confirm('متأكد إنك عايز تحذف الإعلان؟')){deleteMyAd('${adId}');}" style="background:#fee2e2;color:var(--red);border:2px solid #fca5a5;padding:11px 16px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🗑️</button>
         </div>`:''}
+        ${isOwnerOf(ad)?`<div style="padding:0 16px 12px;">
+          <button onclick="toggleMyAdOffer('${adId}',${!ad.is_offer})" style="width:100%;background:${ad.is_offer?'#fee2e2':'#fff7ed'};color:${ad.is_offer?'var(--red)':'var(--orange)'};border:2px solid ${ad.is_offer?'#fca5a5':'#fed7aa'};padding:11px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${ad.is_offer?'❌ إلغاء من العروض':'⭐ إضافة إعلاني للعروض'}</button>
+        </div>`:''}
       </div>
     </div>
     <div style="position:fixed;bottom:0;left:0;right:0;background:white;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,.08);">
@@ -7710,6 +7713,19 @@ async function toggleOffer(id, val) {
   showToast(val ? '⭐ تم التمييز كعرض!' : 'تم إلغاء التمييز');
   await loadAds();
   showDeals();
+}
+
+async function toggleMyAdOffer(id, val) {
+  const u = getCurrentUser();
+  if(!u || !u.token) { showToast('سجّل دخولك الأول', 'error'); return; }
+  try {
+    await sbRPC('secure_toggle_ad_offer', {p_token: u.token, p_ad_id: id, p_is_offer: val});
+    showToast(val ? '⭐ اتضاف إعلانك للعروض!' : 'تم إلغاء إعلانك من العروض');
+    hideDynPage();
+    await loadAds();
+  } catch(e) {
+    showToast('حصل خطأ، جرب تاني', 'error');
+  }
 }
 function toggleSearch() { showSearchPage(); }
 
