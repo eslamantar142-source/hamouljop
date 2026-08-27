@@ -447,7 +447,7 @@ function safeUrl(u) {
   if(/^(https?:|tel:|mailto:)/i.test(s)) return s;
   return '';
 }
-const ADMIN_WA = '201014185158';
+const ADMIN_WA = '201080150801';
 
 async function hashPass(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
