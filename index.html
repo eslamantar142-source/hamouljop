@@ -2610,6 +2610,7 @@ async function showShopDashboard(trader) {
               '<span style="position:absolute;inset:0;background:'+(active?'#16a34a':'#dc2626')+';border-radius:22px;transition:.2s;"></span>' +
               '<span style="position:absolute;height:16px;width:16px;left:'+(active?'3px':'19px')+';top:3px;background:white;border-radius:50%;transition:.2s;"></span>' +
             '</label>' +
+            '<button data-pid="'+p.id+'" onclick="toggleProductOffer(this.dataset.pid,\''+trader.id+'\',' + (!p.is_offer) + ')" style="background:'+(p.is_offer?'#fee2e2':'#fff7ed')+';color:'+(p.is_offer?'var(--red)':'var(--orange)')+';border:none;padding:5px 8px;border-radius:8px;font-size:12px;cursor:pointer;flex-shrink:0;" title="'+(p.is_offer?'إلغاء من العروض':'إضافة للعروض')+'">'+(p.is_offer?'❌':'⭐')+'</button>' +
             '<button data-pid="'+p.id+'" onclick="editShopProduct(this.dataset.pid,\''+trader.id+'\')" style="background:#eff6ff;color:#1d4ed8;border:none;padding:5px 8px;border-radius:8px;font-size:12px;cursor:pointer;flex-shrink:0;">✏️</button>' +
             '<button data-pid="'+p.id+'" onclick="deleteShopProduct(this.dataset.pid,\''+trader.id+'\')" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;flex-shrink:0;">🗑️</button>' +
           '</div>'; }).join('') + '</div>' :
@@ -2919,6 +2920,21 @@ async function toggleProductActive(checkbox, traderId) {
     showToast('حصل خطأ، حاول تاني', 'error');
     checkbox.checked = !newState;
     checkbox.disabled = false;
+    return;
+  }
+  var overlay = document.getElementById('shopDashOverlay');
+  if(overlay) overlay.remove();
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+}
+
+async function toggleProductOffer(pid, traderId, newState) {
+  var phone = localStorage.getItem('my_shop_phone_'+traderId);
+  var passHash = localStorage.getItem('my_shop_pass_'+traderId);
+  try {
+    await sbRPC('secure_toggle_shop_product_offer', {p_phone: phone, p_password_hash: passHash, p_product_id: pid, p_is_offer: newState});
+    showToast(newState ? '⭐ اتضاف المنتج للعروض!' : 'تم إلغاء المنتج من العروض');
+  } catch(e) {
+    showToast('حصل خطأ، حاول تاني', 'error');
     return;
   }
   var overlay = document.getElementById('shopDashOverlay');
@@ -7635,7 +7651,7 @@ function showFavorites() {
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
-function showDeals() {
+async function showDeals() {
   sessionStorage.setItem('dynState', JSON.stringify({type:'deals'}));
   try{history.pushState({dyn:1},'');}catch(e){}
   const page = document.getElementById('dynamicPage');
@@ -7647,7 +7663,23 @@ function showDeals() {
     if(a.is_offer) return true;
     const text = ((a.title||'')+(a.description||'')).toLowerCase();
     return dealKeywords.some(k => text.includes(k));
-  });
+  }).map(a => Object.assign({_kind:'ad'}, a));
+
+  // منتجات المعارض المميّزة كعروض بواسطة التاجر نفسه
+  let dealProducts = [];
+  try {
+    const offerProducts = await sbFetch('GET', 'shop_products?is_offer=eq.true&order=created_at.desc') || [];
+    if(offerProducts.length) {
+      const traderIds = [...new Set(offerProducts.map(p => p.trader_id))];
+      const traders = await sbFetch('GET', 'shop_traders?id=in.(' + traderIds.join(',') + ')&status=eq.approved&select=id,shop_name,phone,subcategory') || [];
+      const tMap = {}; traders.forEach(t => tMap[t.id] = t);
+      dealProducts = offerProducts
+        .filter(p => tMap[p.trader_id])
+        .map(p => Object.assign({_kind:'product'}, p, {_trader: tMap[p.trader_id]}));
+    }
+  } catch(e) {}
+
+  const dealItems = dealAds.concat(dealProducts).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
   page.innerHTML = `
     <div class="dyn-header">
@@ -7658,17 +7690,43 @@ function showDeals() {
     <div style="background:linear-gradient(135deg,#ff6b00,#ff9500);padding:16px;text-align:center;color:white;">
       <div style="font-size:28px;margin-bottom:4px;">🏷️</div>
       <div style="font-size:16px;font-weight:900;">أحدث العروض في الحامول</div>
-      <div style="font-size:12px;opacity:.85;margin-top:4px;">${dealAds.length} عرض متاح دلوقتي</div>
+      <div style="font-size:12px;opacity:.85;margin-top:4px;">${dealItems.length} عرض متاح دلوقتي</div>
     </div>
     <div id="catBanner"></div>
     <div class="dyn-content" id="dealsContent">
-      ${dealAds.length === 0 ? `
+      ${dealItems.length === 0 ? `
         <div style="text-align:center;padding:60px 20px;color:var(--gray);">
           <div style="font-size:48px;margin-bottom:12px;">🏷️</div>
           <p style="font-size:15px;font-weight:700;">مفيش عروض دلوقتي</p>
           <p style="font-size:13px;margin-top:6px;color:#aaa;">تابع الموقع للعروض الجديدة</p>
         </div>` :
-        dealAds.map(ad => {
+        dealItems.map(item => {
+          if(item._kind === 'product') {
+            const p = item, trader = item._trader;
+            let phone = trader.phone||'';
+            if(phone.startsWith('01')) phone='20'+phone.substring(1);
+            const waMsg = encodeURIComponent(`أهلاً، أنا مهتم بعرضك (${p.title}) على دليل الحامول`);
+            const waUrl = phone?`https://wa.me/${phone}?text=${waMsg}`:'#';
+            const date = new Date(p.created_at).toLocaleDateString('ar-EG');
+            return `
+            <div class="ad-card" style="border-top:3px solid var(--orange);">
+              <div style="background:var(--orange);color:white;padding:4px 12px;font-size:11px;font-weight:700;text-align:center;">⭐ عرض من معرض</div>
+              ${p.image_url ? `<img src="${p.image_url}" class="ad-img" loading="lazy" onerror="this.style.display='none'" onclick="openShopProduct('${p.id}')">` : ''}
+              <div class="ad-body">
+                <div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:4px;">🏪 ${escapeHtml(trader.shop_name)} ← ${escapeHtml(trader.subcategory||'')}</div>
+                <div class="ad-title" onclick="openShopProduct('${p.id}')">${escapeHtml(p.title)||''}</div>
+                ${p.price ? `<div style="font-size:14px;font-weight:900;color:#7c3aed;margin-top:4px;">${parseFloat(p.price).toLocaleString()} جنيه</div>` : ''}
+                <div class="ad-footer">
+                  <span class="ad-date">${date}</span>
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <button class="btn-details" onclick="openShopProduct('${p.id}')">التفاصيل</button>
+                    <a href="${waUrl}" target="_blank" class="btn-wa">💬 واتساب</a>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+          }
+          const ad = item;
           const cat = CATEGORIES.find(c=>c.id===ad.category)||{icon:'📋',name:'عام'};
           let phone = ad.phone||'';
           if(phone.startsWith('01')) phone='20'+phone.substring(1);
