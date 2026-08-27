@@ -2483,6 +2483,10 @@ function shopTraderLogout(traderId) {
 async function showShopDashboard(trader) {
   var sections = await sbFetch('GET', 'shop_sections?trader_id=eq.'+trader.id+'&order=sort_order.asc') || [];
   var products = await sbFetch('GET', 'shop_products?trader_id=eq.'+trader.id+'&order=created_at.desc') || [];
+  var broadcasts = await sbFetch('GET', 'broadcasts?order=created_at.desc&limit=3').catch(function(){return [];}) || [];
+  var dismissed = [];
+  try { dismissed = JSON.parse(localStorage.getItem('dismissed_broadcasts')||'[]'); } catch(e) {}
+  broadcasts = broadcasts.filter(function(b){ return dismissed.indexOf(b.id) === -1; });
 
   var totalProducts = products.length;
   var outOfStockCount = products.filter(function(p){ return p.stock === 0 || p.stock === '0'; }).length;
@@ -2496,6 +2500,17 @@ async function showShopDashboard(trader) {
       '<div style="flex:1;text-align:center;font-size:15px;font-weight:900;">لوحة تحكم ' + escapeHtml(trader.shop_name) + '</div>' +
       '<button onclick="showShopsPage(\'' + trader.subcategory + '\',\'' + getShopCatId(trader.subcategory) + '\')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;">👁️ شوف</button>' +
     '</div>' +
+    (broadcasts.length ? broadcasts.map(function(b){
+      return '<div style="background:#fffbeb;border-bottom:1px solid #fde68a;padding:12px 16px;display:flex;gap:10px;align-items:flex-start;">' +
+        '<div style="font-size:18px;">📣</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;font-weight:900;color:#92400e;">' + escapeHtml(b.title) + '</div>' +
+          (b.body ? '<div style="font-size:12px;color:#78350f;margin-top:2px;line-height:1.6;">' + escapeHtml(b.body) + '</div>' : '') +
+        '</div>' +
+        '<button onclick="dismissBroadcast(\'' + b.id + '\',this)" style="background:none;border:none;color:#92400e;font-size:16px;cursor:pointer;flex-shrink:0;">×</button>' +
+      '</div>';
+    }).join('') : '') +
+    
     // بوستر المعرض مع زرار تغيير
     '<div style="position:relative;">' +
       (trader.logo_url ?
@@ -4205,6 +4220,7 @@ async function loadNotificationsList() {
   const u = getCurrentUser();
   try {
     const notifs = await sbRPC('get_my_notifications', {p_token: u.token});
+    sbRPC('ack_broadcasts', {p_token: u.token}).then(refreshNotifBadge).catch(()=>{});
     if(!notifs || !notifs.length) {
       list.innerHTML = '<div style="text-align:center;color:#999;padding:30px;">مفيش إشعارات لسه</div>';
       return;
@@ -4242,6 +4258,32 @@ async function markAllNotifsRead() {
     refreshNotifBadge();
     loadNotificationsList();
   } catch(e) {}
+}
+
+function dismissBroadcast(id, btn) {
+  var dismissed = [];
+  try { dismissed = JSON.parse(localStorage.getItem('dismissed_broadcasts')||'[]'); } catch(e) {}
+  if(dismissed.indexOf(id) === -1) dismissed.push(id);
+  try { localStorage.setItem('dismissed_broadcasts', JSON.stringify(dismissed.slice(-50))); } catch(e) {}
+  var row = btn.parentElement;
+  if(row) row.remove();
+}
+
+async function sendAdminBroadcast() {
+  const title = document.getElementById('bcTitle')?.value.trim();
+  const body = document.getElementById('bcBody')?.value.trim();
+  if(!title) { showToast('اكتب عنوان الرسالة', 'error'); return; }
+  const btn = document.getElementById('bcSendBtn');
+  if(btn) { btn.disabled = true; btn.textContent = '⏳ جاري الإرسال...'; }
+  try {
+    await sbRPC('admin_send_broadcast', {p_title: title, p_body: body || null});
+    showToast('✅ اتبعتت الرسالة للجميع');
+    document.getElementById('bcTitle').value = '';
+    document.getElementById('bcBody').value = '';
+  } catch(e) {
+    showToast('❌ حصل خطأ في الإرسال', 'error');
+  }
+  if(btn) { btn.disabled = false; btn.textContent = '📣 إرسال للجميع'; }
 }
 
 // الأقسام دي "معارض" فقط — أصحابها لازم يسجلوا نشاطهم بزرار "سجّل نشاطك" مش عن طريق فورم الإعلان العادي
@@ -5814,7 +5856,7 @@ async function showAdminPanel(tab='pending') {
 
   const tabList = [
     ['pending','⏳ انتظار'],['approved','✅ معتمدة'],['rejected','❌ مرفوضة'],
-    ['marriage','💍 زواج'],['banners','📢 بانرات'],['stats','📊 إحصائيات'],['merchants','🏪 تجار'],['shops','🛍️ معارض'],['users','👤 مستخدمين'],['dellog','🗑️ سجل الحذف'],['backup','💾 نسخة احتياطية']
+    ['marriage','💍 زواج'],['banners','📢 بانرات'],['broadcast','📣 رسالة عامة'],['stats','📊 إحصائيات'],['merchants','🏪 تجار'],['shops','🛍️ معارض'],['users','👤 مستخدمين'],['dellog','🗑️ سجل الحذف'],['backup','💾 نسخة احتياطية']
   ];
 
   // بناء الهيكل دايماً من أول
@@ -5847,6 +5889,15 @@ async function showAdminPanel(tab='pending') {
   } else if(tab === 'banners') {
     cont.innerHTML = '<div id="bannersAdminContent"><div style="text-align:center;padding:30px;color:var(--gray);"><div style="font-size:28px;">⏳</div><p>جاري تحميل البانرات...</p></div></div>';
     setTimeout(loadAdminBanners, 50);
+  } else if(tab === 'broadcast') {
+    cont.innerHTML =
+      '<div style="background:white;border-radius:14px;padding:16px;border:1px solid var(--border);">' +
+        '<div style="font-size:14px;font-weight:900;margin-bottom:4px;">📣 إرسال رسالة عامة</div>' +
+        '<div style="font-size:12px;color:var(--gray);margin-bottom:14px;">هتوصل كإشعار جوه الموقع لكل العملاء المسجلين دخول، وكبانر في لوحة تحكم كل التجار.</div>' +
+        '<input id="bcTitle" type="text" placeholder="عنوان الرسالة" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;box-sizing:border-box;">' +
+        '<textarea id="bcBody" placeholder="نص الرسالة (اختياري)" rows="4" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:10px;box-sizing:border-box;resize:vertical;"></textarea>' +
+        '<button id="bcSendBtn" onclick="sendAdminBroadcast()" style="width:100%;background:var(--primary);color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">📣 إرسال للجميع</button>' +
+      '</div>';
   } else if(tab === 'marriage') {
     loadAdminMarriage(page);
   } else if(tab === 'stats') {
