@@ -1428,13 +1428,13 @@ async function showShopsPage(subcategory, catId) {
   loadCatBanner(catId, subcategory);
 
   // جيب المعارض المعتمدة في هذا التصنيف — المثبّت أولاً ثم الأقدم فالأحدث
-  let traders = await sbFetch('GET', 'shop_traders?subcategory=eq.'+encodeURIComponent(subcategory)+'&status=eq.approved&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&order=created_at.asc') || [];
+  let traders = await sbFetch('GET', 'shop_traders?subcategory=eq.'+encodeURIComponent(subcategory)+'&status=eq.approved&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&order=created_at.asc') || [];
 
   // fallback: لو مفيش نتيجة بالمطابقة التامة، نجيب كل معارض القسم المعتمدة ونفلتر يدويًا
   // (بيمسك أي اختلاف بسيط في التخزين زي مسافات زيادة)
   if(!traders.length) {
     try {
-      const allApproved = await sbFetch('GET', 'shop_traders?status=eq.approved&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&order=created_at.desc&limit=500') || [];
+      const allApproved = await sbFetch('GET', 'shop_traders?status=eq.approved&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&order=created_at.desc&limit=500') || [];
       const norm = function(s){ return (s||'').replace(/\s+/g,' ').trim(); };
       const target = norm(subcategory);
       traders = allApproved.filter(function(t){ return norm(t.subcategory) === target; });
@@ -1522,7 +1522,7 @@ async function togglePinShop(traderId, pinVal, subcategory, catId) {
 // نقل معرض مكان لأعلى/لأسفل بين باقي المعارض (للأدمن)
 async function moveShopOrder(traderId, direction, subcategory, catId) {
   try {
-    let traders = await sbFetch('GET', 'shop_traders?subcategory=eq.'+encodeURIComponent(subcategory)+'&status=eq.approved&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&order=created_at.asc') || [];
+    let traders = await sbFetch('GET', 'shop_traders?subcategory=eq.'+encodeURIComponent(subcategory)+'&status=eq.approved&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&order=created_at.asc') || [];
     traders.sort(function(a,b){
       var pa = a.pin_order || 0, pb = b.pin_order || 0;
       if(pa !== pb) return pb - pa;
@@ -1590,7 +1590,7 @@ async function openShop(traderId) {
   page.innerHTML = '<div style="text-align:center;padding:60px;color:var(--gray);">⏳ جاري تحميل المعرض...</div>';
 
   const [traderArr, sections, products] = await Promise.all([
-    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1') || [],
+    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1') || [],
     sbFetch('GET', 'shop_sections?trader_id=eq.'+traderId+'&order=sort_order.asc') || [],
     sbFetch('GET', 'shop_products?trader_id=eq.'+traderId+'&order=created_at.desc') || [],
   ]);
@@ -1957,7 +1957,7 @@ async function doShopLoginForId(traderId, subcategory) {
 }
 
 async function openShopOwnerPanel(traderId) {
-  var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1') || [];
+  var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1') || [];
   if(!rows.length) return;
   showShopDashboard(rows[0]);
 }
@@ -2029,13 +2029,13 @@ async function updateShopLogo(input, traderId, subcategory) {
   showToast('✅ تم تحديث بوستر المعرض!');
   var overlay = document.getElementById('shopDashOverlay');
   if(overlay) overlay.remove();
-  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
 }
 
 async function addShopGalleryImages(input, traderId) {
   if(!input.files.length) return;
   try {
-    var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1') || [];
+    var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1') || [];
     var trader = rows[0];
     if(!trader) return;
     var current = trader.gallery_images || [];
@@ -2055,7 +2055,7 @@ async function addShopGalleryImages(input, traderId) {
     showToast('✅ تم إضافة الصور');
     var overlay = document.getElementById('shopDashOverlay');
     if(overlay) overlay.remove();
-    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows2){ if(rows2&&rows2[0]) showShopDashboard(rows2[0]); });
+    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows2){ if(rows2&&rows2[0]) showShopDashboard(rows2[0]); });
   } catch(e) {
     showToast('⚠️ حصل خطأ — تأكد إنك شغّلت SQL عمود gallery_images', 'error');
     console.error('gallery add error:', e);
@@ -2064,7 +2064,7 @@ async function addShopGalleryImages(input, traderId) {
 
 async function removeShopGalleryImage(traderId, index) {
   try {
-    var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1') || [];
+    var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1') || [];
     var trader = rows[0];
     if(!trader) return;
     var current = trader.gallery_images || [];
@@ -2075,7 +2075,7 @@ async function removeShopGalleryImage(traderId, index) {
     showToast('✅ تم حذف الصورة');
     var overlay = document.getElementById('shopDashOverlay');
     if(overlay) overlay.remove();
-    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows2){ if(rows2&&rows2[0]) showShopDashboard(rows2[0]); });
+    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows2){ if(rows2&&rows2[0]) showShopDashboard(rows2[0]); });
   } catch(e) {
     showToast('⚠️ حصل خطأ في حذف الصورة', 'error');
     console.error('gallery remove error:', e);
@@ -2084,7 +2084,7 @@ async function removeShopGalleryImage(traderId, index) {
 
 // ===== تعديل بيانات المحل (لصاحب المعرض) =====
 async function showShopEditForm(traderId) {
-  var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1') || [];
+  var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1') || [];
   var trader = rows[0];
   if(!trader) return;
   var fb = (trader.social_links||[]).find(function(l){return l.type==='facebook';});
@@ -2162,7 +2162,7 @@ async function submitShopEdit(traderId) {
     if(editOverlay) editOverlay.remove();
     var dashOverlay = document.getElementById('shopDashOverlay');
     if(dashOverlay) dashOverlay.remove();
-    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
   } catch(e) {
     showToast('⚠️ حصل خطأ في الحفظ — جرب تاني', 'error');
     console.error('shop edit error:', e);
@@ -2241,7 +2241,7 @@ async function _doSubmitShopRegister(subcategory, catId) {
   if(!pass || pass.length < 6){ showToast('كلمة السر لازم تكون 6 أحرف على الأقل', 'error'); return; }
 
   // تحقق إن الموبايل مش مسجل قبل كده في نفس القسم
-  var existing = await sbFetch('GET', 'shop_traders?phone=eq.'+encodeURIComponent(phone)+'&subcategory=eq.'+encodeURIComponent(subcategory)+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1') || [];
+  var existing = await sbFetch('GET', 'shop_traders?phone=eq.'+encodeURIComponent(phone)+'&subcategory=eq.'+encodeURIComponent(subcategory)+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1') || [];
   if(existing.length){
     var exTrader = existing[0];
     if(confirm('الرقم ده عنده نشاط مسجل بالفعل في "' + subcategory + '" (' + (exTrader.shop_name||'') + ').\n\n' + (exTrader.status==='pending' ? 'النشاط لسه تحت المراجعة من الأدمن.' : 'النشاط معتمد وظاهر.') + '\n\nتحب تدخل على صفحتك؟')) {
@@ -2306,7 +2306,7 @@ async function _doSubmitShopRegister(subcategory, catId) {
 
   // دالة تسجيل بترجّع الصف المحفوظ فعليًا (return=representation)
   async function insertTrader(payload) {
-    var res = await fetch(SB_URL + '/rest/v1/shop_traders?select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available', {
+    var res = await fetch(SB_URL + '/rest/v1/shop_traders?select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2488,6 +2488,9 @@ async function showShopDashboard(trader) {
   try { dismissed = JSON.parse(localStorage.getItem('dismissed_broadcasts')||'[]'); } catch(e) {}
   broadcasts = broadcasts.filter(function(b){ return dismissed.indexOf(b.id) === -1; });
 
+  var lastSeenComments = trader.last_comments_seen_at || '1970-01-01';
+  var newComments = await sbFetch('GET', 'shop_comments?trader_id=eq.'+trader.id+'&created_at=gt.'+encodeURIComponent(lastSeenComments)+'&order=created_at.desc&limit=10').catch(function(){return [];}) || [];
+
   var totalProducts = products.length;
   var outOfStockCount = products.filter(function(p){ return p.stock === 0 || p.stock === '0'; }).length;
 
@@ -2510,6 +2513,21 @@ async function showShopDashboard(trader) {
         '<button onclick="dismissBroadcast(\'' + b.id + '\',this)" style="background:none;border:none;color:#92400e;font-size:16px;cursor:pointer;flex-shrink:0;">×</button>' +
       '</div>';
     }).join('') : '') +
+    (newComments.length ?
+      '<div style="background:#eff6ff;border-bottom:1px solid #bfdbfe;padding:12px 16px;">' +
+        '<div style="font-size:13px;font-weight:900;color:#1e40af;margin-bottom:8px;">💬 ' + newComments.length + ' كومنت/تقييم جديد على محلك</div>' +
+        newComments.map(function(c){
+          var d = ''; try { d = new Date(c.created_at).toLocaleDateString('ar-EG',{day:'numeric',month:'short'}); } catch(e){}
+          return '<div style="background:white;border-radius:8px;padding:8px 10px;margin-bottom:6px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">' +
+              '<span style="font-size:12px;font-weight:800;color:#1e3a8a;">' + escapeHtml(c.author_name||'زائر') + (c.rating ? ' ' + '⭐'.repeat(c.rating) : '') + '</span>' +
+              '<span style="font-size:10px;color:#94a3b8;">' + d + '</span>' +
+            '</div>' +
+            (c.body ? '<div style="font-size:12px;color:#334155;">' + escapeHtml(c.body) + '</div>' : '') +
+          '</div>';
+        }).join('') +
+      '</div>'
+    : '') +
     
     // بوستر المعرض مع زرار تغيير
     '<div style="position:relative;">' +
@@ -2634,6 +2652,11 @@ async function showShopDashboard(trader) {
       '</div>' +
     '</div>';
   document.body.appendChild(overlay);
+  if(newComments.length) {
+    var myPhone = localStorage.getItem('my_shop_phone_'+trader.id);
+    var myPassHash = localStorage.getItem('my_shop_pass_'+trader.id);
+    sbRPC('secure_ack_shop_comments', {p_phone: myPhone, p_password_hash: myPassHash, p_trader_id: trader.id}).catch(function(){});
+  }
 }
 
 function showAddSection(traderId) {
@@ -2646,7 +2669,7 @@ function showAddSection(traderId) {
     // refresh dashboard
     var overlay = document.getElementById('shopDashOverlay');
     if(overlay) overlay.remove();
-    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+    sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
   }).catch(function(e) {
     showToast('❌ حصل خطأ في إضافة القسم', 'error');
   });
@@ -2662,7 +2685,7 @@ async function deleteShopSection(sectionId, traderId) {
   showToast('تم حذف القسم');
   var overlay = document.getElementById('shopDashOverlay');
   if(overlay) overlay.remove();
-  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
 }
 
 function previewDashImg(input) {
@@ -2791,7 +2814,7 @@ async function submitShopProduct(traderId) {
   showToast('✅ تم إضافة المنتج!');
   var overlay = document.getElementById('shopDashOverlay');
   if(overlay) overlay.remove();
-  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
 }
 
 async function deleteShopProduct(productId, traderId) {
@@ -2804,7 +2827,7 @@ async function deleteShopProduct(productId, traderId) {
   showToast('تم حذف المنتج');
   var overlay = document.getElementById('shopDashOverlay');
   if(overlay) overlay.remove();
-  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
 }
 
 // ===== تعديل منتج (السعر / الكمية / الاسم / الحالة) بدون حذف =====
@@ -2905,7 +2928,7 @@ async function saveEditedProduct(productId, traderId) {
   var eo = document.getElementById('editProdOverlay'); if(eo) eo.remove();
   var overlay = document.getElementById('shopDashOverlay');
   if(overlay) overlay.remove();
-  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
 }
 
 // معاينة الصور الجديدة في تعديل المنتج
@@ -2946,7 +2969,7 @@ async function toggleProductActive(checkbox, traderId) {
   }
   var overlay = document.getElementById('shopDashOverlay');
   if(overlay) overlay.remove();
-  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
 }
 
 async function toggleProductOffer(pid, traderId, newState) {
@@ -2961,7 +2984,7 @@ async function toggleProductOffer(pid, traderId, newState) {
   }
   var overlay = document.getElementById('shopDashOverlay');
   if(overlay) overlay.remove();
-  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
+  sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1').then(function(rows){ if(rows&&rows[0]) showShopDashboard(rows[0]); });
 }
 
 // ===== سحب وإفلات لترتيب الأقسام =====
@@ -3025,7 +3048,7 @@ async function openShopSection(sectionId, sectionName) {
 }
 
 async function shareShop(traderId) {
-  var traderArr = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1') || [];
+  var traderArr = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1') || [];
   var trader = traderArr && traderArr[0];
   if(!trader) { showToast('حصل خطأ، حاول تاني', 'error'); return; }
 
@@ -3058,7 +3081,7 @@ async function shareShopProduct(productId) {
   var prodArr = await sbFetch('GET', 'shop_products?id=eq.'+productId+'&limit=1') || [];
   var p = prodArr && prodArr[0];
   if(!p) { showToast('حصل خطأ، حاول تاني', 'error'); return; }
-  var traderArr = await sbFetch('GET', 'shop_traders?id=eq.'+p.trader_id+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1') || [];
+  var traderArr = await sbFetch('GET', 'shop_traders?id=eq.'+p.trader_id+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1') || [];
   var trader = traderArr && traderArr[0];
 
   var link = SHARE_FN_BASE + '/product/' + encodeURIComponent(productId);
@@ -3091,7 +3114,7 @@ async function openShopProduct(productId) {
   var p = prodArr && prodArr[0];
   if(!p) return;
 
-  var traderArr = await sbFetch('GET', 'shop_traders?id=eq.'+p.trader_id+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1') || [];
+  var traderArr = await sbFetch('GET', 'shop_traders?id=eq.'+p.trader_id+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1') || [];
   var trader = traderArr && traderArr[0];
 
   var imgs = (p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []);
@@ -5999,7 +6022,7 @@ async function loadAdminShops(cont) {
   cont.innerHTML = '<div style="text-align:center;padding:30px;">⏳ جاري التحميل...</div>';
   var traders = [];
   try {
-    traders = await sbFetch('GET', 'shop_traders?select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&order=created_at.desc&limit=200') || [];
+    traders = await sbFetch('GET', 'shop_traders?select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&order=created_at.desc&limit=200') || [];
   } catch(e) {
     console.error('load admin shops error:', e);
     cont.innerHTML = '<div style="text-align:center;padding:30px;color:#dc2626;">⚠️ حصل خطأ في تحميل المعارض<br><span style="font-size:11px;">' + (e.message||'') + '</span></div>';
