@@ -2589,7 +2589,7 @@ async function showShopDashboard(trader) {
         '<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:6px;">📱 وسائل التواصل (واتساب / فيسبوك / تيك توك / موقع...)</div>' +
         '<div id="dp_links_wrap">' + renderLinkRow() + '</div>' +
         '<button onclick="addLinkRow()" style="background:#f3f4f6;color:#64748b;border:none;padding:7px 14px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;cursor:pointer;margin-bottom:10px;">+ أضف وسيلة تواصل</button>' +
-        '<button onclick="submitShopProduct(\'' + trader.id + '\')" style="width:100%;background:#16a34a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ أضف المنتج</button>' +
+        '<button id="dpSubmitBtn" onclick="submitShopProduct(\'' + trader.id + '\')" style="width:100%;background:#16a34a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">✅ أضف المنتج</button>' +
       '</div>' +
       // المنتجات الحالية
       '<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);">' +
@@ -2710,6 +2710,8 @@ function addLinkRow() {
 }
 
 async function submitShopProduct(traderId) {
+  var btn = document.getElementById('dpSubmitBtn');
+  if(btn && btn.disabled) return; // منع الضغط مرتين وهي لسه شغالة
   var title = document.getElementById('dp_title').value.trim();
   var price = document.getElementById('dp_price').value.trim();
   var stock = document.getElementById('dp_stock').value.trim();
@@ -2722,6 +2724,8 @@ async function submitShopProduct(traderId) {
   if(!title){ showToast('اكتب اسم المنتج', 'error'); return; }
   if(price && parseFloat(price) < 0){ showToast('السعر مينفعش يكون رقم سالب', 'error'); return; }
   if(stock && parseInt(stock) < 0){ showToast('الكمية مينفعش تكون رقم سالب', 'error'); return; }
+
+  if(btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.style.cursor = 'not-allowed'; btn.textContent = '⏳ جاري الحفظ...'; }
 
   // جمع وسائل التواصل
   var links = [];
@@ -2741,12 +2745,14 @@ async function submitShopProduct(traderId) {
   var imageUrls = [];
   if(imgFiles.length) {
     showToast('⏳ جاري رفع الصور...');
+    if(btn) btn.textContent = '⏳ جاري رفع الصور...';
     for(var j=0; j<imgFiles.length; j++) {
       var url = await uploadImage(imgFiles[j]);
       if(url) imageUrls.push(url);
     }
   }
 
+  if(btn) btn.textContent = '⏳ جاري الحفظ...';
   var myPhone = localStorage.getItem('my_shop_phone_'+traderId);
   var myPassHash = localStorage.getItem('my_shop_pass_'+traderId);
   try {
@@ -2763,6 +2769,7 @@ async function submitShopProduct(traderId) {
     });
   } catch(e) {
     showToast('❌ حصل خطأ في إضافة المنتج', 'error');
+    if(btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; btn.textContent = '✅ أضف المنتج'; }
     return;
   }
 
