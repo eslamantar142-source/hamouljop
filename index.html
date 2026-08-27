@@ -4191,19 +4191,48 @@ function updateNavAddVisibility() {
 }
 
 // ============ نظام الإشعارات ============
+function getMyTraderSessions() {
+  var sessions = [];
+  try {
+    for(var i=0; i<localStorage.length; i++) {
+      var key = localStorage.key(i);
+      var m = key && key.match(/^my_shop_phone_(.+)$/);
+      if(m) {
+        var traderId = m[1];
+        var phone = localStorage.getItem(key);
+        var passHash = localStorage.getItem('my_shop_pass_'+traderId);
+        if(phone && passHash) sessions.push({traderId: traderId, phone: phone, passHash: passHash});
+      }
+    }
+  } catch(e) {}
+  return sessions;
+}
+
+async function getTraderNewCommentsCount(traderId) {
+  try {
+    var rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=last_comments_seen_at&limit=1');
+    var lastSeen = (rows && rows[0] && rows[0].last_comments_seen_at) || '1970-01-01';
+    var comments = await sbFetch('GET', 'shop_comments?trader_id=eq.'+traderId+'&created_at=gt.'+encodeURIComponent(lastSeen)+'&select=id');
+    return (comments || []).length;
+  } catch(e) { return 0; }
+}
+
 async function refreshNotifBadge() {
   const btn = document.getElementById('notifBellBtn');
   const badge = document.getElementById('notifBadge');
   const u = getCurrentUser();
-  if(!u || !u.token) { if(btn) btn.style.display = 'none'; return; }
+  const traderSessions = getMyTraderSessions();
+  if(!(u && u.token) && !traderSessions.length) { if(btn) btn.style.display = 'none'; return; }
   if(btn) btn.style.display = 'flex';
+  let count = 0;
   try {
-    const count = await sbRPC('get_unread_notifications_count', {p_token: u.token});
-    if(badge) {
-      if(count > 0) { badge.style.display = 'flex'; badge.textContent = count > 99 ? '99+' : count; }
-      else { badge.style.display = 'none'; }
-    }
+    if(u && u.token) count += await sbRPC('get_unread_notifications_count', {p_token: u.token});
+    for(const s of traderSessions) count += await getTraderNewCommentsCount(s.traderId);
   } catch(e) {}
+  if(badge) {
+    if(count > 0) { badge.style.display = 'flex'; badge.textContent = count > 99 ? '99+' : count; }
+    else { badge.style.display = 'none'; }
+  }
 }
 
 if(!window._notifPollStarted) {
@@ -4213,7 +4242,8 @@ if(!window._notifPollStarted) {
 
 async function openNotificationsPanel() {
   const u = getCurrentUser();
-  if(!u || !u.token) { showToast('سجّل دخولك الأول', 'error'); return; }
+  const traderSessions = getMyTraderSessions();
+  if(!(u && u.token) && !traderSessions.length) { showToast('سجّل دخولك الأول', 'error'); return; }
   let existing = document.getElementById('notifModal');
   if(existing) existing.remove();
   const modal = document.createElement('div');
@@ -4241,17 +4271,40 @@ async function loadNotificationsList() {
   const list = document.getElementById('notifList');
   if(!list) return;
   const u = getCurrentUser();
+  const traderSessions = getMyTraderSessions();
   try {
-    const notifs = await sbRPC('get_my_notifications', {p_token: u.token});
-    sbRPC('ack_broadcasts', {p_token: u.token}).then(refreshNotifBadge).catch(()=>{});
-    if(!notifs || !notifs.length) {
+    let notifs = [];
+    if(u && u.token) {
+      notifs = await sbRPC('get_my_notifications', {p_token: u.token});
+      sbRPC('ack_broadcasts', {p_token: u.token}).then(refreshNotifBadge).catch(()=>{});
+    }
+    let traderItems = [];
+    for(const s of traderSessions) {
+      try {
+        const rows = await sbFetch('GET', 'shop_traders?id=eq.'+s.traderId+'&select=shop_name,last_comments_seen_at&limit=1');
+        const trader = rows && rows[0]; if(!trader) continue;
+        const lastSeen = trader.last_comments_seen_at || '1970-01-01';
+        const comments = await sbFetch('GET', 'shop_comments?trader_id=eq.'+s.traderId+'&created_at=gt.'+encodeURIComponent(lastSeen)+'&order=created_at.desc&limit=10');
+        (comments||[]).forEach(c => traderItems.push({
+          id: c.id, type: 'shop_comment',
+          title: '💬 كومنت جديد على ' + trader.shop_name,
+          body: (c.author_name||'زائر') + (c.rating ? ' ' + '⭐'.repeat(c.rating) : '') + (c.body ? ': ' + c.body : ''),
+          created_at: c.created_at, is_read: false, _traderId: s.traderId
+        }));
+      } catch(e) {}
+    }
+    const all = (notifs||[]).concat(traderItems).sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+    if(!all.length) {
       list.innerHTML = '<div style="text-align:center;color:#999;padding:30px;">مفيش إشعارات لسه</div>';
       return;
     }
-    list.innerHTML = notifs.map(n => {
+    list.innerHTML = all.map(n => {
       let d = '';
       try { d = new Date(n.created_at).toLocaleDateString('ar-EG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); } catch(e){}
-      return `<div onclick="handleNotifClick('${n.id}','${n.link_type||''}','${n.link_id||''}')"
+      const clickArg = n.type === 'shop_comment'
+        ? `handleTraderNotifClick('${n._traderId}')`
+        : `handleNotifClick('${n.id}','${n.link_type||''}','${n.link_id||''}')`;
+      return `<div onclick="${clickArg}"
                 style="padding:12px;border-radius:10px;margin-bottom:6px;cursor:pointer;background:${n.is_read?'#fff':'#f0fdfa'};border:1px solid ${n.is_read?'#eee':'#99f6e4'};">
         <div style="font-weight:800;font-size:13px;color:#111;margin-bottom:3px;">${!n.is_read?'🟢 ':''}${escapeHtml(n.title)}</div>
         <div style="font-size:12.5px;color:#444;line-height:1.6;">${escapeHtml(n.body||'')}</div>
@@ -4261,6 +4314,19 @@ async function loadNotificationsList() {
   } catch(e) {
     list.innerHTML = '<div style="text-align:center;color:#999;padding:30px;">تعذّر تحميل الإشعارات</div>';
   }
+}
+
+async function handleTraderNotifClick(traderId) {
+  const modal = document.getElementById('notifModal');
+  if(modal) modal.remove();
+  const phone = localStorage.getItem('my_shop_phone_'+traderId);
+  const passHash = localStorage.getItem('my_shop_pass_'+traderId);
+  try { await sbRPC('secure_ack_shop_comments', {p_phone: phone, p_password_hash: passHash, p_trader_id: traderId}); } catch(e) {}
+  refreshNotifBadge();
+  try {
+    const rows = await sbFetch('GET', 'shop_traders?id=eq.'+traderId+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available,last_comments_seen_at&limit=1');
+    if(rows && rows[0]) showShopDashboard(rows[0]);
+  } catch(e) {}
 }
 
 async function handleNotifClick(notifId, linkType, linkId) {
