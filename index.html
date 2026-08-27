@@ -291,6 +291,9 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
     </div>
     <div class="header-icons">
       <button class="header-icon" onclick="showSearchPage()" title="بحث">🔍</button>
+      <button class="header-icon" onclick="openNotificationsPanel()" title="الإشعارات" id="notifBellBtn" style="display:none;position:relative;">
+        🔔<span id="notifBadge" style="display:none;position:absolute;top:-4px;left:-4px;background:#ef4444;color:#fff;font-size:10px;font-weight:900;min-width:16px;height:16px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 3px;">0</span>
+      </button>
       <button class="header-icon" onclick="toggleDarkMode()" title="وضع ليلي" id="darkModeBtn">🌙</button>
       <button class="header-icon" onclick="installPWA()" title="تثبيت" id="installBtn" style="display:none;">📲</button>
       <button class="header-icon" onclick="openAdmin()" title="مشرف" id="adminGearBtn" style="display:none;">⚙️</button>
@@ -3109,17 +3112,19 @@ async function openShopProduct(productId) {
       (p.description ? '<div style="font-size:14px;color:#374151;line-height:1.8;margin-bottom:12px;">' + escapeHtml(p.description) + '</div>' : '') +
       linksHtml +
       (trader ?
-        '<div style="background:#f8fafc;border-radius:12px;padding:12px;margin-top:14px;display:flex;align-items:center;gap:10px;">' +
-          '<div style="font-size:24px;">🏪</div>' +
-          '<div style="flex:1;">' +
-            '<div style="font-size:13px;font-weight:900;">' + escapeHtml(trader.shop_name) + '</div>' +
-            '<div style="font-size:11px;color:#64748b;">' + trader.subcategory + '</div>' +
-            (trader.address ? '<div style="font-size:11px;color:#64748b;margin-top:2px;">📍 ' + escapeHtml(trader.address) + '</div>' : '') +
+        '<div style="background:#f8fafc;border-radius:12px;padding:12px;margin-top:14px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<div style="font-size:24px;">🏪</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:13px;font-weight:900;">' + escapeHtml(trader.shop_name) + '</div>' +
+              '<div style="font-size:11px;color:#64748b;">' + trader.subcategory + '</div>' +
+              (trader.address ? '<div style="font-size:11px;color:#64748b;margin-top:2px;line-height:1.6;">📍 ' + escapeHtml(trader.address) + '</div>' : '') +
+            '</div>' +
           '</div>' +
           (function(){
             var waPhone = '20'+(trader.phone.charAt(0)==='0'?trader.phone.slice(1):trader.phone);
             var waMsg = 'مرحباً، أنا من دليل الحامول 🛍️%0Aعايز أستفسر عن: *'+p.title+'*'+(p.price?'%0Aالسعر المعروض: '+parseFloat(p.price).toLocaleString()+' جنيه':'')+'%0Aمن معرض: '+trader.shop_name;
-            return '<a href="https://wa.me/'+waPhone+'?text='+waMsg+'" target="_blank" style="display:block;width:100%;background:#25D366;color:white;padding:13px;border-radius:12px;text-align:center;text-decoration:none;font-size:14px;font-weight:900;margin-top:10px;">💬 تواصل واتساب بشأن هذا المنتج</a>';
+            return '<a href="https://wa.me/'+waPhone+'?text='+waMsg+'" target="_blank" style="display:block;width:100%;background:#25D366;color:white;padding:13px;border-radius:12px;text-align:center;text-decoration:none;font-size:14px;font-weight:900;margin-top:10px;box-sizing:border-box;">💬 تواصل واتساب بشأن هذا المنتج</a>';
           })() +
         '</div>'
       : '') +
@@ -4117,6 +4122,99 @@ function updateNavAddVisibility() {
   try {
     var el = document.querySelector('.nav-add');
     if(el) el.style.display = getCurrentUser() ? 'none' : 'flex';
+  } catch(e) {}
+  refreshNotifBadge();
+}
+
+// ============ نظام الإشعارات ============
+async function refreshNotifBadge() {
+  const btn = document.getElementById('notifBellBtn');
+  const badge = document.getElementById('notifBadge');
+  const u = getCurrentUser();
+  if(!u || !u.token) { if(btn) btn.style.display = 'none'; return; }
+  if(btn) btn.style.display = 'flex';
+  try {
+    const count = await sbRPC('get_unread_notifications_count', {p_token: u.token});
+    if(badge) {
+      if(count > 0) { badge.style.display = 'flex'; badge.textContent = count > 99 ? '99+' : count; }
+      else { badge.style.display = 'none'; }
+    }
+  } catch(e) {}
+}
+
+if(!window._notifPollStarted) {
+  window._notifPollStarted = true;
+  setInterval(refreshNotifBadge, 30000);
+}
+
+async function openNotificationsPanel() {
+  const u = getCurrentUser();
+  if(!u || !u.token) { showToast('سجّل دخولك الأول', 'error'); return; }
+  let existing = document.getElementById('notifModal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'notifModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#fff;width:100%;max-width:480px;max-height:80vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #eee;">
+        <strong style="font-size:16px;">🔔 الإشعارات</strong>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button onclick="markAllNotifsRead()" style="background:none;border:none;color:#0f766e;font-size:12px;font-weight:700;cursor:pointer;">تعليم الكل كمقروء</button>
+          <button onclick="document.getElementById('notifModal').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#666;">×</button>
+        </div>
+      </div>
+      <div id="notifList" style="overflow-y:auto;padding:8px;">
+        <div style="text-align:center;color:#999;padding:30px;">جاري التحميل...</div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target === modal) modal.remove(); });
+  loadNotificationsList();
+}
+
+async function loadNotificationsList() {
+  const list = document.getElementById('notifList');
+  if(!list) return;
+  const u = getCurrentUser();
+  try {
+    const notifs = await sbRPC('get_my_notifications', {p_token: u.token});
+    if(!notifs || !notifs.length) {
+      list.innerHTML = '<div style="text-align:center;color:#999;padding:30px;">مفيش إشعارات لسه</div>';
+      return;
+    }
+    list.innerHTML = notifs.map(n => {
+      let d = '';
+      try { d = new Date(n.created_at).toLocaleDateString('ar-EG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); } catch(e){}
+      return `<div onclick="handleNotifClick('${n.id}','${n.link_type||''}','${n.link_id||''}')"
+                style="padding:12px;border-radius:10px;margin-bottom:6px;cursor:pointer;background:${n.is_read?'#fff':'#f0fdfa'};border:1px solid ${n.is_read?'#eee':'#99f6e4'};">
+        <div style="font-weight:800;font-size:13px;color:#111;margin-bottom:3px;">${!n.is_read?'🟢 ':''}${escapeHtml(n.title)}</div>
+        <div style="font-size:12.5px;color:#444;line-height:1.6;">${escapeHtml(n.body||'')}</div>
+        <div style="font-size:10px;color:#999;margin-top:4px;">${d}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;color:#999;padding:30px;">تعذّر تحميل الإشعارات</div>';
+  }
+}
+
+async function handleNotifClick(notifId, linkType, linkId) {
+  const u = getCurrentUser();
+  try { await sbRPC('mark_notification_read', {p_token: u.token, p_notification_id: notifId}); } catch(e) {}
+  refreshNotifBadge();
+  const modal = document.getElementById('notifModal');
+  if(modal) modal.remove();
+  if(linkType === 'ad' && linkId) { try { openAdDetails(linkId); } catch(e) {} }
+  else if(linkType === 'post' && linkId) { try { loadPostDetail(linkId); } catch(e) {} }
+}
+
+async function markAllNotifsRead() {
+  const u = getCurrentUser();
+  if(!u || !u.token) return;
+  try {
+    await sbRPC('mark_all_notifications_read', {p_token: u.token});
+    refreshNotifBadge();
+    loadNotificationsList();
   } catch(e) {}
 }
 
@@ -11476,7 +11574,7 @@ async function submitComment(postId, parentId) {
   const text = document.getElementById(inputId)?.value.trim();
   if(!text) { showToast('اكتب تعليقك','error'); return; }
   try {
-    const body = {post_id:postId, author_name:curUser.name, author_device:getDeviceId(), content:text};
+    const body = {post_id:postId, author_name:curUser.name, author_device:getDeviceId(), user_id:curUser.id, content:text};
     if(parentId) body.parent_id = parentId;
     await sbFetch('POST', 'community_comments', body);
     // تحديث عدد التعليقات
