@@ -1960,7 +1960,7 @@ function showShopRegister(subcategory, catId) {
       '<div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:16px;">بياناتك بتترّاجع من الأدمن قبل ما تظهر للناس</div>' +
       '<input id="sr_name" type="text" placeholder="اسم النشاط أو الجهة" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="sr_phone" type="tel" placeholder="رقم موبايلك" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
-      '<input id="sr_pass" type="password" placeholder="كلمة سر للدخول لصفحتك" autocomplete="new-password" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="sr_pass" type="password" placeholder="كلمة سر للدخول لصفحتك (6 أحرف/أرقام على الأقل)" autocomplete="new-password" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<textarea id="sr_desc" placeholder="وصف مختصر عن نشاطك (اختياري)" rows="2" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;"></textarea>' +
       '<input id="sr_address" type="text" placeholder="العنوان (مثال: شارع الشهداء، الحامول)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="sr_mapurl" type="url" placeholder="رابط الخريطة من Google Maps (اختياري)" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
@@ -2225,7 +2225,7 @@ async function _doSubmitShopRegister(subcategory, catId) {
   var desc = document.getElementById('sr_desc').value.trim();
   if(!name){ showToast('اكتب اسم النشاط', 'error'); return; }
   if(!phone || !/^01[0-9]{9}$/.test(phone)){ showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
-  if(!pass || pass.length < 4){ showToast('كلمة السر لازم تكون 4 أحرف على الأقل', 'error'); return; }
+  if(!pass || pass.length < 6){ showToast('كلمة السر لازم تكون 6 أحرف على الأقل', 'error'); return; }
 
   // تحقق إن الموبايل مش مسجل قبل كده في نفس القسم
   var existing = await sbFetch('GET', 'shop_traders?phone=eq.'+encodeURIComponent(phone)+'&subcategory=eq.'+encodeURIComponent(subcategory)+'&select=id,category,subcategory,shop_name,phone,logo_url,description,status,created_at,address,map_url,social_links,pin_order,sort_order,gallery_images,opening_hours,delivery_available&limit=1') || [];
@@ -2428,7 +2428,7 @@ function showChangeShopPasswordForm(traderId) {
       '<div style="font-size:32px;margin-bottom:8px;">🔒</div>' +
       '<div style="font-size:15px;font-weight:900;margin-bottom:14px;">غيّر كلمة السر</div>' +
       '<input id="cp_old" type="password" placeholder="كلمة السر الحالية" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:8px;text-align:center;">' +
-      '<input id="cp_new" type="password" placeholder="كلمة السر الجديدة (4 حروف/أرقام على الأقل)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:8px;text-align:center;">' +
+      '<input id="cp_new" type="password" placeholder="كلمة السر الجديدة (6 حروف/أرقام على الأقل)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:8px;text-align:center;">' +
       '<input id="cp_confirm" type="password" placeholder="أكّد كلمة السر الجديدة" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;margin-bottom:14px;text-align:center;">' +
       '<div style="display:flex;gap:8px;">' +
         '<button onclick="submitChangeShopPassword(\''+traderId+'\')" style="flex:1;background:#7c3aed;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">حفظ</button>' +
@@ -2443,7 +2443,7 @@ async function submitChangeShopPassword(traderId) {
   var newPass = document.getElementById('cp_new').value.trim();
   var confirmPass = document.getElementById('cp_confirm').value.trim();
   if(!oldPass || !newPass || !confirmPass){ showToast('املأ كل الحقول', 'error'); return; }
-  if(newPass.length < 4){ showToast('كلمة السر الجديدة لازم تكون 4 حروف/أرقام على الأقل', 'error'); return; }
+  if(newPass.length < 6){ showToast('كلمة السر الجديدة لازم تكون 6 حروف/أرقام على الأقل', 'error'); return; }
   if(newPass !== confirmPass){ showToast('كلمة السر الجديدة غير متطابقة', 'error'); return; }
   var phone = localStorage.getItem('my_shop_phone_'+traderId);
   try {
@@ -9493,7 +9493,7 @@ function showAddTraderDialog() {
       '<input id="ta_prod" type="text" placeholder="اسم المنتج (مثال: فراخ بلدي، بلطي، طماطم...)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="ta_name" type="text" placeholder="اسم التاجر" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="ta_phone" type="tel" placeholder="رقم الموبايل" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;" dir="ltr">' +
-      '<input id="ta_pass" type="password" placeholder="كلمة سر التاجر (هو بس يعرفها)" autocomplete="new-password" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="ta_pass" type="password" placeholder="كلمة سر التاجر (6 أحرف/أرقام على الأقل)" autocomplete="new-password" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="ta_addr" type="text" placeholder="العنوان / الموقع" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="ta_price" type="number" placeholder="السعر الحالي للكيلو (جنيه)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:14px;">' +
       '<div style="display:flex;gap:8px;">' +
@@ -9516,7 +9516,7 @@ async function submitAddTrader() {
   if(!prod){ showToast('اكتب اسم المنتج', 'error'); return; }
   if(!name){ showToast('اكتب اسم التاجر', 'error'); return; }
   if(!phone || !/^01[0-9]{9}$/.test(phone)){ showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
-  if(!pass){ showToast('اكتب كلمة سر التاجر', 'error'); return; }
+  if(!pass || pass.length < 6){ showToast('كلمة سر التاجر لازم تكون 6 أحرف/أرقام على الأقل', 'error'); return; }
   if(!price || isNaN(parseFloat(price))){ showToast('اكتب السعر', 'error'); return; }
   try {
     const passHash = await hashPass(pass);
@@ -9588,7 +9588,7 @@ function showTraderRegisterDialog() {
       '<input id="tr_prod" type="text" placeholder="اسم المنتج (مثال: فراخ بلدي، بلطي، طماطم...)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="tr_name" type="text" placeholder="اسمك" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="tr_phone" type="tel" placeholder="رقم موبايلك" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;" dir="ltr">' +
-      '<input id="tr_pass" type="password" placeholder="اختار كلمة سر (هتستخدمها بعدين تدخل بيها)" autocomplete="new-password" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="tr_pass" type="password" placeholder="اختار كلمة سر (6 أحرف/أرقام على الأقل)" autocomplete="new-password" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="tr_addr" type="text" placeholder="العنوان / الموقع" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="tr_price" type="number" placeholder="السعر الحالي للكيلو (جنيه)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:14px;">' +
       '<div style="display:flex;gap:8px;">' +
@@ -9611,7 +9611,7 @@ async function submitTraderRegister() {
   if(!prod){ showToast('اكتب اسم المنتج', 'error'); return; }
   if(!name){ showToast('اكتب اسمك', 'error'); return; }
   if(!phone || !/^01[0-9]{9}$/.test(phone)){ showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
-  if(!pass || pass.length < 4){ showToast('كلمة السر لازم تكون 4 حروف/أرقام على الأقل', 'error'); return; }
+  if(!pass || pass.length < 6){ showToast('كلمة السر لازم تكون 6 حروف/أرقام على الأقل', 'error'); return; }
   if(!price || isNaN(parseFloat(price))){ showToast('اكتب السعر', 'error'); return; }
   try {
     const passHash = await hashPass(pass);
