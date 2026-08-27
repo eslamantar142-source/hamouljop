@@ -745,6 +745,18 @@ function renderAcctStatusBox() {
 }
 
 // CATEGORIES DEFINITION
+// ===== مجتمع المدرسين: قائمة المواد الدراسية منظمة بالمرحلة والشعبة =====
+const TEACHER_SUBJECT_GROUPS = [
+  { id:'primary', label:'الابتدائية', icon:'🟢', subjects:['لغة عربية','رياضيات','لغة إنجليزية','دراسات اجتماعية','علوم','تربية دينية','ICT (تكنولوجيا المعلومات)','تربية فنية / موسيقى','مدرس متابعة / تأسيس عام'] },
+  { id:'prep', label:'الإعدادية', icon:'🟡', subjects:['لغة عربية','رياضيات (جبر وهندسة)','لغة إنجليزية','علوم','دراسات اجتماعية (تاريخ وجغرافيا)','تربية دينية','حاسب آلي وتكنولوجيا','تربية فنية','لغة أجنبية ثانية (فرنساوي/ألماني)'] },
+  { id:'sec_shared', label:'الثانوي — مشترك (كل الشعب)', icon:'🔵', subjects:['لغة عربية','لغة إنجليزية','لغة ثانية (فرنساوي/ألماني/إيطالي/إسباني)','تربية دينية'] },
+  { id:'sec_science', label:'الثانوي — علمي علوم', icon:'🔵', subjects:['أحياء','كيمياء','فيزياء'] },
+  { id:'sec_math', label:'الثانوي — علمي رياضة', icon:'🔵', subjects:['رياضيات بحتة (تفاضل وتكامل، جبر وهندسة فراغية)','رياضيات تطبيقية (استاتيكا وديناميكا)','فيزياء','كيمياء'] },
+  { id:'sec_literary', label:'الثانوي — أدبي', icon:'🔵', subjects:['تاريخ','جغرافيا','علم نفس واجتماع','فلسفة ومنطق'] },
+];
+// أنواع تانية غير المواد الدراسية (تفضل زي ما هي، مش جزء من نظام اختيار المواد)
+const TEACHER_OTHER_TYPES = ['سنتر تعليمي','روضة وحضانة','كورسات لغات','كورسات كمبيوتر','دروس برمجة','تأهيل وتدريب مهني','فصل دراسي خاص','دروس أونلاين','تعليم ذوي الاحتياجات الخاصة','مطلوب مدرس','أخرى'];
+
 const CATEGORIES = [
   { id:'jobs', name:'وظائف', icon:'💼', color:'#e8f5ee', subs:[], children: [
     { id:'jobs_vacancy', name:'وظيفة شاغرة', icon:'🏢', color:'#e8f5ee', subs:[
@@ -777,7 +789,10 @@ const CATEGORIES = [
   ]},
   { id:'online',     name:'البيع أونلاين',      icon:'🛍️', color:'#ede9fe', subs:['ملابس حريمي','ملابس رجالي','ملابس أطفال','أحذية وشنط','مستحضرات تجميل وعناية','عطور','إكسسوارات وهدايا','موبايلات وإلكترونيات','سماعات وإكسسوار تقني','ساعات','أدوات منزلية','مفروشات وديكور','ألعاب أطفال','كتب ومستلزمات مدرسية','أغذية وحلويات هوم ميد','مخبوزات وكيك','ألبان وأجبان بلدي (لبن، قشطة، جبنة)','لحوم ومجمدات','بيع طيور وبط وفراخ','أنابيب بوتاجاز','عسل ومنتجات طبيعية','مكملات غذائية','أدوات رياضية','أدوات حرف يدوية','نباتات وبذور','حيوانات أليفة ومستلزماتها','أخرى'] },
   { id:'doctors',    name:'أطباء',              icon:'🩺', color:'#fee2e2', subs:['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','عام'] },
-  { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:['رياضيات','علوم','لغة عربية','لغة إنجليزية','فيزياء','كيمياء','أحياء','تاريخ وجغرافيا','تربية دينية','تحفيظ قرآن','فلسفة ومنطق','علم نفس واجتماع','محاسبة واقتصاد','حاسب آلي','موسيقى ورسم','مواد ابتدائي','مواد إعدادي','مواد ثانوي','لغة فرنسية','لغة ألمانية','لغة إيطالية أو إسبانية','سنتر تعليمي','روضة وحضانة','كورسات لغات','كورسات كمبيوتر','تأهيل وتدريب مهني','فصل دراسي خاص','دروس أونلاين','تعليم ذوي الاحتياجات الخاصة','مطلوب مدرس','أخرى'] },
+  { id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:[], children: [
+    ...TEACHER_SUBJECT_GROUPS.map(g => ({ id:'th_'+g.id, name:g.label, icon:g.icon, color:'#ede9fe', subs: g.subjects.map(s=>({name:s, icon:g.icon})) })),
+    { id:'th_other', name:'أنواع تانية', icon:'🏫', color:'#ede9fe', subs: TEACHER_OTHER_TYPES.map(s=>({name:s, icon:'🏫'})) },
+  ] },
   { id:'realestate', name:'عقارات', icon:'🏠', color:'#dbeafe', subs:[], children: [
     { id:'re_rent', name:'إيجار', icon:'🔑', color:'#dbeafe', subs:[
       {name:'شقق للإيجار', icon:'🏠'},
@@ -3687,6 +3702,14 @@ function restoreDynState(state) {
     if(state.sub) showShopsPage(state.sub, state.catId || getShopCatId(state.sub));
   } else if(state.type === 'teacherSub') {
     if(state.sub) showTeacherAds(state.sub);
+  } else if(state.type === 'teacherStage') {
+    if(state.stageId) showTeacherStage(state.stageId);
+  } else if(state.type === 'teacherSecondary') {
+    showTeacherSecondary();
+  } else if(state.type === 'teacherOtherTypes') {
+    showTeacherOtherTypes();
+  } else if(state.type === 'teachers_hub') {
+    showTeachersHub();
   } else {
     document.getElementById('dynamicPage').classList.remove('active');
     document.body.style.overflow = '';
@@ -4497,6 +4520,47 @@ function updateFSub() {
   const sel = document.getElementById('fSub');
   if(!cat) { wrap.style.display = 'none'; return; }
 
+  // ===== مجتمع المدرسين: واجهة خاصة لاختيار أكتر من مادة =====
+  if(catId === 'teachers_hub') {
+    wrap.style.display = 'block';
+    document.getElementById('fSubLabel').textContent = 'نوع الإعلان';
+    let otherOptsHtml = '<option value="">-- مدرّس مادة (اختار من القايمة تحت) --</option>' + TEACHER_OTHER_TYPES.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+    sel.innerHTML = otherOptsHtml;
+    sel.onchange = function() {
+      const picker = document.getElementById('teacherSubjectPicker');
+      if(picker) picker.style.display = sel.value ? 'none' : 'block';
+      updateTitlePlaceholder(); updateDescPlaceholder();
+    };
+    let existingPicker = document.getElementById('teacherSubjectPicker');
+    if(!existingPicker) {
+      existingPicker = document.createElement('div');
+      existingPicker.id = 'teacherSubjectPicker';
+      existingPicker.style.marginTop = '10px';
+      wrap.appendChild(existingPicker);
+    }
+    existingPicker.style.display = 'block';
+    existingPicker.innerHTML = '<div style="font-size:12px;color:var(--gray);margin-bottom:8px;">✅ اختار كل المواد اللي بتدرّسها (تقدر تختار أكتر من واحدة):</div>' +
+      TEACHER_SUBJECT_GROUPS.map(g => `
+        <div style="margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:900;color:#5b21b6;margin-bottom:6px;">${g.icon} ${g.label}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            ${g.subjects.map((s,i)=>`
+            <label style="display:flex;align-items:center;gap:4px;background:#f5f3ff;border:1px solid #ede9fe;border-radius:20px;padding:5px 10px;font-size:11px;cursor:pointer;">
+              <input type="checkbox" class="teacherSubjChk" value="${s}" style="margin:0;">
+              <span>${s}</span>
+            </label>`).join('')}
+          </div>
+        </div>`).join('');
+    updateDescPlaceholder();
+    updateJobsUI(); updateLostUI(); updateDeathsUI();
+    return;
+  } else {
+    const oldPicker = document.getElementById('teacherSubjectPicker');
+    if(oldPicker) oldPicker.remove();
+    document.getElementById('fSubLabel').textContent = 'التخصص';
+    sel.onchange = function() { updateTitlePlaceholder();updateDescPlaceholder();updateJobsUI();updateLostUI();updateDeathsUI(); };
+  }
+
   // جمع كل التخصصات: subs المباشرة + subs داخل children
   let allSubs = [];
   if(cat.subs && cat.subs.length > 0) {
@@ -5264,7 +5328,13 @@ async function submitNewAd() {
   const desc = document.getElementById('fDesc').value.trim();
   const catId = document.getElementById('fCat').value;
   const subEl = document.getElementById('fSub');
-  const sub = (subEl && subEl.style.display !== 'none') ? subEl.value : '';
+  let sub = (subEl && subEl.style.display !== 'none') ? subEl.value : '';
+  // مجتمع المدرسين: لو مدرّس اختار أكتر من مادة، اجمعهم كلهم في نفس الإعلان
+  if(catId === 'teachers_hub' && !sub) {
+    const checkedSubjects = Array.from(document.querySelectorAll('.teacherSubjChk:checked')).map(c=>c.value);
+    if(checkedSubjects.length === 0) { showToast('اختار مادة واحدة على الأقل، أو نوع الإعلان من القايمة', 'error'); return; }
+    sub = checkedSubjects.join('، ');
+  }
   if(!title) { showToast('اكتب عنوان الإعلان','error'); return; }
   // رقم التليفون اختياري في قسم الوفيات فقط
   if(catId !== 'deaths' && (!phone || !/^01[0-9]{9}$/.test(phone))) { showToast('رقم التليفون لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
@@ -10692,10 +10762,8 @@ function showTeachersHub() {
 
       <!-- مجتمع النقاشات — مستقل فوق -->
       <div onclick="showCommunityPage()" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:16px;padding:16px;margin-bottom:20px;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.3);position:relative;overflow:hidden;">
-        <!-- خلفية زخرفية -->
         <div style="position:absolute;top:-20px;left:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.08);"></div>
         <div style="position:absolute;bottom:-30px;right:20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.06);"></div>
-        <!-- شارة "تفاعلي" -->
         <div style="position:absolute;top:12px;left:12px;background:#fbbf24;color:#1e293b;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:900;">🔴 مباشر</div>
         <div style="display:flex;align-items:center;gap:14px;margin-top:8px;">
           <div style="font-size:40px;">💬</div>
@@ -10712,58 +10780,39 @@ function showTeachersHub() {
         </div>
       </div>
 
-      <!-- مدرسين متاحين -->
-      <div style="font-size:13px;font-weight:900;color:var(--dark);margin-bottom:10px;">👨‍🏫 مدرسين متاحين</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;">
-        ${[
-          {sub:'رياضيات',icon:'🔢'},{sub:'علوم',icon:'🔬'},
-          {sub:'لغة عربية',icon:'📖'},{sub:'لغة إنجليزية',icon:'🇬🇧'},
-          {sub:'فيزياء',icon:'⚡'},{sub:'كيمياء',icon:'🧪'},
-          {sub:'أحياء',icon:'🌿'},{sub:'تاريخ وجغرافيا',icon:'🌍'},
-          {sub:'تربية دينية',icon:'📿'},{sub:'تحفيظ قرآن',icon:'🕌'},
-          {sub:'فلسفة ومنطق',icon:'🏛️'},{sub:'علم نفس واجتماع',icon:'🧠'},
-          {sub:'محاسبة واقتصاد',icon:'📊'},{sub:'حاسب آلي',icon:'💻'},
-          {sub:'موسيقى ورسم',icon:'🎨'},{sub:'مواد ابتدائي',icon:'✏️'},
-          {sub:'مواد إعدادي',icon:'📝'},{sub:'مواد ثانوي',icon:'🎓'},
-          {sub:'لغة فرنسية',icon:'🇫🇷'},{sub:'لغة ألمانية',icon:'🇩🇪'},
-          {sub:'لغة إيطالية أو إسبانية',icon:'🇪🇸'},
-        ].map(s=>`
-        <div onclick="showTeacherAds('${s.sub}')" style="background:white;border:1px solid #ede9fe;border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;">
-          <div style="font-size:22px;margin-bottom:4px;">${s.icon}</div>
-          <div style="font-size:11px;font-weight:700;color:#4c1d95;">${s.sub}</div>
-        </div>`).join('')}
-        <div onclick="showTeacherAds('أخرى')" style="background:white;border:1px solid #ede9fe;border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;">
-          <div style="font-size:22px;margin-bottom:4px;">📋</div>
-          <div style="font-size:11px;font-weight:700;color:#4c1d95;">أخرى</div>
-        </div>
-        <div onclick="openAddModal('teachers_hub','')" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;">
-          <div style="font-size:22px;margin-bottom:4px;color:white;">+</div>
-          <div style="font-size:11px;font-weight:700;color:white;">أضف</div>
+      <!-- زرار أضف مدرس -->
+      <div onclick="openAddModal('teachers_hub','')" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:14px;padding:14px;margin-bottom:20px;cursor:pointer;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:28px;color:white;">➕</span>
+        <div>
+          <div style="font-size:14px;font-weight:900;color:white;">سجّل نفسك كمدرس</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.85);margin-top:2px;">اختار كل المواد اللي بتدرّسها في مرة واحدة</div>
         </div>
       </div>
 
-      <!-- مراكز تعليمية -->
-      <div style="font-size:13px;font-weight:900;color:var(--dark);margin-bottom:10px;">🏫 مراكز تعليمية</div>
+      <!-- اختر المرحلة -->
+      <div style="font-size:13px;font-weight:900;color:var(--dark);margin-bottom:10px;">📚 اختر المرحلة الدراسية</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
-        ${[
-          {sub:'سنتر تعليمي',icon:'🏫',color:'#dcfce7',text:'#166534'},
-          {sub:'روضة وحضانة',icon:'🧸',color:'#fce7f3',text:'#be185d'},
-          {sub:'كورسات لغات',icon:'🌍',color:'#dbeafe',text:'#1d4ed8'},
-          {sub:'كورسات كمبيوتر',icon:'💻',color:'#fef3c7',text:'#92400e'},
-          {sub:'تأهيل وتدريب مهني',icon:'🎯',color:'#f3e8ff',text:'#7c3aed'},
-          {sub:'فصل دراسي خاص',icon:'📚',color:'#e0f2fe',text:'#0284c7'},
-          {sub:'دروس أونلاين',icon:'🖥️',color:'#dcfce7',text:'#166534'},
-          {sub:'تعليم ذوي الاحتياجات الخاصة',icon:'🧩',color:'#fce7f3',text:'#be185d'},
-        ].map(s=>`
-        <div onclick="showTeacherAds('${s.sub}')" style="background:${s.color};border-radius:14px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
-          <span style="font-size:26px;">${s.icon}</span>
-          <span style="font-size:13px;font-weight:700;color:${s.text};">${s.sub}</span>
-        </div>`).join('')}
+        <div onclick="showTeacherStage('primary')" style="background:#dcfce7;border-radius:14px;padding:16px;cursor:pointer;text-align:center;">
+          <div style="font-size:30px;margin-bottom:6px;">🟢</div>
+          <div style="font-size:13px;font-weight:900;color:#166534;">الابتدائية</div>
+        </div>
+        <div onclick="showTeacherStage('prep')" style="background:#fef9c3;border-radius:14px;padding:16px;cursor:pointer;text-align:center;">
+          <div style="font-size:30px;margin-bottom:6px;">🟡</div>
+          <div style="font-size:13px;font-weight:900;color:#92400e;">الإعدادية</div>
+        </div>
+        <div onclick="showTeacherSecondary()" style="background:#dbeafe;border-radius:14px;padding:16px;cursor:pointer;text-align:center;">
+          <div style="font-size:30px;margin-bottom:6px;">🔵</div>
+          <div style="font-size:13px;font-weight:900;color:#1d4ed8;">الثانوية</div>
+        </div>
+        <div onclick="showTeacherOtherTypes()" style="background:#f3e8ff;border-radius:14px;padding:16px;cursor:pointer;text-align:center;">
+          <div style="font-size:30px;margin-bottom:6px;">🏫</div>
+          <div style="font-size:13px;font-weight:900;color:#7c3aed;">سناتر ودروس تانية</div>
+        </div>
       </div>
 
       <!-- مطلوب مدرس -->
       <div style="font-size:13px;font-weight:900;color:var(--dark);margin-bottom:10px;">🔍 مطلوب مدرس</div>
-      <div onclick="showTeacherAds('مطلوب مدرس')" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:14px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:12px;border:1px solid #fbbf24;">
+      <div onclick="setTeacherBackTo({type:'hub'});showTeacherAds('مطلوب مدرس')" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:14px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:12px;border:1px solid #fbbf24;">
         <span style="font-size:30px;">🙋</span>
         <div>
           <div style="font-size:14px;font-weight:900;color:#92400e;">محتاج مدرس خاص؟</div>
@@ -10777,10 +10826,116 @@ function showTeachersHub() {
   loadCatBanner('teachers_hub', null);
 }
 
+// صفحة مواد مرحلة معينة (ابتدائي / إعدادي)
+// تتبّع الصفحة اللي المستخدم جاي منها عشان زرار الرجوع يرجعله بالظبط مش لمجتمع المدرسين دايمًا
+function setTeacherBackTo(info) {
+  try { sessionStorage.setItem('teacherAdsBackTo', JSON.stringify(info)); } catch(e) {}
+}
+function teacherGoBack() {
+  var info = null;
+  try { info = JSON.parse(sessionStorage.getItem('teacherAdsBackTo') || 'null'); } catch(e) {}
+  if(info && info.type === 'stage') { showTeacherStage(info.id); return; }
+  if(info && info.type === 'secondary') { showTeacherSecondary(); return; }
+  if(info && info.type === 'other') { showTeacherOtherTypes(); return; }
+  showTeachersHub();
+}
+
+function showTeacherStage(stageId) {
+  const group = TEACHER_SUBJECT_GROUPS.find(g => g.id === stageId);
+  if(!group) return;
+  sessionStorage.setItem('dynState', JSON.stringify({type:'teacherStage', stageId}));
+  try{history.pushState({dyn:1},'');}catch(e){}
+  const isSecTrack = stageId.indexOf('sec_') === 0 && stageId !== 'sec_shared';
+  const page = document.getElementById('dynamicPage');
+  page.innerHTML = `
+    <div class="dyn-header" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
+      <button class="dyn-back" onclick="${isSecTrack ? 'showTeacherSecondary()' : 'showTeachersHub()'}">←</button>
+      <span>${group.icon} ${group.label}</span>
+      <span></span>
+    </div>
+    <div class="dyn-content" style="padding:16px 16px 80px;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        ${group.subjects.map(s=>`
+        <div onclick="setTeacherBackTo({type:'stage',id:'${stageId}'});showTeacherAds('${s}')" style="background:white;border:1px solid #ede9fe;border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer;">
+          <div style="font-size:22px;margin-bottom:4px;">${group.icon}</div>
+          <div style="font-size:11px;font-weight:700;color:#4c1d95;">${s}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  page.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+// صفحة الثانوي — اختيار الشعبة
+function showTeacherSecondary() {
+  sessionStorage.setItem('dynState', JSON.stringify({type:'teacherSecondary'}));
+  try{history.pushState({dyn:1},'');}catch(e){}
+  const page = document.getElementById('dynamicPage');
+  const shared = TEACHER_SUBJECT_GROUPS.find(g=>g.id==='sec_shared');
+  page.innerHTML = `
+    <div class="dyn-header" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
+      <button class="dyn-back" onclick="showTeachersHub()">←</button>
+      <span>🔵 الثانوية</span>
+      <span></span>
+    </div>
+    <div class="dyn-content" style="padding:16px 16px 80px;">
+      <div style="font-size:13px;font-weight:900;color:var(--dark);margin-bottom:10px;">📘 مواد مشتركة (كل الشعب)</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px;">
+        ${shared.subjects.map(s=>`
+        <div onclick="setTeacherBackTo({type:'secondary'});showTeacherAds('${s}')" style="background:white;border:1px solid #ede9fe;border-radius:12px;padding:12px 6px;text-align:center;cursor:pointer;">
+          <div style="font-size:22px;margin-bottom:4px;">🔵</div>
+          <div style="font-size:11px;font-weight:700;color:#4c1d95;">${s}</div>
+        </div>`).join('')}
+      </div>
+      <div style="font-size:13px;font-weight:900;color:var(--dark);margin-bottom:10px;">🎓 اختر الشعبة</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div onclick="showTeacherStage('sec_science')" style="background:#dcfce7;border-radius:14px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:26px;">🧬</span>
+          <span style="font-size:13px;font-weight:900;color:#166534;">علمي علوم</span>
+        </div>
+        <div onclick="showTeacherStage('sec_math')" style="background:#dbeafe;border-radius:14px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:26px;">➗</span>
+          <span style="font-size:13px;font-weight:900;color:#1d4ed8;">علمي رياضة</span>
+        </div>
+        <div onclick="showTeacherStage('sec_literary')" style="background:#fce7f3;border-radius:14px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:26px;">📜</span>
+          <span style="font-size:13px;font-weight:900;color:#be185d;">أدبي</span>
+        </div>
+      </div>
+    </div>`;
+  page.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+// صفحة الأنواع التانية (سناتر، روضة، دروس أونلاين...)
+function showTeacherOtherTypes() {
+  sessionStorage.setItem('dynState', JSON.stringify({type:'teacherOtherTypes'}));
+  try{history.pushState({dyn:1},'');}catch(e){}
+  const page = document.getElementById('dynamicPage');
+  const icons = {'سنتر تعليمي':'🏫','روضة وحضانة':'🧸','كورسات لغات':'🌍','كورسات كمبيوتر':'💻','دروس برمجة':'👨‍💻','تأهيل وتدريب مهني':'🎯','فصل دراسي خاص':'📚','دروس أونلاين':'🖥️','تعليم ذوي الاحتياجات الخاصة':'🧩','مطلوب مدرس':'🙋','أخرى':'📋'};
+  page.innerHTML = `
+    <div class="dyn-header" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
+      <button class="dyn-back" onclick="showTeachersHub()">←</button>
+      <span>🏫 سناتر ودروس تانية</span>
+      <span></span>
+    </div>
+    <div class="dyn-content" style="padding:16px 16px 80px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        ${TEACHER_OTHER_TYPES.map(s=>`
+        <div onclick="setTeacherBackTo({type:'other'});showTeacherAds('${s}')" style="background:#f3e8ff;border-radius:14px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:24px;">${icons[s]||'📋'}</span>
+          <span style="font-size:12px;font-weight:700;color:#5b21b6;">${s}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  page.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
 async function showTeacherAds(subName) {
   await loadAds();
   window._teacherAdsSubName = subName;
-  window._teacherAdsAll = allAds.filter(a => a.status==='approved' && (a.subcategory===subName || a.title?.includes(subName)));
+  window._teacherAdsAll = allAds.filter(a => a.status==='approved' && (a.subcategory===subName || (a.subcategory && a.subcategory.includes(subName)) || a.title?.includes(subName)));
   sessionStorage.setItem('dynState', JSON.stringify({type:'teacherSub', sub: subName}));
   try{history.pushState({dyn:1},'');}catch(e){}
   const fakeCat = {id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:[]};
@@ -10788,7 +10943,7 @@ async function showTeacherAds(subName) {
   const page = document.getElementById('dynamicPage');
   page.innerHTML = `
     <div class="dyn-header" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">
-      <button class="dyn-back" onclick="showTeachersHub()">←</button>
+      <button class="dyn-back" onclick="teacherGoBack()">←</button>
       <span>👨‍🏫 ${subName}</span>
       <button onclick="openAddModal('teachers_hub','${subName}')" style="background:rgba(255,255,255,.2);color:white;border:none;padding:4px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">+ أضف</button>
     </div>
