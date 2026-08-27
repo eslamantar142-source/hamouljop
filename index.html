@@ -393,6 +393,16 @@ header { background:var(--primary); position:sticky; top:0; z-index:100; box-sha
   </div>
   -->
 
+  <!-- زرار سجّل نشاطك — عام وواضح، أي حد يقدر يبدأ منه من غير ما يعرف يدخل فين -->
+  <div onclick="openBusinessRegisterPicker()" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:16px;padding:16px;margin:0 16px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(124,58,237,.3);">
+    <div style="font-size:32px;">🏪</div>
+    <div style="flex:1;">
+      <div style="font-size:15px;font-weight:900;color:white;">عندك محل أو نشاط؟ سجّله مجانًا</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.85);margin-top:2px;">دوس هنا واختار نوع نشاطك — هيوصّلك للتسجيل على طول</div>
+    </div>
+    <div style="background:rgba(255,255,255,.2);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;flex-shrink:0;">›</div>
+  </div>
+
   <div class="cats-section-title">تصفح الأقسام</div>
   <div class="cats-grid" id="catsGrid"></div>
 </div>
@@ -12675,6 +12685,76 @@ function restoreOnRefresh() {
 }
 
 // ===== بوب أب تحفيزي للتسجيل المبكر =====
+// ===== زرار "سجّل نشاطك" العام في الصفحة الرئيسية — قائمة كل الأنشطة عشان أي حد يلاقي نفسه من غير ما يعرف يدخل قسمه فين =====
+function openBusinessRegisterPicker(mode) {
+  mode = mode || 'register';
+  var items = [];
+  CATEGORIES.forEach(function(cat) {
+    if(SHOP_ONLY_CAT_IDS.indexOf(cat.id) !== -1 && cat.subs && cat.subs.length) {
+      cat.subs.forEach(function(s) {
+        items.push({ parent: cat.name, icon: cat.icon, catId: cat.id, sub: s });
+      });
+    }
+    if(cat.children) {
+      cat.children.forEach(function(child) {
+        if(NESTED_SHOP_CHILDREN.indexOf(child.id) !== -1 && child.subs && child.subs.length) {
+          child.subs.forEach(function(s) {
+            var subName = (typeof s === 'string') ? s : s.name;
+            items.push({ parent: cat.name + ' — ' + child.name, icon: child.icon || cat.icon, catId: child.id, sub: subName });
+          });
+        }
+      });
+    }
+  });
+
+  var overlay = document.createElement('div');
+  overlay.id = 'bizRegPickerOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px 20px 0 0;padding:18px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;">' +
+      '<div style="font-size:16px;font-weight:900;text-align:center;margin-bottom:4px;">' + (mode === 'login' ? '✏️ نشاطك إيه بالظبط؟' : '🏪 نشاطك إيه بالظبط؟') + '</div>' +
+      '<div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:12px;">' + (mode === 'login' ? 'دوس على نشاطك عشان تسجّل دخول وتعدّل بياناتك' : 'دوس على نشاطك عشان تبدأ التسجيل على طول') + '</div>' +
+      '<input id="bizRegSearch" type="text" placeholder="🔍 دوّر على نشاطك (مثال: كافيه، سباك، صيدلية)..." oninput="filterBizRegPicker()" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:10px;box-sizing:border-box;">' +
+      '<div id="bizRegPickerList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;"></div>' +
+      '<button onclick="document.getElementById(\'bizRegPickerOverlay\').remove()" style="margin-top:12px;background:#f3f4f6;color:#666;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">إلغاء</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  window._bizRegPickerItems = items;
+  window._bizRegPickerMode = mode;
+  renderBizRegPickerList(items);
+}
+function renderBizRegPickerList(items) {
+  var list = document.getElementById('bizRegPickerList');
+  if(!list) return;
+  var mode = window._bizRegPickerMode || 'register';
+  if(items.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-size:13px;">مفيش نتائج — جرب كلمة تانية</div>';
+    return;
+  }
+  var lastParent = null;
+  var html = '';
+  items.forEach(function(it) {
+    if(it.parent !== lastParent) {
+      html += '<div style="font-size:11px;font-weight:900;color:#7c3aed;margin-top:8px;">' + it.parent + '</div>';
+      lastParent = it.parent;
+    }
+    var action = mode === 'login'
+      ? "document.getElementById('bizRegPickerOverlay').remove();showShopLogin('" + it.sub.replace(/'/g,"\\'") + "')"
+      : "document.getElementById('bizRegPickerOverlay').remove();showShopRegister('" + it.sub.replace(/'/g,"\\'") + "','" + it.catId + "')";
+    html += '<div onclick="' + action + '" style="background:#f5f3ff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;">' +
+      '<span style="font-size:18px;">' + it.icon + '</span><span style="font-size:13px;font-weight:700;color:#4c1d95;">' + it.sub + '</span>' +
+    '</div>';
+  });
+  list.innerHTML = html;
+}
+function filterBizRegPicker() {
+  var q = (document.getElementById('bizRegSearch').value || '').trim();
+  var items = window._bizRegPickerItems || [];
+  if(!q) { renderBizRegPickerList(items); return; }
+  var filtered = items.filter(function(it) { return it.sub.indexOf(q) !== -1 || it.parent.indexOf(q) !== -1; });
+  renderBizRegPickerList(filtered);
+}
+
 function maybeShowRegisterUrgencyPopup() {
   if(isAdmin) return;
   var lastShown = localStorage.getItem('reg_urgency_popup_last');
@@ -12694,7 +12774,7 @@ function maybeShowRegisterUrgencyPopup() {
         '</div>' +
         '<div style="padding:18px 20px;text-align:center;">' +
           '<p style="font-size:13px;color:#475569;line-height:1.8;margin:0 0 16px;">الأماكن الأولى في كل قسم بتاخد أكبر نسبة مشاهدة. سجّل نشاطك أو خدمتك دلوقتي عشان تظهر من أوائل النتائج قبل ما الأماكن تتزحم.</p>' +
-          '<button onclick="closeRegUrgencyPopup()" style="width:100%;background:#1a7a4a;color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">تمام، هسجل 👍</button>' +
+          '<button onclick="closeRegUrgencyPopup();openBusinessRegisterPicker();" style="width:100%;background:#1a7a4a;color:white;border:none;padding:13px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">سجّل نشاطي دلوقتي 🚀</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(overlay);
