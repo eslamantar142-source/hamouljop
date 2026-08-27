@@ -6379,8 +6379,8 @@ async function loadAdminStatsContent(cont) {
     const approved = allAds.filter(a=>a.status==='approved');
     const rejected = allAds.filter(a=>a.status==='rejected');
 
-    let adStats=[], likes=[], reviews=[], marriageProfiles=[], marriageLikes=[], marriageRequests=[], siteVisits=[];
-    [adStats, likes, reviews, marriageProfiles, marriageLikes, marriageRequests, siteVisits] = await Promise.all([
+    let adStats=[], likes=[], reviews=[], marriageProfiles=[], marriageLikes=[], marriageRequests=[], siteVisits=[], appInstalls=[];
+    [adStats, likes, reviews, marriageProfiles, marriageLikes, marriageRequests, siteVisits, appInstalls] = await Promise.all([
       sbFetch('GET', 'ad_stats?select=ad_id,event_type,created_at').catch(()=>[]) || [],
       sbFetch('GET', 'ad_likes?select=ad_id').catch(()=>[]) || [],
       sbFetch('GET', 'reviews?select=id,rating').catch(()=>[]) || [],
@@ -6388,8 +6388,13 @@ async function loadAdminStatsContent(cont) {
       sbFetch('GET', 'marriage_likes?select=id').catch(()=>[]) || [],
       sbFetch('GET', 'marriage_requests?select=id,status').catch(()=>[]) || [],
       sbFetch('GET', 'site_visits?select=visitor_id,created_at&order=created_at.desc&limit=10000').catch(()=>[]) || [],
+      sbFetch('GET', 'app_installs?select=device_id,platform,created_at&order=created_at.desc&limit=10000').catch(()=>[]) || [],
     ]);
     window._siteVisitsAll = siteVisits;
+    const totalInstalls = appInstalls.length;
+    const installsAndroid = appInstalls.filter(i=>i.platform==='android').length;
+    const installsIOS = appInstalls.filter(i=>i.platform==='ios').length;
+    const installsDesktop = appInstalls.filter(i=>i.platform==='desktop').length;
 
     const totalViews = (adStats||[]).filter(s=>s.event_type==='view').length;
     setTimeout(()=>renderViewsChart(adStats), 100);
@@ -6449,6 +6454,30 @@ async function loadAdminStatsContent(cont) {
           </div>
         </div>
         <div id="visitsDateResult" style="margin-top:8px;"></div>
+      </div>
+
+      <div style="background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:14px;padding:14px;margin-bottom:12px;color:white;">
+        <div style="font-size:13px;font-weight:900;margin-bottom:10px;opacity:.9;">📲 تثبيت التطبيق</div>
+        <div style="display:grid;grid-template-columns:repeat(1,1fr);gap:8px;margin-bottom:8px;">
+          <div style="background:rgba(255,255,255,.2);border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:28px;font-weight:900;">${totalInstalls}</div>
+            <div style="font-size:11px;opacity:.85;">إجمالي عدد من ثبّت التطبيق</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center;">
+            <div style="font-size:16px;font-weight:900;">${installsAndroid}</div>
+            <div style="font-size:10px;opacity:.8;">🤖 أندرويد</div>
+          </div>
+          <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center;">
+            <div style="font-size:16px;font-weight:900;">${installsIOS}</div>
+            <div style="font-size:10px;opacity:.8;">🍎 آيفون</div>
+          </div>
+          <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center;">
+            <div style="font-size:16px;font-weight:900;">${installsDesktop}</div>
+            <div style="font-size:10px;opacity:.8;">💻 كمبيوتر</div>
+          </div>
+        </div>
       </div>
 
       <div style="background:linear-gradient(135deg,#1a7a4a,#22c55e);border-radius:14px;padding:14px;margin-bottom:12px;color:white;">
@@ -13129,7 +13158,29 @@ window.addEventListener('appinstalled', function() {
   deferredInstallPrompt = null;
   try { var b = document.getElementById('installBtn'); if(b) b.style.display = 'none'; } catch(e2) {}
   try { showToast('✅ تم تثبيت التطبيق بنجاح'); } catch(e3) {}
+  try { trackAppInstall(); } catch(e4) {}
 });
+
+function detectInstallPlatform() {
+  var ua = navigator.userAgent || '';
+  if(/iphone|ipad|ipod/i.test(ua)) return 'ios';
+  if(/android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+
+async function trackAppInstall() {
+  try {
+    if(localStorage.getItem('hamoul_install_logged')) return; // مرة واحدة بس لكل جهاز
+    localStorage.setItem('hamoul_install_logged', '1');
+    var vid = localStorage.getItem('hamoul_visitor_id');
+    if(!vid) { vid = 'v_' + Date.now() + '_' + Math.random().toString(36).substr(2,9); localStorage.setItem('hamoul_visitor_id', vid); }
+    await sbFetch('POST', 'app_installs', { device_id: vid, platform: detectInstallPlatform() });
+  } catch(e) {}
+}
+
+// لو الموقع شغال دلوقتي في وضع standalone (اتثبت فعلاً) وأول مرة نكتشف ده — سجّله
+// ده بيغطي آيفون كمان، لأن Safari مبيطلقش appinstalled أبدًا
+try { if(isStandaloneMode()) trackAppInstall(); } catch(e) {}
 
 function installPWA() {
   if(isStandaloneMode()) {
