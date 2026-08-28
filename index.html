@@ -3460,29 +3460,32 @@ function goBackFromAdDetail() {
   if(parentState) {
     try {
       var ps = JSON.parse(parentState);
+      window._restoringFromDetail = true;
       if(ps.type === 'ads') {
         var cat = CATEGORIES.find(function(c){ return c.id === ps.catId; });
-        if(cat) { window._restoringFromDetail = true; showAdsPage(cat, ps.sub || null); return; }
+        if(cat) { showAdsPage(cat, ps.sub || null); window._restoringFromDetail = false; return; }
       } else if(ps.type === 'ads2') {
-        if(ps.catId && ps.childId && ps.subName) { window._restoringFromDetail = true; showAdsPageV2(ps.catId, ps.childId, ps.subName); return; }
+        if(ps.catId && ps.childId && ps.subName) { showAdsPageV2(ps.catId, ps.childId, ps.subName); window._restoringFromDetail = false; return; }
       } else if(ps.type === 'subs') {
         var cat2 = CATEGORIES.find(function(c){ return c.id === ps.catId; });
-        if(cat2) { showSubsPage(cat2); return; }
+        if(cat2) { showSubsPage(cat2); window._restoringFromDetail = false; return; }
       } else if(ps.type === 'subs2') {
         var parent = CATEGORIES.find(function(c){ return c.id === ps.catId; });
         var child = parent && parent.children ? parent.children.find(function(c){ return c.id === ps.childId; }) : null;
-        if(parent && child) { showSubsPageV2(parent, child); return; }
+        if(parent && child) { showSubsPageV2(parent, child); window._restoringFromDetail = false; return; }
       } else if(ps.type === 'children') {
         var cat3 = CATEGORIES.find(function(c){ return c.id === ps.catId; });
-        if(cat3) { showChildrenPage(cat3); return; }
+        if(cat3) { showChildrenPage(cat3); window._restoringFromDetail = false; return; }
       } else if(ps.type === 'shops') {
         showShopsPage(ps.sub, ps.catId || getShopCatId(ps.sub));
+        window._restoringFromDetail = false;
         return;
       } else {
-        restoreDynState(ps);
+        restoreDynState(ps); // بتظبط الـ flag لوحدها وترجعه false في الآخر
         return;
       }
-    } catch(e) {}
+      window._restoringFromDetail = false;
+    } catch(e) { window._restoringFromDetail = false; }
   }
   hideDynPage();
 }
@@ -4273,10 +4276,13 @@ if(!window._notifPollStarted) {
 }
 
 // بيدوس فعليًا على نفس زرار "←" الموجود فوق في الصفحة الحالية — عشان يشتغل بنفس الطريقة المضمونة بالظبط
+// (window._restoringFromDetail=true بيمنع الصفحة اللي بنرجعلها من تسجيل نفسها في التاريخ من جديد، عشان رصيد الرجوع مايتراكمش)
 function clickRealBackButton() {
   var realBackBtn = document.querySelector('#dynamicPage .dyn-back');
+  window._restoringFromDetail = true;
   if(realBackBtn) { realBackBtn.click(); }
   else { hideDynPage(); }
+  window._restoringFromDetail = false;
 }
 
 async function openNotificationsPanel() {
