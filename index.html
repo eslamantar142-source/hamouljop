@@ -8028,72 +8028,51 @@ async function showDeals() {
       <span>🏷️ العروض والخصومات</span>
       <span></span>
     </div>
-    <div style="background:linear-gradient(135deg,#ff6b00,#ff9500);padding:16px;text-align:center;color:white;">
-      <div style="font-size:28px;margin-bottom:4px;">🏷️</div>
-      <div style="font-size:16px;font-weight:900;">أحدث العروض في الحامول</div>
-      <div style="font-size:12px;opacity:.85;margin-top:4px;">${dealItems.length} عرض متاح دلوقتي</div>
-    </div>
-    <div id="catBanner"></div>
     <div class="dyn-content" id="dealsContent">
+      <div style="background:linear-gradient(135deg,#ff6b00,#ff9500);padding:16px;text-align:center;color:white;border-radius:14px;margin-bottom:10px;">
+        <div style="font-size:28px;margin-bottom:4px;">🏷️</div>
+        <div style="font-size:16px;font-weight:900;">أحدث العروض في الحامول</div>
+        <div style="font-size:12px;opacity:.85;margin-top:4px;">${dealItems.length} عرض متاح دلوقتي</div>
+      </div>
+      <div id="catBanner"></div>
       ${dealItems.length === 0 ? `
         <div style="text-align:center;padding:60px 20px;color:var(--gray);">
           <div style="font-size:48px;margin-bottom:12px;">🏷️</div>
           <p style="font-size:15px;font-weight:700;">مفيش عروض دلوقتي</p>
           <p style="font-size:13px;margin-top:6px;color:#aaa;">تابع الموقع للعروض الجديدة</p>
         </div>` :
+        `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;">` +
         dealItems.map(item => {
           if(item._kind === 'product') {
             const p = item, trader = item._trader;
-            let phone = trader.phone||'';
-            if(phone.startsWith('01')) phone='20'+phone.substring(1);
-            const waMsg = encodeURIComponent(`أهلاً، أنا مهتم بعرضك (${p.title}) على دليل الحامول`);
-            const waUrl = phone?`https://wa.me/${phone}?text=${waMsg}`:'#';
-            const date = new Date(p.created_at).toLocaleDateString('ar-EG');
             return `
-            <div class="ad-card" style="border-top:3px solid var(--orange);">
-              <div style="background:var(--orange);color:white;padding:4px 12px;font-size:11px;font-weight:700;text-align:center;">⭐ عرض من معرض</div>
-              ${p.image_url ? `<img src="${p.image_url}" class="ad-img" loading="lazy" onerror="this.style.display='none'" onclick="openShopProduct('${p.id}')">` : ''}
-              <div class="ad-body">
-                <div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:4px;">🏪 ${escapeHtml(trader.shop_name)} ← ${escapeHtml(trader.subcategory||'')}</div>
-                <div class="ad-title" onclick="openShopProduct('${p.id}')">${escapeHtml(p.title)||''}</div>
-                ${p.price ? `<div style="font-size:14px;font-weight:900;color:#7c3aed;margin-top:4px;">${parseFloat(p.price).toLocaleString()} جنيه</div>` : ''}
-                <div class="ad-footer">
-                  <span class="ad-date">${date}</span>
-                  <div style="display:flex;gap:6px;align-items:center;">
-                    <button class="btn-details" onclick="openShopProduct('${p.id}')">التفاصيل</button>
-                    <a href="${waUrl}" target="_blank" class="btn-wa">💬 واتساب</a>
-                  </div>
-                </div>
+            <div class="deal-tile" onclick="openShopProduct('${p.id}')" style="background:white;border-radius:12px;overflow:hidden;border:1px solid var(--border);cursor:pointer;">
+              <div style="position:relative;aspect-ratio:1/1;background:#f3f4f6;">
+                ${p.image_url ? `<img src="${p.image_url}" loading="lazy" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;">` : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;">🏷️</div>'}
+                <div style="position:absolute;top:4px;right:4px;background:var(--orange);color:white;font-size:9px;font-weight:900;padding:2px 6px;border-radius:6px;">⭐ عرض</div>
+              </div>
+              <div style="padding:6px 8px;">
+                <div style="font-size:11px;font-weight:800;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.title)||''}</div>
+                <div style="font-size:9px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🏪 ${escapeHtml(trader.shop_name)}</div>
+                ${p.price ? `<div style="font-size:12px;font-weight:900;color:#7c3aed;margin-top:2px;">${parseFloat(p.price).toLocaleString()} ج</div>` : ''}
               </div>
             </div>`;
           }
           const ad = item;
           const cat = CATEGORIES.find(c=>c.id===ad.category)||{icon:'📋',name:'عام'};
-          let phone = ad.phone||'';
-          if(phone.startsWith('01')) phone='20'+phone.substring(1);
-          const waMsg = encodeURIComponent(`أهلاً، أنا مهتم بعرضك (${ad.title}) على دليل الحامول`);
-          const waUrl = phone?`https://wa.me/${phone}?text=${waMsg}`:'#';
-          const date = new Date(ad.created_at).toLocaleDateString('ar-EG');
           return `
-          <div class="ad-card" style="border-top:3px solid var(--orange);">
-            ${ad.is_offer ? '<div style="background:var(--orange);color:white;padding:4px 12px;font-size:11px;font-weight:700;text-align:center;">⭐ عرض مميز</div>' : ''}
-            ${ad.image_url ? `<img src="${ad.image_url}" class="ad-img" loading="lazy" onerror="this.style.display='none'" onclick="openAdDetails('${ad.id}')">` : ''}
-            <div class="ad-body">
-              <div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:4px;">${cat.icon} ${cat.name}${ad.subcategory?' ← '+ad.subcategory:''}</div>
-              <div class="ad-title" onclick="openAdDetails('${ad.id}')">${escapeHtml(ad.title)||''}</div>
-              <div class="ad-desc">${ad.description||''}</div>
-              <div class="ad-footer">
-                <span class="ad-date">${date}</span>
-                <div style="display:flex;gap:6px;align-items:center;">
-                  <button onclick="toggleFav('${ad.id}')" style="background:${isFav(ad.id)?'#fee2e2':'#f3f4f6'};color:${isFav(ad.id)?'#dc2626':'#aaa'};border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;">❤️</button>
-                  ${isAdmin ? `<button onclick="toggleOffer('${ad.id}',${!ad.is_offer})" style="background:${ad.is_offer?'#fee2e2':'#fff7ed'};color:${ad.is_offer?'var(--red)':'var(--orange)'};border:none;padding:6px 10px;border-radius:8px;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">${ad.is_offer?'❌ إلغاء التمييز':'⭐ تمييز كعرض'}</button>` : ''}
-                  <button class="btn-details" onclick="openAdDetails('${ad.id}')">التفاصيل</button>
-                  <a href="${waUrl}" target="_blank" class="btn-wa" onclick="trackStat('${ad.id}','whatsapp')">💬 واتساب</a>
-                </div>
-              </div>
+          <div class="deal-tile" onclick="openAdDetails('${ad.id}')" style="background:white;border-radius:12px;overflow:hidden;border:1px solid var(--border);cursor:pointer;">
+            <div style="position:relative;aspect-ratio:1/1;background:#f3f4f6;">
+              ${ad.image_url ? `<img src="${ad.image_url}" loading="lazy" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;">${cat.icon}</div>`}
+              <div style="position:absolute;top:4px;right:4px;background:var(--orange);color:white;font-size:9px;font-weight:900;padding:2px 6px;border-radius:6px;">⭐ عرض</div>
+              <button onclick="event.stopPropagation();toggleFav('${ad.id}')" style="position:absolute;top:4px;left:4px;background:rgba(255,255,255,.9);color:${isFav(ad.id)?'#dc2626':'#aaa'};border:none;width:22px;height:22px;border-radius:50%;font-size:11px;cursor:pointer;">❤️</button>
+            </div>
+            <div style="padding:6px 8px;">
+              <div style="font-size:11px;font-weight:800;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(ad.title)||''}</div>
+              <div style="font-size:9px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cat.icon} ${cat.name}</div>
             </div>
           </div>`;
-        }).join('')
+        }).join('') + `</div>`
       }
     </div>`;
   page.classList.add('active');
