@@ -999,6 +999,16 @@ const CATEGORIES = [
 ];
 
 let allAds = [];
+
+// حل جذري: منع أي دالة من تسجيل صفحة جديدة في تاريخ المتصفح وهي بترجع لصفحة سابقة
+// (كان ده سبب رجوع زرار الموبايل للصفحة الرئيسية بدل القسم — كل دالة كانت بتسجل نفسها تاني وقت الرجوع فبتلخبط الترتيب)
+(function(){
+  var _origPushState = history.pushState.bind(history);
+  history.pushState = function(state, title, url) {
+    if(window._restoringFromDetail) return; // إحنا بنرجع لصفحة سابقة — مفيش داعي نسجلها تاني
+    return _origPushState(state, title, url);
+  };
+})();
 let isAdmin = false;
 
 // ===== منطق انتهاء صلاحية إعلانات الوظائف (30 يوم) =====
@@ -3775,6 +3785,7 @@ function hideDynPage() {
 
 function restoreDynState(state) {
   if(!state) return;
+  window._restoringFromDetail = true;
   if(state.type === 'subs') {
     const cat = CATEGORIES.find(c => c.id === state.catId);
     if(cat) showSubsPage(cat);
@@ -3829,6 +3840,7 @@ function restoreDynState(state) {
     document.body.style.overflow = '';
     sessionStorage.removeItem('dynState');
   }
+  window._restoringFromDetail = false; // شبكة أمان — لو الدالة المستهدفة معملتش reset بنفسها
 }
 
 function toggleDynSearch() {
