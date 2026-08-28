@@ -3806,6 +3806,24 @@ function restoreDynState(state) {
     showWeatherPage();
   } else if(state.type === 'prayer') {
     showPrayerTimes();
+  } else if(state.type === 'doctors') {
+    showDoctorsHub();
+  } else if(state.type === 'docSub') {
+    if(state.sub) showDoctorAds(state.sub);
+  } else if(state.type === 'charity') {
+    showCharityPage();
+  } else if(state.type === 'charityOrgs') {
+    showCharityOrgs();
+  } else if(state.type === 'charityOrgAds') {
+    if(state.sub) showCharityOrgAds(state.sub);
+  } else if(state.type === 'charitySub') {
+    if(state.sub) showCharityAds(state.sub);
+  } else if(state.type === 'more') {
+    showMore();
+  } else if(state.type === 'about') {
+    showAbout();
+  } else if(state.type === 'advertise') {
+    showAdvertisePage();
   } else {
     document.getElementById('dynamicPage').classList.remove('active');
     document.body.style.overflow = '';
@@ -7884,6 +7902,13 @@ function showMore() {
 }
 
 function showAbout() {
+  if(!window._restoringFromDetail){
+    const currentState = sessionStorage.getItem('dynState');
+    if(currentState) { try { sessionStorage.setItem('parentDynState', currentState); } catch(e) {} }
+  }
+  sessionStorage.setItem('dynState', JSON.stringify({type:'about'}));
+  if(!window._restoringFromDetail){ try{history.pushState({dyn:1},'');}catch(e){} }
+  window._restoringFromDetail = false;
   const page = document.getElementById('dynamicPage');
   page.innerHTML = `
     <div class="dyn-header">
@@ -9370,6 +9395,8 @@ function resetMarriageFilters() {
 }
 
 function showAdvertisePage() {
+  sessionStorage.setItem('dynState', JSON.stringify({type:'advertise'}));
+  try{history.pushState({dyn:1},'');}catch(e){}
   const page = document.getElementById('dynamicPage');
   page.innerHTML = `
     <div class="dyn-header" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
@@ -10954,6 +10981,13 @@ function buildSpecsGrid() {
 async function showDoctorAds(subName) {
   await loadAds();
   const isOther = subName === '__other__';
+  if(!window._restoringFromDetail){
+    const currentState = sessionStorage.getItem('dynState');
+    if(currentState) { try { sessionStorage.setItem('parentDynState', currentState); } catch(e) {} }
+  }
+  sessionStorage.setItem('dynState', JSON.stringify({type:'docSub', sub:subName}));
+  if(!window._restoringFromDetail){ try{history.pushState({dyn:1},'');}catch(e){} }
+  window._restoringFromDetail = false;
   const knownSubs = ['أسنان','عظام','أطفال وحديثي الولادة','نساء وتوليد','باطنة والجهاز الهضمي','عيون','أنف وأذن وحنجرة','قلب وأوعية دموية','جلدية','مخ وأعصاب','جراحة عامة','صدر','مسالك بولية','أورام','علاج طبيعي','تغذية علاجية','عام'];
   const filtered = allAds.filter(a => {
     if(a.status !== 'approved') return false;
@@ -11109,6 +11143,9 @@ function renderDoctorsCommunityEmptyState() {
 
 // CHARITY PAGE
 function showCharityOrgs() {
+  sessionStorage.setItem('dynState', JSON.stringify({type:'charityOrgs'}));
+  if(!window._restoringFromDetail){ try{history.pushState({dyn:1},'');}catch(e){} }
+  window._restoringFromDetail = false;
   const page = document.getElementById('dynamicPage');
   const orgsAds = allAds.filter(a => a.status==='approved' && a.category==='charity_orgs');
 
@@ -11199,6 +11236,13 @@ function showCharityOrgs() {
 
 async function showCharityOrgAds(subName) {
   await loadAds();
+  if(!window._restoringFromDetail){
+    const currentState = sessionStorage.getItem('dynState');
+    if(currentState) { try { sessionStorage.setItem('parentDynState', currentState); } catch(e) {} }
+  }
+  sessionStorage.setItem('dynState', JSON.stringify({type:'charityOrgAds', sub:subName}));
+  if(!window._restoringFromDetail){ try{history.pushState({dyn:1},'');}catch(e){} }
+  window._restoringFromDetail = false;
   const filtered = allAds.filter(a => a.status==='approved' && a.category==='charity_orgs' && a.subcategory===subName);
   const fakeCat = {id:'charity_orgs', name:'جمعيات خيرية', icon:'🕌', color:'#dcfce7', subs:[]};
   const page = document.getElementById('dynamicPage');
@@ -11342,6 +11386,13 @@ function showCharityPage() {
 
 async function showCharityAds(subName) {
   await loadAds();
+  if(!window._restoringFromDetail){
+    const currentState = sessionStorage.getItem('dynState');
+    if(currentState) { try { sessionStorage.setItem('parentDynState', currentState); } catch(e) {} }
+  }
+  sessionStorage.setItem('dynState', JSON.stringify({type:'charitySub', sub:subName}));
+  if(!window._restoringFromDetail){ try{history.pushState({dyn:1},'');}catch(e){} }
+  window._restoringFromDetail = false;
   const filtered = allAds.filter(a => a.status==='approved' && a.category==='charity' && a.subcategory===subName);
   const fakeCat = {id:'charity', name:'قسم الخير', icon:'🤍', color:'#f0fdf4', subs:[]};
   const page = document.getElementById('dynamicPage');
