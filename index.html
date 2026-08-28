@@ -3123,6 +3123,7 @@ async function openShopProduct(productId) {
   var overlay = document.createElement('div');
   overlay.id = 'productDetailOverlay';
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;overflow-y:auto;';
+  try{history.pushState({dyn:1},'');}catch(e){}
 
   // سلايدر الصور
   var sliderHtml = '';
@@ -13471,6 +13472,21 @@ buildCatsGrid();
 window.addEventListener('popstate', function() {
   var zoomOverlay = document.getElementById('shopZoomOverlay') || document.getElementById('adZoomOverlay');
   if(zoomOverlay) { zoomOverlay.remove(); return; }
+
+  // أي نافذة/بوب-أب من النوع اللي مش متسجل في تاريخ المتصفح — اقفلها الأول قبل أي رجوع تاني
+  var floatingOverlayIds = [
+    'imgFullOverlay', 'productDetailOverlay', 'notifModal', 'postDetailModal',
+    'shareProdModal', 'shareShopModal', 'tipModal', 'contactRequestModal',
+    'shopDashOverlay', 'editProdOverlay', 'shopEditOverlay', 'shopPassChangeOverlay',
+    'shopLoginOverlay', 'traderLoginOverlay', 'traderUpdateOverlay', 'traderAddOverlay',
+    'sectionDetailOverlay', 'adPreviewModal', 'editPostModal', 'newPostModal',
+    'authModalOverlay', 'moveModal', 'adminEditModal', 'advertiseFormModal'
+  ];
+  for(var i=0; i<floatingOverlayIds.length; i++) {
+    var el = document.getElementById(floatingOverlayIds[i]);
+    if(el) { el.remove(); document.body.style.overflow = document.getElementById('dynamicPage')?.classList.contains('active') ? 'hidden' : ''; return; }
+  }
+
   var page = document.getElementById('dynamicPage');
   if(!page || !page.classList.contains('active')) return; // مفيش صفحة داخلية — خروج طبيعي
   if(window._adDetailOpen) {
