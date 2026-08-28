@@ -437,7 +437,7 @@ body:has(.dyn-page.active) #floatingBackBtn { display:flex; }
 <div class="dyn-page" id="dynamicPage"></div>
 
 <!-- زرار رجوع عائم في نص الشاشة — احتياطي مضمون في حالة رجوع الموبايل مبيرجعش صح -->
-<button id="floatingBackBtn" onclick="hideDynPage()" title="رجوع" style="position:fixed;top:50%;right:10px;transform:translateY(-50%);z-index:9999;width:46px;height:46px;border-radius:50%;background:rgba(15,23,42,.6);color:#fff;border:2px solid rgba(255,255,255,.4);font-size:20px;display:none;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer;">←</button>
+<button id="floatingBackBtn" onclick="clickRealBackButton()" title="رجوع" style="position:fixed;top:50%;right:10px;transform:translateY(-50%);z-index:9999;width:46px;height:46px;border-radius:50%;background:rgba(15,23,42,.6);color:#fff;border:2px solid rgba(255,255,255,.4);font-size:20px;display:none;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer;">←</button>
 
 <!-- DETAILS MODAL -->
 <div class="details-modal" id="detailsModal" onclick="if(event.target===this)closeDetails()"></div>
@@ -4285,6 +4285,13 @@ if(!window._notifPollStarted) {
   sync();
   new MutationObserver(sync).observe(dynPage, {attributes:true, attributeFilter:['class']});
 })();
+
+// بيدوس فعليًا على نفس زرار "←" الموجود فوق في الصفحة الحالية — عشان يشتغل بنفس الطريقة المضمونة بالظبط
+function clickRealBackButton() {
+  var realBackBtn = document.querySelector('#dynamicPage .dyn-back');
+  if(realBackBtn) { realBackBtn.click(); }
+  else { hideDynPage(); }
+}
 
 async function openNotificationsPanel() {
   const u = getCurrentUser();
@@ -13570,7 +13577,7 @@ window.addEventListener('popstate', function() {
     window._adDetailOpen = false;
     goBackFromAdDetail();
   } else {
-    hideDynPage();
+    clickRealBackButton();
   }
 });
 
