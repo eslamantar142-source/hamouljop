@@ -478,6 +478,14 @@ async function hashPass(str) {
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
+const SECURITY_QUESTIONS = [
+  'ما اسم أول مدرسة التحقت بها؟',
+  'ما اسم والدتك؟',
+  'ما هو لقبك من صغرك؟',
+  'ما اسم أقرب صديق ليك في الطفولة؟',
+  'ما اسم الشارع اللي اتربيت فيه؟'
+];
+
 // ============ نظام تسجيل المستخدمين (موبايل+باسورد أو جيميل) ============
 const GOOGLE_CLIENT_ID = '1075657280150-b7l2nqp8ui28kipq01p9m02u5mgu6tum.apps.googleusercontent.com';
 
@@ -557,11 +565,55 @@ function closeAuthModal() {
   if(el) el.remove();
 }
 
-function forgotUserPassword() {
+// نافذة موحّدة لعرض كلمة السر الجديدة بعد الاسترجاع التلقائي
+function showNewPasswordModal(newPassword, subtitle) {
+  var overlay = document.createElement('div');
+  overlay.id = 'newPassModal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:20px;padding:26px 22px;width:100%;max-width:340px;text-align:center;">' +
+      '<div style="font-size:36px;margin-bottom:10px;">🔑</div>' +
+      '<div style="font-size:15px;font-weight:900;margin-bottom:4px;">اتعملت كلمة سر جديدة!</div>' +
+      '<div style="font-size:12px;color:#64748b;margin-bottom:16px;">' + (subtitle||'') + '</div>' +
+      '<div style="background:#f0fdf4;border:2px dashed #16a34a;border-radius:12px;padding:14px;margin-bottom:14px;">' +
+        '<div id="newPassText" dir="ltr" style="font-size:22px;font-weight:900;letter-spacing:2px;color:#166534;">' + escapeHtml(newPassword) + '</div>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#b91c1c;margin-bottom:16px;">⚠️ احفظها الآن، مش هتقدر تشوفها تاني</div>' +
+      '<button onclick="navigator.clipboard.writeText(\'' + newPassword + '\').then(function(){showToast(\'✅ اتنسخت\')})" style="width:100%;background:#16a34a;color:white;border:none;padding:12px;border-radius:12px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;margin-bottom:8px;">📋 نسخ كلمة السر</button>' +
+      '<button onclick="document.getElementById(\'newPassModal\').remove()" style="width:100%;background:#f3f4f6;color:#666;border:none;padding:11px;border-radius:12px;font-family:Cairo,sans-serif;font-size:13px;cursor:pointer;">تمام، حفظتها</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function forgotUserPassword() {
   var phoneInput = document.getElementById('authPhone');
   var phone = phoneInput ? phoneInput.value.trim() : '';
-  var msg = 'السلام عليكم، نسيت كلمة سر حسابي في دليل الحامول. رقم موبايلي: ' + (phone || '(اكتب رقمك هنا)');
-  window.open('https://wa.me/' + ADMIN_WA + '?text=' + encodeURIComponent(msg), '_blank');
+  if(!phone) { showToast('اكتب رقم موبايلك الأول فوق', 'error'); return; }
+  try {
+    var question = await sbRPC('get_security_question_user', {p_phone: phone});
+    if(!question) {
+      // حساب قديم مفيهوش سؤال أمان — نرجع للطريقة اليدوية القديمة عن طريق الأدمن
+      var msg = 'السلام عليكم، نسيت كلمة سر حسابي في دليل الحامول. رقم موبايلي: ' + phone;
+      window.open('https://wa.me/' + ADMIN_WA + '?text=' + encodeURIComponent(msg), '_blank');
+      showToast('حسابك قديم ومفيهوش سؤال أمان — هيتواصل معاك الأدمن', 'error');
+      return;
+    }
+    var answer = prompt(question);
+    if(answer === null) return;
+    if(!answer.trim()) { showToast('لازم تكتب إجابة', 'error'); return; }
+    var answerHash = await hashPass(answer.trim().toLowerCase());
+    var rows = await sbRPC('self_forgot_password_user', {p_phone: phone, p_answer_hash: answerHash});
+    var r = (rows && rows[0]) || {};
+    if(!r.success) {
+      if(r.out_status === 'WRONG_ANSWER') showToast('❌ الإجابة مش صح', 'error');
+      else showToast('حصل خطأ، حاول تاني', 'error');
+      return;
+    }
+    closeAuthModal();
+    showNewPasswordModal(r.new_password, 'استخدمها لتسجيل الدخول بدل كلمة السر القديمة');
+  } catch(e) {
+    showToast('حصل خطأ، حاول تاني', 'error');
+  }
 }
 
 function switchAuthTab(tab) {
@@ -582,6 +634,11 @@ function switchAuthTab(tab) {
       '<input id="authName" type="text" placeholder="الاسم" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
       '<input id="authPhone" type="tel" placeholder="رقم الموبايل" dir="ltr" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
       '<input id="authPass" type="password" placeholder="كلمة مرور (6 أرقام/حروف على الأقل)" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
+      '<select id="authSecQ" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">' +
+        SECURITY_QUESTIONS.map(function(q){return '<option value="'+escapeHtml(q)+'">'+escapeHtml(q)+'</option>';}).join('') +
+      '</select>' +
+      '<input id="authSecA" type="text" placeholder="إجابتك على السؤال" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
+      '<div style="font-size:10.5px;color:#94a3b8;margin-bottom:10px;">هنستخدمها لو نسيت كلمة السر بعدين</div>' +
       '<button id="authSubmitBtn" onclick="submitRegister()" style="width:100%;background:var(--green);color:white;border:none;padding:12px;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">إنشاء حساب</button>';
   }
 }
@@ -633,9 +690,12 @@ async function submitRegister() {
   const name = document.getElementById('authName').value.trim();
   const phone = document.getElementById('authPhone').value.trim();
   const pass = document.getElementById('authPass').value;
+  const secQ = document.getElementById('authSecQ')?.value || '';
+  const secA = document.getElementById('authSecA')?.value.trim() || '';
   if(!name) { showToast('اكتب الاسم', 'error'); return; }
   if(!phone || !/^01[0-9]{9}$/.test(phone)) { showToast('رقم الموبايل لازم يبدأ بـ 01 ويتكون من 11 رقم', 'error'); return; }
   if(!pass || pass.length < 6) { showToast('كلمة المرور لازم 6 على الأقل', 'error'); return; }
+  if(!secA) { showToast('اكتب إجابة سؤال الأمان — هتحتاجها لو نسيت كلمة السر', 'error'); return; }
   const btn = document.getElementById('authSubmitBtn');
   btn.disabled = true; btn.textContent = 'جاري التسجيل...';
   try {
@@ -648,6 +708,10 @@ async function submitRegister() {
       btn.disabled = false; btn.textContent = 'إنشاء حساب';
       return;
     }
+    try {
+      const answerHash = await hashPass(secA.toLowerCase());
+      await sbRPC('set_security_question_user', {p_token: r.out_token, p_question: secQ, p_answer_hash: answerHash});
+    } catch(e2) {}
     // علّم إنه حساب جديد لسه اتعمل، عشان لو جاي من زرار "+" العام في الأسفل نوديه للرئيسية بدل ما نفتحله فورم إضافة موضوع على طول
     window._justRegisteredNow = true;
     finishAuth({id:r.out_user_id, name:r.out_name || name, phone, token:r.out_token});
@@ -1985,6 +2049,10 @@ function showShopRegister(subcategory, catId) {
       '<input id="sr_name" type="text" placeholder="اسم النشاط أو الجهة" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="sr_phone" type="tel" placeholder="رقم موبايلك" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="sr_pass" type="password" placeholder="كلمة سر للدخول لصفحتك (6 أحرف/أرقام على الأقل)" autocomplete="new-password" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<select id="sr_secq" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;margin-bottom:6px;background:white;">' +
+        SECURITY_QUESTIONS.map(function(q){return '<option value="'+escapeHtml(q)+'">'+escapeHtml(q)+'</option>';}).join('') +
+      '</select>' +
+      '<input id="sr_seca" type="text" placeholder="إجابتك على السؤال (هتحتاجها لو نسيت كلمة السر)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<textarea id="sr_desc" placeholder="وصف مختصر عن نشاطك (اختياري)" rows="2" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;"></textarea>' +
       '<input id="sr_address" type="text" placeholder="العنوان (مثال: شارع الشهداء، الحامول)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="sr_mapurl" type="url" placeholder="رابط الخريطة من Google Maps (اختياري)" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
@@ -2299,11 +2367,16 @@ async function _doSubmitShopRegister(subcategory, catId) {
     }
   }
   var passHash = await hashPass(pass);
+  var secQ = document.getElementById('sr_secq') ? document.getElementById('sr_secq').value : '';
+  var secA = document.getElementById('sr_seca') ? document.getElementById('sr_seca').value.trim() : '';
+  var secAHash = secA ? await hashPass(secA.toLowerCase()) : null;
   var shopData = {
     subcategory: subcategory,
     shop_name: name,
     phone: phone,
     password_hash: passHash,
+    security_question: secQ || null,
+    security_answer_hash: secAHash,
     description: desc,
     address: address || null,
     map_url: mapurl || null,
@@ -2413,11 +2486,36 @@ function showShopLogin(subcategory) {
   document.body.appendChild(overlay);
 }
 
-function forgotShopTraderPassword() {
+async function forgotShopTraderPassword() {
   var phoneInput = document.getElementById('sl_phone');
   var phone = phoneInput ? phoneInput.value.trim() : '';
-  var msg = 'السلام عليكم، نسيت كلمة سر حسابي كصاحب نشاط في دليل الحامول. رقم موبايلي: ' + (phone || '(اكتب رقمك هنا)');
-  window.open('https://wa.me/' + ADMIN_WA + '?text=' + encodeURIComponent(msg), '_blank');
+  if(!phone) { showToast('اكتب رقم موبايلك الأول فوق', 'error'); return; }
+  try {
+    var question = await sbRPC('get_security_question_shop_trader', {p_phone: phone});
+    if(!question) {
+      var msg = 'السلام عليكم، نسيت كلمة سر حسابي كصاحب نشاط في دليل الحامول. رقم موبايلي: ' + phone;
+      window.open('https://wa.me/' + ADMIN_WA + '?text=' + encodeURIComponent(msg), '_blank');
+      showToast('حسابك مفيهوش سؤال أمان محدد — هيتواصل معاك الأدمن', 'error');
+      return;
+    }
+    var answer = prompt(question);
+    if(answer === null) return;
+    if(!answer.trim()) { showToast('لازم تكتب إجابة', 'error'); return; }
+    var answerHash = await hashPass(answer.trim().toLowerCase());
+    var rows = await sbRPC('self_forgot_password_shop_trader', {p_phone: phone, p_answer_hash: answerHash});
+    var r = (rows && rows[0]) || {};
+    if(!r.success) {
+      if(r.out_status === 'WRONG_ANSWER') showToast('❌ الإجابة مش صح', 'error');
+      else showToast('حصل خطأ، حاول تاني', 'error');
+      return;
+    }
+    var overlay = document.getElementById('shopLoginOverlay');
+    if(overlay) overlay.remove();
+    var subtitle = r.shops_count > 1 ? 'هتفتح بيها كل معارضك (' + r.shops_count + ') برقم الموبايل ده' : 'استخدمها لتسجيل الدخول لمعرضك';
+    showNewPasswordModal(r.new_password, subtitle);
+  } catch(e) {
+    showToast('حصل خطأ، حاول تاني', 'error');
+  }
 }
 
 async function doShopLogin(subcategory) {
