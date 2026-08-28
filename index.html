@@ -638,7 +638,7 @@ function switchAuthTab(tab) {
         SECURITY_QUESTIONS.map(function(q){return '<option value="'+escapeHtml(q)+'">'+escapeHtml(q)+'</option>';}).join('') +
       '</select>' +
       '<input id="authSecA" type="text" placeholder="إجابتك على السؤال" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;font-family:Cairo,sans-serif;font-size:14px;box-sizing:border-box;">' +
-      '<div style="font-size:10.5px;color:#94a3b8;margin-bottom:10px;">هنستخدمها لو نسيت كلمة السر بعدين</div>' +
+      '<div style="font-size:10.5px;color:#0369a1;background:#eff6ff;border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.6;">💡 لو نسيت كلمة السر بعدين، هنسألك السؤال ده بدل ما تضطر تكلمنا — اكتب إجابة تفتكرها كويس ومتنساهاش</div>' +
       '<button id="authSubmitBtn" onclick="submitRegister()" style="width:100%;background:var(--green);color:white;border:none;padding:12px;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:900;cursor:pointer;">إنشاء حساب</button>';
   }
 }
@@ -2052,7 +2052,8 @@ function showShopRegister(subcategory, catId) {
       '<select id="sr_secq" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:12px;margin-bottom:6px;background:white;">' +
         SECURITY_QUESTIONS.map(function(q){return '<option value="'+escapeHtml(q)+'">'+escapeHtml(q)+'</option>';}).join('') +
       '</select>' +
-      '<input id="sr_seca" type="text" placeholder="إجابتك على السؤال (هتحتاجها لو نسيت كلمة السر)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
+      '<input id="sr_seca" type="text" placeholder="إجابتك على السؤال" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:6px;">' +
+      '<div style="font-size:10.5px;color:#0369a1;background:#eff6ff;border-radius:8px;padding:8px 10px;margin-bottom:8px;line-height:1.6;">💡 لو نسيت كلمة السر بعدين، هنسألك السؤال ده بدل ما تضطر تكلمنا — اكتب إجابة تفتكرها كويس ومتنساهاش</div>' +
       '<textarea id="sr_desc" placeholder="وصف مختصر عن نشاطك (اختياري)" rows="2" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;"></textarea>' +
       '<input id="sr_address" type="text" placeholder="العنوان (مثال: شارع الشهداء، الحامول)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
       '<input id="sr_mapurl" type="url" placeholder="رابط الخريطة من Google Maps (اختياري)" dir="ltr" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;">' +
