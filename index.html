@@ -5938,7 +5938,7 @@ async function submitNewAd() {
 }
 
 // ===== ضغط الصور قبل الرفع (تقليل الحجم بدون فقدان جودة ملحوظة) =====
-function compressImageFile(file, maxDim = 1200, quality = 0.68) {
+function compressImageFile(file, maxDim = 1600, quality = 0.8) {
   return new Promise((resolve) => {
     if(!file || !file.type || !file.type.startsWith('image/') || file.type === 'image/gif') {
       resolve(file); // مش هنضغط GIF (بيفقد الحركة) أو ملفات مش صور
