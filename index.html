@@ -13539,6 +13539,23 @@ function closeRegUrgencyPopup() {
 
 // ===== INIT =====
 // ===== PWA: تسجيل Service Worker (مطلوب على أغلب الموبايلات عشان التثبيت يبقى تطبيق حقيقي مش مجرد اختصار) =====
+// تنبيه لمستخدمي الآيفون اللي فاتحين الموقع من متصفح غير Safari — عشان يعرفوا إن التثبيت مش هيشتغل غير من Safari
+(function(){
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPad|iPhone|iPod/.test(ua);
+  var isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|mercury/i.test(ua);
+  var isStandalone = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if(isIOS && !isSafari && !isStandalone && !localStorage.getItem('ios_safari_banner_dismissed')) {
+    var banner = document.createElement('div');
+    banner.id = 'iosSafariBanner';
+    banner.style.cssText = 'position:fixed;bottom:66px;left:10px;right:10px;z-index:9998;background:#1e293b;color:white;padding:12px 14px;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.3);display:flex;align-items:center;gap:10px;font-family:Cairo,sans-serif;';
+    banner.innerHTML = '<div style="font-size:22px;">🧭</div>' +
+      '<div style="flex:1;font-size:11.5px;line-height:1.7;">عشان تقدر تثبّت التطبيق على آيفون، افتح الموقع من متصفح <strong>Safari</strong> بدل المتصفح الحالي 📲</div>' +
+      '<button onclick="document.getElementById(\'iosSafariBanner\').remove();localStorage.setItem(\'ios_safari_banner_dismissed\',\'1\')" style="background:rgba(255,255,255,.2);border:none;color:white;width:24px;height:24px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0;">×</button>';
+    document.body.appendChild(banner);
+  }
+})();
+
 if('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('sw.js').catch(function(e) {
