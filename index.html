@@ -3354,7 +3354,9 @@ function renderShopGrid(ads, cat) {
 function renderAdsList(ads, cat, sub) {
   if(!ads.length) return '<div style="text-align:center;padding:60px 20px;color:var(--gray);"><div style="font-size:48px;margin-bottom:12px;">' + cat.icon + '</div><p style="font-size:15px;font-weight:700;">مفيش إعلانات هنا دلوقتي</p><p style="font-size:13px;margin-top:6px;">كن أول من يضيف إعلان!</p></div>';
 
-  const sorted = [...ads].sort((a,b) => {
+  const sorted = cat.id === 'deaths'
+    ? [...ads].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)) // الوفيات: الأحدث فوق دايمًا، من غير أي ترتيب تاني
+    : [...ads].sort((a,b) => {
     if(b.is_sponsored !== a.is_sponsored) return (b.is_sponsored?1:0) - (a.is_sponsored?1:0);
     if(b.is_offer !== a.is_offer) return (b.is_offer?1:0) - (a.is_offer?1:0);
     const so = (b.sponsored_order||0) - (a.sponsored_order||0);
@@ -8535,6 +8537,8 @@ async function loadReviews(adId) {
   container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--gray);font-size:12px;">جاري تحميل التقييمات...</div>';
   try {
     const deviceId = getDeviceId();
+    const adRef = (typeof allAds !== 'undefined' ? allAds.find(a=>a.id===adId) : null);
+    const isDeaths = adRef && adRef.category === 'deaths';
     const [reviews, likes, myLike] = await Promise.all([
       sbFetch('GET', `reviews?ad_id=eq.${adId}&select=*&order=created_at.desc`) || [],
       sbFetch('GET', `ad_likes?ad_id=eq.${adId}&select=id`) || [],
@@ -8547,6 +8551,11 @@ async function loadReviews(adId) {
     const ratingCounts = [5,4,3,2,1].map(n=>({ n, count: reviews?.filter(r=>r.rating===n).length||0 }));
     container.innerHTML = `
       <div style="background:white;border-radius:14px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px;">
+        ${isDeaths ? `
+        <div style="padding:14px;border-bottom:1px solid var(--border);">
+          <div style="font-size:13px;font-weight:900;">🤍 كلمات العزاء</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:2px;">${reviews?.length||0} رسالة عزاء</div>
+        </div>` : `
         <div style="padding:14px;border-bottom:1px solid var(--border);">
           <div style="font-size:13px;font-weight:900;margin-bottom:10px;">⭐ التقييمات</div>
           <div style="display:flex;gap:12px;align-items:center;">
@@ -8566,7 +8575,7 @@ async function loadReviews(adId) {
               </div>`).join('')}
             </div>
           </div>
-        </div>
+        </div>`}
         <div style="padding:10px 14px;border-bottom:1px solid var(--border);">
           <button onclick="toggleLike('${adId}').then(()=>loadReviews('${adId}'))"
             style="width:100%;background:${hasLiked?'#fee2e2':'#f3f4f6'};color:${hasLiked?'#dc2626':'var(--gray)'};border:none;padding:10px;border-radius:10px;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
@@ -8575,28 +8584,29 @@ async function loadReviews(adId) {
         </div>
         ${!myReview ? `
         <div style="padding:14px;border-bottom:1px solid var(--border);">
-          <div style="font-size:13px;font-weight:900;margin-bottom:10px;">✍️ أضف تقييمك</div>
+          <div style="font-size:13px;font-weight:900;margin-bottom:10px;">${isDeaths ? '🤍 اكتب كلمة عزاء' : '✍️ أضف تقييمك'}</div>
           <input type="text" id="reviewName" placeholder="اسمك (اختياري)" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;box-sizing:border-box;">
+          ${isDeaths ? '' : `
           <div style="display:flex;justify-content:center;gap:8px;margin-bottom:10px;">
             ${[1,2,3,4,5].map(i=>`<button onclick="setRating(${i},'${adId}')" id="star_${adId}_${i}" style="background:transparent;border:none;font-size:32px;cursor:pointer;opacity:.3;transition:all .2s;">⭐</button>`).join('')}
-          </div>
-          <textarea id="reviewComment" placeholder="اكتب تعليقك... (اختياري)" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;box-sizing:border-box;"></textarea>
-          <button onclick="submitReview('${adId}')" style="width:100%;background:var(--primary);color:white;border:none;padding:11px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">إرسال التقييم ⭐</button>
+          </div>`}
+          <textarea id="reviewComment" placeholder="${isDeaths ? 'اكتب كلمة عزاء ومواساة...' : 'اكتب تعليقك... (اختياري)'}" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;box-sizing:border-box;"></textarea>
+          <button onclick="submitReview('${adId}', ${isDeaths})" style="width:100%;background:var(--primary);color:white;border:none;padding:11px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${isDeaths ? 'إرسال كلمة العزاء 🤍' : 'إرسال التقييم ⭐'}</button>
         </div>` : `
         <div style="padding:12px 14px;border-bottom:1px solid var(--border);background:#f0fdf4;text-align:center;font-size:13px;color:#166534;font-weight:700;">
-          ✅ قيّمت هذا الإعلان من قبل — شكراً!
+          ✅ ${isDeaths ? 'شكراً لمشاركتنا العزاء' : 'قيّمت هذا الإعلان من قبل — شكراً!'}
         </div>`}
         <div style="padding:14px;">
-          <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px;">تعليقات الناس</div>
+          <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px;">${isDeaths ? 'رسائل العزاء' : 'تعليقات الناس'}</div>
           ${reviews?.length ? reviews.map(r=>`
           <div style="border-bottom:1px solid #f3f4f6;padding-bottom:10px;margin-bottom:10px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
               <span style="font-size:13px;font-weight:700;">${r.reviewer_name||'زائر'}</span>
-              <span style="font-size:13px;">${'⭐'.repeat(r.rating||0)}${'☆'.repeat(5-(r.rating||0))}</span>
+              ${isDeaths ? '' : `<span style="font-size:13px;">${'⭐'.repeat(r.rating||0)}${'☆'.repeat(5-(r.rating||0))}</span>`}
             </div>
             ${r.comment?`<p style="font-size:13px;color:#374151;line-height:1.6;margin:0 0 4px;">${escapeHtml(r.comment)}</p>`:''}
             <div style="font-size:11px;color:#aaa;">${new Date(r.created_at).toLocaleDateString('ar-EG')}</div>
-          </div>`).join('') : '<div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">لا توجد تقييمات بعد — كن أول من يقيّم! 🌟</div>'}
+          </div>`).join('') : `<div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">${isDeaths ? 'كن أول من يواسي الأسرة 🤍' : 'لا توجد تقييمات بعد — كن أول من يقيّم! 🌟'}</div>`}
         </div>
       </div>`;
     window._currentRating = 0;
@@ -8615,17 +8625,18 @@ function setRating(val, adId) {
   });
 }
 
-async function submitReview(adId) {
+async function submitReview(adId, skipRatingRequirement) {
   const rating = window._currentRating || 0;
-  if(!rating) { showToast('اختر عدد النجوم أولاً ⭐','error'); return; }
+  if(!rating && !skipRatingRequirement) { showToast('اختر عدد النجوم أولاً ⭐','error'); return; }
   const name = document.getElementById('reviewName')?.value.trim() || 'زائر';
   const comment = document.getElementById('reviewComment')?.value.trim() || null;
+  if(skipRatingRequirement && !comment) { showToast('اكتب كلمة العزاء أولاً','error'); return; }
   try {
     await sbFetch('POST', 'reviews', {
       ad_id: adId, device_id: getDeviceId(),
-      reviewer_name: name, rating, comment
+      reviewer_name: name, rating: skipRatingRequirement ? null : rating, comment
     });
-    showToast('✅ تم إرسال تقييمك! شكراً 🌟');
+    showToast(skipRatingRequirement ? '✅ اتبعتت كلمة العزاء، ربنا يصبّر أهل الفقيد 🤍' : '✅ تم إرسال تقييمك! شكراً 🌟');
     loadReviews(adId);
   } catch(e) { showToast('خطأ في الإرسال','error'); }
 }
