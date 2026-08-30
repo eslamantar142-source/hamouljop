@@ -11734,7 +11734,7 @@ function showTeacherOtherTypes() {
 async function showTeacherAds(subName) {
   await loadAds();
   window._teacherAdsSubName = subName;
-  window._teacherAdsAll = allAds.filter(a => a.status==='approved' && (a.subcategory===subName || (a.subcategory && a.subcategory.includes(subName)) || a.title?.includes(subName)));
+  window._teacherAdsAll = allAds.filter(a => a.status==='approved' && a.category==='teachers_hub' && (a.subcategory===subName || (a.subcategory && a.subcategory.includes(subName)) || a.title?.includes(subName)));
   sessionStorage.setItem('dynState', JSON.stringify({type:'teacherSub', sub: subName}));
   try{history.pushState({dyn:1},'');}catch(e){}
   const fakeCat = {id:'teachers_hub', name:'مجتمع المدرسين', icon:'👨‍🏫', color:'#ede9fe', subs:[]};
