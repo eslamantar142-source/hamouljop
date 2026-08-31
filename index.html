@@ -6274,10 +6274,23 @@ async function loadAdminShops(cont) {
     cont.innerHTML = '<div style="text-align:center;padding:30px;color:#dc2626;">⚠️ حصل خطأ في تحميل المعارض<br><span style="font-size:11px;">' + (e.message||'') + '</span></div>';
     return;
   }
+  window._adminShopsCache = traders;
+  cont.innerHTML =
+    '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;">' +
+      '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">🔍 دوّر على معرض</div>' +
+      '<input id="adminShopsSearch" type="text" placeholder="اكتب اسم المعرض أو رقم الموبايل..." oninput="filterAdminShops()" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;">' +
+    '</div>' +
+    '<div id="adminShopsListsWrap"></div>';
+  renderAdminShopsLists(traders);
+}
+
+function renderAdminShopsLists(traders) {
+  var wrap = document.getElementById('adminShopsListsWrap');
+  if(!wrap) return;
   var pending = traders.filter(function(t){ return t.status==='pending'; });
   var approved = traders.filter(function(t){ return t.status==='approved'; });
 
-  cont.innerHTML =
+  wrap.innerHTML =
     '<div style="background:white;border-radius:14px;padding:14px;margin-bottom:12px;">' +
       '<div style="font-size:14px;font-weight:900;margin-bottom:10px;">⏳ معارض تنتظر الموافقة (' + pending.length + ')</div>' +
       (pending.length ? pending.map(function(t){
@@ -6300,12 +6313,21 @@ async function loadAdminShops(cont) {
             '<div style="font-size:13px;font-weight:700;">' + escapeHtml(t.shop_name) + '</div>' +
             '<div style="font-size:11px;color:#64748b;">' + t.subcategory + ' • ' + t.phone + '</div>' +
           '</div>' +
-          '<button data-tid=\"'+t.id+'\" data-tcat=\"'+t.category+'\" data-tsub=\"'+escapeHtml(t.subcategory||'')+'\" onclick=\"moveShopTraderToCategory(this.dataset.tid,this.dataset.tcat,this.dataset.tsub)\" style=\"background:#dbeafe;color:#1d4ed8;border:none;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;\">📂 نقل</button>' +
+          '<button data-tid="'+t.id+'" data-tcat="'+t.category+'" data-tsub="'+escapeHtml(t.subcategory||'')+'" onclick="moveShopTraderToCategory(this.dataset.tid,this.dataset.tcat,this.dataset.tsub)" style="background:#dbeafe;color:#1d4ed8;border:none;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">📂 نقل</button>' +
           '<button data-tid="'+t.id+'" data-tname="'+escapeHtml(t.shop_name||'')+'" onclick="resetShopTraderPassword(this.dataset.tid,this.dataset.tname)" style="background:#fef3c7;color:#92400e;border:none;padding:5px 10px;border-radius:8px;font-size:14px;cursor:pointer;">🔑</button>' +
           '<button data-tid="'+t.id+'" data-tname="'+escapeHtml(t.shop_name||'')+'" onclick="deleteShopTraderAdmin(this.dataset.tid,this.dataset.tname)" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️</button>' +
         '</div>';
       }).join('') : '<p style="font-size:12px;color:#94a3b8;">مفيش معارض معتمدة</p>') +
     '</div>';
+}
+
+function filterAdminShops() {
+  var q = (document.getElementById('adminShopsSearch')?.value || '').trim().toLowerCase();
+  var traders = window._adminShopsCache || [];
+  var filtered = !q ? traders : traders.filter(function(t){
+    return (t.shop_name||'').toLowerCase().indexOf(q) !== -1 || (t.phone||'').indexOf(q) !== -1;
+  });
+  renderAdminShopsLists(filtered);
 }
 
 // نقل معرض لقسم/تخصص فرعي تاني (للأدمن) — زي نقل الإعلانات بالظبط
