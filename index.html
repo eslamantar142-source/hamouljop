@@ -6300,11 +6300,82 @@ async function loadAdminShops(cont) {
             '<div style="font-size:13px;font-weight:700;">' + escapeHtml(t.shop_name) + '</div>' +
             '<div style="font-size:11px;color:#64748b;">' + t.subcategory + ' • ' + t.phone + '</div>' +
           '</div>' +
+          '<button data-tid=\"'+t.id+'\" data-tcat=\"'+t.category+'\" data-tsub=\"'+escapeHtml(t.subcategory||'')+'\" onclick=\"moveShopTraderToCategory(this.dataset.tid,this.dataset.tcat,this.dataset.tsub)\" style=\"background:#dbeafe;color:#1d4ed8;border:none;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;\">📂 نقل</button>' +
           '<button data-tid="'+t.id+'" data-tname="'+escapeHtml(t.shop_name||'')+'" onclick="resetShopTraderPassword(this.dataset.tid,this.dataset.tname)" style="background:#fef3c7;color:#92400e;border:none;padding:5px 10px;border-radius:8px;font-size:14px;cursor:pointer;">🔑</button>' +
           '<button data-tid="'+t.id+'" data-tname="'+escapeHtml(t.shop_name||'')+'" onclick="deleteShopTraderAdmin(this.dataset.tid,this.dataset.tname)" style="background:#fee2e2;color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:12px;cursor:pointer;">🗑️</button>' +
         '</div>';
       }).join('') : '<p style="font-size:12px;color:#94a3b8;">مفيش معارض معتمدة</p>') +
     '</div>';
+}
+
+// نقل معرض لقسم/تخصص فرعي تاني (للأدمن) — زي نقل الإعلانات بالظبط
+function moveShopTraderToCategory(traderId, currentCat, currentSub) {
+  const options = [];
+  CATEGORIES.forEach(function(c) {
+    if(SHOP_ONLY_CAT_IDS.indexOf(c.id) !== -1 && c.subs && c.subs.length > 0) {
+      c.subs.forEach(function(s) {
+        var sName = typeof s === 'string' ? s : s.name;
+        options.push({cat: c.id, sub: sName, label: c.icon + ' ' + c.name + ' — ' + sName});
+      });
+    }
+    if(c.children) {
+      c.children.forEach(function(child) {
+        if(typeof NESTED_SHOP_CHILDREN !== 'undefined' && NESTED_SHOP_CHILDREN.indexOf(child.id) !== -1 && child.subs && child.subs.length > 0) {
+          child.subs.forEach(function(s) {
+            var sName = typeof s === 'string' ? s : s.name;
+            options.push({cat: child.id, sub: sName, label: c.icon + ' ' + c.name + ' ← ' + child.name + ' ← ' + sName});
+          });
+        }
+      });
+    }
+  });
+
+  const modal = document.createElement('div');
+  modal.id = 'moveShopModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;';
+
+  var btns = options.map(function(o) {
+    var isCurrent = (o.cat === currentCat && o.sub === currentSub);
+    var btn = document.createElement('button');
+    btn.style.cssText = "background:" + (isCurrent ? "#dbeafe" : "#f8fafc") + ";border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;text-align:right;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;color:#1e293b;margin-bottom:6px;width:100%;";
+    btn.textContent = o.label + (isCurrent ? ' ✅ الحالي' : '');
+    btn.dataset.cat = o.cat;
+    btn.dataset.sub = o.sub;
+    btn.dataset.tid = traderId;
+    btn.onclick = function() { confirmMoveShopTrader(this.dataset.tid, this.dataset.cat, this.dataset.sub); };
+    return btn.outerHTML;
+  }).join('');
+
+  modal.innerHTML = '<div style="background:white;border-radius:20px 20px 0 0;width:100%;padding:20px;max-height:80vh;overflow-y:auto;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+    '<div style="font-size:16px;font-weight:900;">📂 نقل المعرض لقسم آخر</div>' +
+    '<button id="closeMoveShopModal" style="background:#f3f4f6;border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;">×</button>' +
+    '</div>' +
+    '<div style="font-size:12px;color:#64748b;margin-bottom:12px;">اختار القسم الجديد:</div>' +
+    '<div id="moveShopBtnsWrap">' + btns + '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  document.getElementById('closeMoveShopModal').onclick = function() { modal.remove(); };
+  modal.addEventListener('click', function(e) { if(e.target === modal) modal.remove(); });
+
+  document.querySelectorAll('#moveShopBtnsWrap button').forEach(function(btn) {
+    btn.onclick = function() {
+      confirmMoveShopTrader(btn.dataset.tid, btn.dataset.cat, btn.dataset.sub);
+    };
+  });
+}
+
+async function confirmMoveShopTrader(traderId, newCat, newSub) {
+  var modal = document.getElementById('moveShopModal');
+  try {
+    await sbFetch('PATCH', 'shop_traders?id=eq.' + traderId, {category: newCat, subcategory: newSub});
+    if(modal) modal.remove();
+    showToast('✅ تم نقل المعرض بنجاح');
+    showAdminPanel('shops');
+  } catch(e) {
+    showToast('خطأ في النقل ❌', 'error');
+  }
 }
 
 async function resetShopTraderPassword(traderId, traderName) {
