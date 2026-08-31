@@ -3702,12 +3702,13 @@ async function openAdDetails(adId) {
           <span style="font-size:12px;color:var(--gray);">📞 ${waClicks} تواصل</span>
           <span style="font-size:12px;color:var(--gray);">📅 ${new Date(ad.created_at).toLocaleDateString('ar-EG')}</span>
         </div>
-        ${(ad.phone||ad.address||ad.subcategory||ad.salary||ad.job_status||ad.reward||ad.category==='lost'||ad.funeral_info||ad.condolence_info||ad.relation||ad.death_date||ad.condition||ad.color||ad.warranty||ad.quantity||ad.opening_hours||ad.delivery)?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;">
+        ${(ad.phone||ad.address||ad.subcategory||ad.salary||ad.job_status||ad.consultation_price||ad.reward||ad.category==='lost'||ad.funeral_info||ad.condolence_info||ad.relation||ad.death_date||ad.condition||ad.color||ad.warranty||ad.quantity||ad.opening_hours||ad.delivery)?`<div style="background:white;border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:13px;font-weight:900;">ℹ️ معلومات عن النشاط</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             ${ad.subcategory?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f8fafc;border-radius:10px;"><span style="font-size:18px;">🏷️</span><div><div style="font-size:11px;color:#94a3b8;">التخصص</div><div style="font-size:13px;font-weight:700;">${ad.subcategory}</div></div></div>`:''}
+            ${ad.consultation_price?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#fef2f2;border-radius:10px;"><span style="font-size:18px;">🩺</span><div><div style="font-size:11px;color:#94a3b8;">سعر الكشف</div><div style="font-size:13px;font-weight:700;color:#991b1b;">${ad.consultation_price} جنيه</div></div></div>`:''}
             ${ad.salary?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#eff6ff;border-radius:10px;"><span style="font-size:18px;">💰</span><div><div style="font-size:11px;color:#94a3b8;">الراتب</div><div style="font-size:13px;font-weight:700;color:#1d4ed8;">${ad.salary}</div></div></div>`:''}
             ${ad.job_status?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:#f0fdf4;border-radius:10px;"><span style="font-size:18px;">📌</span><div><div style="font-size:11px;color:#94a3b8;">الحالة</div><div style="font-size:13px;font-weight:700;color:#166534;">${ad.job_status}</div></div></div>`:''}
             ${ad.category==='lost'?`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:${ad.lost_mode==='found'?'#f0fdf4':'#fef2f2'};border-radius:10px;"><span style="font-size:18px;">${ad.lost_mode==='found'?'🙂':'😟'}</span><div><div style="font-size:11px;color:#94a3b8;">النوع</div><div style="font-size:13px;font-weight:700;color:${ad.lost_mode==='found'?'#166534':'#dc2626'};">${ad.lost_mode==='found'?'لقيت حاجة':'فقدت حاجة'}</div></div></div>`:''}
@@ -3768,6 +3769,7 @@ async function openAdDetails(adId) {
         </div>`:''}
         ${isOwnerOf(ad)?`<div style="padding:0 16px 12px;">
           <button onclick="toggleMyAdOffer('${adId}',${!ad.is_offer})" style="width:100%;background:${ad.is_offer?'#fee2e2':'#fff7ed'};color:${ad.is_offer?'var(--red)':'var(--orange)'};border:2px solid ${ad.is_offer?'#fca5a5':'#fed7aa'};padding:11px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${ad.is_offer?'❌ إلغاء من العروض':'⭐ إضافة إعلاني للعروض'}</button>
+          <div style="font-size:10.5px;color:#94a3b8;text-align:center;margin-top:5px;line-height:1.6;">⭐ = تمييز الإعلان كـ"عرض" — هيظهر في تاب "العروض" بالصفحة الرئيسية عشان يشوفه أكبر عدد من الناس</div>
         </div>`:''}
       </div>
     </div>
@@ -4059,6 +4061,8 @@ function openEditAd(adId) {
     if(fSalary) fSalary.value = ad.salary || '';
     var fJobStatus = document.getElementById('fJobStatus');
     if(fJobStatus) fJobStatus.value = ad.job_status || '';
+    var fConsultPrice = document.getElementById('fConsultPrice');
+    if(fConsultPrice) fConsultPrice.value = ad.consultation_price || '';
 
     // بيانات المفقودات (النوع والمكافأة)
     if(document.getElementById('fLostMode')) setLostMode(ad.lost_mode || 'lost');
@@ -4098,6 +4102,7 @@ function openEditAd(adId) {
       updateJobsUI();
       updateLostUI();
       updateDeathsUI();
+      updateDoctorUI();
     }, 100);
     
     // تغيير العنوان والزرار للتعديل
@@ -4215,6 +4220,14 @@ async function submitEditAd(adId) {
       try {
         await sbFetch('PATCH', `ads?id=eq.${adId}`, {salary: salary || null, job_status: jobStatus || null});
       } catch(e){ console.error('salary/job_status save failed:', e.message || e); }
+    }
+
+    // تحديث سعر الكشف (لقسم الأطباء فقط)
+    if(cat === 'doctors') {
+      try {
+        const consultPrice = document.getElementById('fConsultPrice')?.value.trim() || null;
+        await sbFetch('PATCH', `ads?id=eq.${adId}`, {consultation_price: consultPrice});
+      } catch(e){ console.error('consultation_price save failed:', e.message || e); }
     }
 
     // تحديث نوع المفقود والمكافأة (لقسم المفقودات فقط)
@@ -4569,7 +4582,7 @@ function openAddModalForm(catId='', sub='', isEdit=false) {
         </div>
         <div class="fg" id="fSubWrap" style="margin-bottom:0;">
           <label id="fSubLabel">التخصص</label>
-          <select id="fSub" onchange="updateTitlePlaceholder();updateDescPlaceholder();updateJobsUI();updateLostUI();updateDeathsUI();" style="font-size:14px;"></select>
+          <select id="fSub" onchange="updateTitlePlaceholder();updateDescPlaceholder();updateJobsUI();updateLostUI();updateDeathsUI();updateDoctorUI();" style="font-size:14px;"></select>
         </div>
         <div onclick="hideDynPage();showHome();" style="margin-top:10px;background:#f5f3ff;border:1.5px dashed #7c3aed;border-radius:10px;padding:10px 12px;font-size:12px;color:#5b21b6;cursor:pointer;text-align:center;font-weight:700;">
           🏪 عندك محل / معرض / نشاط تجاري؟ سجّله من قسمه مباشرة بزرار "سجّل نشاطك"
@@ -4693,6 +4706,18 @@ function openAddModalForm(catId='', sub='', isEdit=false) {
             </div>
           </div>
         </div>
+
+        <!-- حقل سعر الكشف (يظهر بس في قسم الأطباء) -->
+        <div id="doctorFields" style="display:none;">
+          <div style="background:#fee2e2;border-radius:12px;padding:12px;margin-bottom:4px;">
+            <div style="font-size:13px;font-weight:900;color:#991b1b;margin-bottom:10px;">🩺 بيانات الكشف</div>
+            <div class="fg" style="margin-bottom:0;">
+              <label style="font-size:11px;color:#374151;font-weight:700;display:block;margin-bottom:4px;">سعر الكشف (اختياري)</label>
+              <input type="text" id="fConsultPrice" placeholder="مثال: 150 جنيه — سيبها فاضية لو مش عايز تحددها" style="width:100%;padding:8px;border:1px solid #fca5a5;border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;box-sizing:border-box;background:white;">
+            </div>
+          </div>
+        </div>
+
 
         <!-- حقول المتجر -->
         <div id="shopFields" style="display:none;">
@@ -4842,9 +4867,9 @@ function openAddModalForm(catId='', sub='', isEdit=false) {
 
   page.classList.add('active');
   document.body.style.overflow = 'hidden';
-  setTimeout(function(){ updateFSub(); if(sub){ var fs=document.getElementById('fSub'); if(fs){ for(var i=0;i<fs.options.length;i++){ if(fs.options[i].value===sub){fs.value=sub;break;} } } } updateTitlePlaceholder(); updateDescPlaceholder(); updateJobsUI(); updateLostUI(); updateDeathsUI(); }, 50);
+  setTimeout(function(){ updateFSub(); if(sub){ var fs=document.getElementById('fSub'); if(fs){ for(var i=0;i<fs.options.length;i++){ if(fs.options[i].value===sub){fs.value=sub;break;} } } } updateTitlePlaceholder(); updateDescPlaceholder(); updateJobsUI(); updateLostUI(); updateDeathsUI(); updateDoctorUI(); }, 50);
   updateFSub();
-  if(sub) { setTimeout(() => { const sel = document.getElementById('fSub'); if(sel) sel.value = sub; updateTitlePlaceholder(); updateDescPlaceholder(); updateJobsUI(); updateLostUI(); updateDeathsUI(); }, 100); }
+  if(sub) { setTimeout(() => { const sel = document.getElementById('fSub'); if(sel) sel.value = sub; updateTitlePlaceholder(); updateDescPlaceholder(); updateJobsUI(); updateLostUI(); updateDeathsUI(); updateDoctorUI(); }, 100); }
 }
 
 function buildAddForm(catId, sub) { openAddModal(catId, sub); }
@@ -4978,13 +5003,13 @@ function updateFSub() {
           </div>
         </div>`).join('');
     updateDescPlaceholder();
-    updateJobsUI(); updateLostUI(); updateDeathsUI();
+    updateJobsUI(); updateLostUI(); updateDeathsUI(); updateDoctorUI();
     return;
   } else {
     const oldPicker = document.getElementById('teacherSubjectPicker');
     if(oldPicker) oldPicker.remove();
     document.getElementById('fSubLabel').textContent = 'التخصص';
-    sel.onchange = function() { updateTitlePlaceholder();updateDescPlaceholder();updateJobsUI();updateLostUI();updateDeathsUI(); };
+    sel.onchange = function() { updateTitlePlaceholder();updateDescPlaceholder();updateJobsUI();updateLostUI();updateDeathsUI();updateDoctorUI(); };
   }
 
   // جمع كل التخصصات: subs المباشرة + subs داخل children
@@ -5022,6 +5047,7 @@ function updateFSub() {
   updateJobsUI();
   updateLostUI();
   updateDeathsUI();
+  updateDoctorUI();
 }
 
 // ===== نص إرشادي مخصص لحقل التفاصيل حسب القسم (خاصة العقارات) =====
@@ -5377,6 +5403,12 @@ function getDeathsMode() {
   if(addCatId === 'deaths_memorial') return 'memorial';
   if(addCatId === 'deaths_announce') return 'announce';
   return 'announce'; // افتراضي
+}
+
+function updateDoctorUI() {
+  const catVal = document.getElementById('fCat')?.value;
+  const doctorFields = document.getElementById('doctorFields');
+  if(doctorFields) doctorFields.style.display = (catVal === 'doctors') ? 'block' : 'none';
 }
 
 function updateDeathsUI() {
@@ -5790,6 +5822,7 @@ async function submitNewAd() {
       warranty: document.getElementById('fWarranty')?.value.trim() || null,
       salary: catId === 'jobs' ? (document.getElementById('fSalary')?.value.trim() || null) : null,
       job_status: catId === 'jobs' ? (document.getElementById('fJobStatus')?.value || null) : null,
+      consultation_price: catId === 'doctors' ? (document.getElementById('fConsultPrice')?.value.trim() || null) : null,
       lost_mode: catId === 'lost' ? (document.getElementById('fLostMode')?.value || 'lost') : null,
       reward: (catId === 'lost' && document.getElementById('fHasReward')?.checked) ? (document.getElementById('fRewardAmount')?.value.trim() || null) : null,
       funeral_info: getDeathsMode() === 'announce' ? (document.getElementById('fFuneralInfo')?.value.trim() || null) : null,
@@ -8539,6 +8572,8 @@ async function loadReviews(adId) {
     const deviceId = getDeviceId();
     const adRef = (typeof allAds !== 'undefined' ? allAds.find(a=>a.id===adId) : null);
     const isDeaths = adRef && adRef.category === 'deaths';
+    const isDoctor = adRef && adRef.category === 'doctors';
+    const isAdOwner = isOwnerOf(adRef);
     const [reviews, likes, myLike] = await Promise.all([
       sbFetch('GET', `reviews?ad_id=eq.${adId}&select=*&order=created_at.desc`) || [],
       sbFetch('GET', `ad_likes?ad_id=eq.${adId}&select=id`) || [],
@@ -8590,14 +8625,14 @@ async function loadReviews(adId) {
           <div style="display:flex;justify-content:center;gap:8px;margin-bottom:10px;">
             ${[1,2,3,4,5].map(i=>`<button onclick="setRating(${i},'${adId}')" id="star_${adId}_${i}" style="background:transparent;border:none;font-size:32px;cursor:pointer;opacity:.3;transition:all .2s;">⭐</button>`).join('')}
           </div>`}
-          <textarea id="reviewComment" placeholder="${isDeaths ? 'اكتب كلمة عزاء ومواساة...' : 'اكتب تعليقك... (اختياري)'}" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;box-sizing:border-box;"></textarea>
+          <textarea id="reviewComment" placeholder="${isDeaths ? 'اكتب كلمة عزاء ومواساة...' : isDoctor ? 'اكتب رأيك أو سؤالك للطبيب...' : 'اكتب تعليقك... (اختياري)'}" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:Cairo,sans-serif;font-size:13px;margin-bottom:8px;resize:none;box-sizing:border-box;"></textarea>
           <button onclick="submitReview('${adId}', ${isDeaths})" style="width:100%;background:var(--primary);color:white;border:none;padding:11px;border-radius:10px;font-family:Cairo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${isDeaths ? 'إرسال كلمة العزاء 🤍' : 'إرسال التقييم ⭐'}</button>
         </div>` : `
         <div style="padding:12px 14px;border-bottom:1px solid var(--border);background:#f0fdf4;text-align:center;font-size:13px;color:#166534;font-weight:700;">
           ✅ ${isDeaths ? 'شكراً لمشاركتنا العزاء' : 'قيّمت هذا الإعلان من قبل — شكراً!'}
         </div>`}
         <div style="padding:14px;">
-          <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px;">${isDeaths ? 'رسائل العزاء' : 'تعليقات الناس'}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px;">${isDeaths ? 'رسائل العزاء' : isDoctor ? '💬 آراء وأسئلة عن الطبيب' : 'تعليقات الناس'}</div>
           ${reviews?.length ? reviews.map(r=>`
           <div style="border-bottom:1px solid #f3f4f6;padding-bottom:10px;margin-bottom:10px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
@@ -8606,7 +8641,19 @@ async function loadReviews(adId) {
             </div>
             ${r.comment?`<p style="font-size:13px;color:#374151;line-height:1.6;margin:0 0 4px;">${escapeHtml(r.comment)}</p>`:''}
             <div style="font-size:11px;color:#aaa;">${new Date(r.created_at).toLocaleDateString('ar-EG')}</div>
-          </div>`).join('') : `<div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">${isDeaths ? 'كن أول من يواسي الأسرة 🤍' : 'لا توجد تقييمات بعد — كن أول من يقيّم! 🌟'}</div>`}
+            ${r.reply ? `
+            <div style="background:#eff6ff;border-radius:10px;padding:8px 10px;margin-top:8px;border-right:3px solid #2563eb;">
+              <div style="font-size:11px;font-weight:900;color:#1d4ed8;margin-bottom:2px;">🩺 رد الطبيب</div>
+              <div style="font-size:12.5px;color:#1e3a8a;line-height:1.6;">${escapeHtml(r.reply)}</div>
+            </div>` : (isDoctor && isAdOwner ? `
+            <div style="margin-top:8px;">
+              <button onclick="showReplyBox('${r.id}')" id="replyBtn_${r.id}" style="background:#eff6ff;color:#1d4ed8;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">↩️ رد على السؤال ده</button>
+              <div id="replyBox_${r.id}" style="display:none;margin-top:6px;">
+                <textarea id="replyText_${r.id}" rows="2" placeholder="اكتب ردك..." style="width:100%;padding:8px 10px;border:1.5px solid #bfdbfe;border-radius:8px;font-family:Cairo,sans-serif;font-size:12.5px;margin-bottom:6px;resize:none;box-sizing:border-box;"></textarea>
+                <button onclick="submitReply('${r.id}','${adId}')" style="width:100%;background:#2563eb;color:white;border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">إرسال الرد</button>
+              </div>
+            </div>` : '')}
+          </div>`).join('') : `<div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">${isDeaths ? 'كن أول من يواسي الأسرة 🤍' : isDoctor ? 'لسه مفيش آراء أو أسئلة — كن أول من يسأل! 💬' : 'لا توجد تقييمات بعد — كن أول من يقيّم! 🌟'}</div>`}
         </div>
       </div>`;
     window._currentRating = 0;
@@ -8639,6 +8686,29 @@ async function submitReview(adId, skipRatingRequirement) {
     showToast(skipRatingRequirement ? '✅ اتبعتت كلمة العزاء، ربنا يصبّر أهل الفقيد 🤍' : '✅ تم إرسال تقييمك! شكراً 🌟');
     loadReviews(adId);
   } catch(e) { showToast('خطأ في الإرسال','error'); }
+}
+
+function showReplyBox(reviewId) {
+  var box = document.getElementById('replyBox_'+reviewId);
+  var btn = document.getElementById('replyBtn_'+reviewId);
+  if(box) box.style.display = 'block';
+  if(btn) btn.style.display = 'none';
+  var ta = document.getElementById('replyText_'+reviewId);
+  if(ta) ta.focus();
+}
+
+async function submitReply(reviewId, adId) {
+  var u = getCurrentUser();
+  if(!u || !u.token) { showToast('سجّل دخولك الأول', 'error'); return; }
+  var text = document.getElementById('replyText_'+reviewId)?.value.trim();
+  if(!text) { showToast('اكتب الرد الأول', 'error'); return; }
+  try {
+    await sbRPC('secure_reply_to_review', {p_token: u.token, p_review_id: reviewId, p_reply: text});
+    showToast('✅ اتبعت ردك');
+    loadReviews(adId);
+  } catch(e) {
+    showToast('حصل خطأ، حاول تاني', 'error');
+  }
 }
 
 // تحويل وقت الصلاة من نظام 24 ساعة لنظام 12 ساعة (1-12) مع ص/م
