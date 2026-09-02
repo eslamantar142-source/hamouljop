@@ -1828,6 +1828,8 @@ async function loadShopComments(traderId) {
     comments = await sbFetch('GET', 'shop_comments?trader_id=eq.'+traderId+'&order=created_at.desc&limit=50') || [];
   } catch(e) { comments = []; }
 
+  var isOwner = !!localStorage.getItem('my_shop_phone_'+traderId);
+
   // احسب متوسط التقييم
   var rated = comments.filter(function(c){ return c.rating && c.rating > 0; });
   var avgEl = document.getElementById('shopAvgRating');
@@ -1854,8 +1856,33 @@ async function loadShopComments(traderId) {
         '<span style="font-size:10px;color:#94a3b8;">' + d + '</span>' +
       '</div>' +
       (c.body ? '<div style="font-size:13px;color:#374151;line-height:1.6;">' + escapeHtml(c.body) + '</div>' : '') +
+      (c.reply ? '<div style="background:#f5f3ff;border-radius:8px;padding:8px 10px;margin-top:8px;border-right:3px solid #7c3aed;"><div style="font-size:11px;font-weight:900;color:#6d28d9;margin-bottom:2px;">🏪 رد صاحب المعرض</div><div style="font-size:12.5px;color:#4c1d95;line-height:1.6;">' + escapeHtml(c.reply) + '</div></div>' : (isOwner ? '<div style="margin-top:8px;"><button onclick="showShopReplyBox(\''+c.id+'\')" id="shopReplyBtn_'+c.id+'" style="background:#f5f3ff;color:#6d28d9;border:none;padding:6px 12px;border-radius:8px;font-family:Cairo,sans-serif;font-size:11px;font-weight:700;cursor:pointer;">↩️ رد</button><div id="shopReplyBox_'+c.id+'" style="display:none;margin-top:6px;"><textarea id="shopReplyText_'+c.id+'" rows="2" placeholder="اكتب ردك..." style="width:100%;padding:8px 10px;border:1.5px solid #ddd6fe;border-radius:8px;font-family:Cairo,sans-serif;font-size:12.5px;margin-bottom:6px;resize:none;box-sizing:border-box;"></textarea><button onclick="submitShopCommentReply(\''+c.id+'\',\''+traderId+'\')" style="width:100%;background:#7c3aed;color:white;border:none;padding:8px;border-radius:8px;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">إرسال الرد</button></div></div>' : '')) +
     '</div>';
   }).join('');
+}
+
+function showShopReplyBox(commentId) {
+  var box = document.getElementById('shopReplyBox_'+commentId);
+  var btn = document.getElementById('shopReplyBtn_'+commentId);
+  if(box) box.style.display = 'block';
+  if(btn) btn.style.display = 'none';
+  var ta = document.getElementById('shopReplyText_'+commentId);
+  if(ta) ta.focus();
+}
+
+async function submitShopCommentReply(commentId, traderId) {
+  var phone = localStorage.getItem('my_shop_phone_'+traderId);
+  var passHash = localStorage.getItem('my_shop_pass_'+traderId);
+  if(!phone || !passHash) { showToast('سجّل دخولك لمعرضك الأول', 'error'); return; }
+  var text = document.getElementById('shopReplyText_'+commentId)?.value.trim();
+  if(!text) { showToast('اكتب الرد الأول', 'error'); return; }
+  try {
+    await sbRPC('secure_reply_to_shop_comment', {p_phone: phone, p_password_hash: passHash, p_comment_id: commentId, p_reply: text});
+    showToast('✅ اتبعت ردك');
+    loadShopComments(traderId);
+  } catch(e) {
+    showToast('حصل خطأ، حاول تاني', 'error');
+  }
 }
 
 async function submitShopComment(traderId) {
