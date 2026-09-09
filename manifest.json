@@ -1,7 +1,7 @@
 {
-  "name": "سوق ودليل الحامول",
-  "short_name": "دليل الحامول",
-  "description": "دليل إلكتروني مجاني لمركز الحامول، كفر الشيخ",
+  "name": "سوق الحامول",
+  "short_name": "سوق الحامول",
+  "description": "سوق ودليل إلكتروني مجاني لمركز الحامول، كفر الشيخ",
   "start_url": "https://souqelhamoul.com/",
   "scope": "https://souqelhamoul.com/",
   "display": "standalone",
